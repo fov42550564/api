@@ -1,8 +1,8 @@
 #!/bin/bash
 
-cp api.md README.md
+cp README.md api.md
 
-file=README.md
+file=api.md
 
 cp ${file} __tmp1.md
 vim -e -s -c "/###.*\|^- \`.*\`$" -c ":v//d" -c ":%s/.*\[\(.*\)\].*/\1/"  -c ":1,\$g/^/join" -c ":%s/ - \`\(.*\)\`/ \1/"  -c ":%s/\(.*\) \(.*\)/\=line('.').'. ['.submatch(1).'('.submatch(2).')](#'.line('.').'-'.submatch(1).')'/" -c ":wq" __tmp1.md
