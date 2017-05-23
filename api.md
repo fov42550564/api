@@ -254,9 +254,9 @@
 | supervisorId | String | 监督人Id |
 | title | String | 标题 |
 | content | String | 内容 |
-| audioList | Array | [音频列表](#audioList格式：) |
+| audioList | Array | [音频列表](#audiolist格式) |
 | imageList | Array | 图片列表 |
-| remindList | Array | [提醒列表](#remindList格式：) |
+| remindList | Array | [提醒列表](#remindlist格式) |
 | type | Number | 任务类型 |
 | expectStartTime | String | 期望开始时间 |
 | expectFinishTime | String | 期望结束时间 |
@@ -303,9 +303,9 @@
 | supervisorId | String | 监督人Id |
 | title | String | 标题 |
 | content | String | 内容 |
-| audioList | Array | [音频列表](#audioList格式：) |
+| audioList | Array | [音频列表](#audiolist格式) |
 | imageList | Array | 图片列表 |
-| remindList | Array | [提醒列表](#remindList格式：) |
+| remindList | Array | [提醒列表](#remindlist格式) |
 | type | Number | 任务类型(0：一般任务， 1：紧急任务，2：加急任务) |
 | expectStartTime | String | 期望开始时间 |
 | expectFinishTime | String | 期望结束时间 |
@@ -444,9 +444,9 @@
 | supervisorId | String | 监督人Id |
 | title | String | 标题 |
 | content | String | 内容 |
-| audioList | Array | [音频列表](#audioList格式：) |
+| audioList | Array | [音频列表](#audiolist格式) |
 | imageList | Array | 图片列表 |
-| remindList | Array | [提醒列表](#remindList格式：) |
+| remindList | Array | [提醒列表](#remindlist格式) |
 | type | Number | 任务类型 |
 | expectStartTime | String | 期望开始时间 |
 | expectFinishTime | String | 期望结束时间 |
