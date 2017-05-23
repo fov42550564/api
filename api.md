@@ -23,11 +23,13 @@
 ##### 22. [修改提醒(modifyRemind)](#22-修改提醒)
 ##### 23. [推送提醒通知(pushRemindNotice)](#23-推送提醒通知)
 ##### 24. [创建日程(createSchedule)](#24-创建日程)
-##### 25. [修改日程(modifySchedule)](#25-修改日程)
-##### 26. [删除日程(removeSchedule)](#26-删除日程)
-##### 27. [获取日程列表(getScheduleList)](#27-获取日程列表)
-##### 28. [修改进度(modifyProgress)](#28-修改进度)
-##### 29. [获取进度列表(getProgressList)](#29-获取进度列表)
+##### 25. [完成日程(finishSchedule)](#25-完成日程)
+##### 26. [修改日程(modifySchedule)](#26-修改日程)
+##### 27. [删除日程(removeSchedule)](#27-删除日程)
+##### 28. [获取日程列表(getScheduleList)](#28-获取日程列表)
+##### 29. [提醒任务(remaindTask)](#29-提醒任务)
+##### 30. [更新任务进度(updateTaskProgress)](#30-更新任务进度)
+##### 31. [获取进度列表(getTaskProgressList)](#31-获取进度列表)
 
 ---
 
@@ -372,6 +374,7 @@
                 "content": "认真测试",
                 "modifyTime": "2017-05-23 08:44:58",
                 "expectFinishTime": "2017-05-16 03:00:00",
+                "type": 1,
                 "id": "5923860a5c1070c1e96defd2"
             }
         ]
@@ -664,9 +667,7 @@
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
 | userId | String | 用户Id |
-| time | String | 日程时间 |
 | content | String | 日程内容 |
-| state | String | 日程状态 |
 
 ```js
 {
@@ -676,16 +677,32 @@
 
 ---
 
-### 25. [修改日程](#25-修改日程modifyschedule)
+### 25. [完成日程](#25-完成日程finishschedule)
+- `finishSchedule`
+- 请求方式：`POST`
+
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| userId | String | 用户Id |
+| scheduleId | String | 日程Id |
+
+```js
+{
+    "success": true,
+}
+```
+
+---
+
+### 26. [修改日程](#26-修改日程modifyschedule)
 - `modifySchedule`
 - 请求方式：`POST`
 
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
-| id | String | 日程Id |
-| time | String | 日程时间 |
+| userId | String | 用户Id |
+| scheduleId | String | 日程Id |
 | content | String | 日程内容 |
-| state | String | 日程状态 |
 
 ```js
 {
@@ -695,13 +712,14 @@
 
 ---
 
-### 26. [删除日程](#26-删除日程removeschedule)
+### 27. [删除日程](#27-删除日程removeschedule)
 - `removeSchedule`
 - 请求方式：`POST`
 
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
-| id | String | 日程Id |
+| userId | String | 用户Id |
+| scheduleId | String | 日程Id |
 
 ```js
 {
@@ -711,7 +729,7 @@
 
 ---
 
-### 27. [获取日程列表](#27-获取日程列表getschedulelist)
+### 28. [获取日程列表](#28-获取日程列表getschedulelist)
 - `getScheduleList`
 - 请求方式：`POST`
 
@@ -719,8 +737,6 @@
 | :- |:-:| :-:|
 | userId | String | 用户Id |
 | time | String | 日程时间 |
-| content | String | 日程内容 |
-| state | String | 日程状态 |
 
 ```js
 {
@@ -728,10 +744,9 @@
     "context": {
         "scheduleList": [
             {
-                "id":"123",
-                "time":"8:00",
-                "content":"要干嘛",
-                "state":1
+                "content": "测试日程",
+                "state": 0,
+                "id": "59225114d4118c3a27ff4a5d"
             }
         ]
     }
@@ -740,15 +755,14 @@
 
 ---
 
-### 28. [修改进度](#28-修改进度modifyprogress)
-- `modifyProgress`
+### 29. [提醒任务](#29-提醒任务remaindtask)
+- `remaindTask`
 - 请求方式：`POST`
 
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
-| taskId | String | 任务Id |
-| time | String | 修改时间 |
-| content | String | 修改内容 |
+| userId | ID | 监督人Id |
+| taskId | ID | 任务Id |
 
 ```js
 {
@@ -758,22 +772,49 @@
 
 ---
 
-### 29. [获取进度列表](#29-获取进度列表getprogresslist)
-- `getProgressList`
+### 30. [更新任务进度](#30-更新任务进度updatetaskprogress)
+- `updateTaskProgress`
 - 请求方式：`POST`
 
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
-| taskId | String | 任务Id |
+| userId | ID | 监督人Id |
+| taskId | ID | 任务Id |
+| content | String | 填写的内容 |
+
+```js
+{
+    "success": true,
+}
+```
+
+---
+
+### 31. [获取进度列表](#31-获取进度列表gettaskprogresslist)
+- `getTaskProgressList`
+- 请求方式：`POST`
+
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| userId | ID | 监督人Id |
+| taskId | ID | 任务Id |
 
 ```js
 {
     "success": true,
     "context": {
-        "progressList": [
+        "ProgressList": [
             {
-                "time":"8:00",
-                "content":"状态",
+                "createTime": "2017-05-23 17:09:20",
+                "content": "测试进度",
+                "userName": "方运江",
+                "id": "5923fc408ddca4373159bb66"
+            },
+            {
+                "createTime": "2017-05-23 17:09:18",
+                "content": "提醒一次任务",
+                "userName": "方运江",
+                "id": "5923fc3e8ddca4373159bb65"
             }
         ]
     }
