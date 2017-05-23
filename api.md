@@ -1,34 +1,34 @@
 ## 目录
 ##### 1. [登录(login)](#1-登录)
-2. [注册(register)](#2-注册)
-3. [获取个人信息(getPersonalInfo)](#3-获取个人信息)
-4. [修改个人信息(modifyPersonalInfo)](#4-修改个人信息)
-5. [修改密码(modifyPassword)](#5-修改密码)
-6. [获取用户列表(getClientList)](#6-获取用户列表)
-7. [获取用户详情(getClientDetail)](#7-获取用户详情)
-8. [获取任务类型列表(getTaskTypeList)](#8-获取任务类型列表)
-9. [通过类型获取任务列表(getTaskListByType)](#9-通过类型获取任务列表)
-10. [创建单一任务(leaderCreateTask)](#10-创建单一任务)
-11. [创建综合任务(secretaryCreateTask)](#11-创建综合任务)
-12. [领导获取待审批的任务列表(getToExamineTaskList)](#12-领导获取待审批的任务列表)
-13. [根据类型获取的任务列表(getTaskListByType)](#13-根据类型获取的任务列表)
-14. [获取单一任务的详情(getSingleTaskDetail)](#14-获取单一任务的详情)
-15. [获取群组任务的详情(getGroupTaskDetail)](#15-获取群组任务的详情)
-16. [打回任务(rejectPublishTask)](#16-打回任务)
-17. [通过任务(agreePublishTask)](#17-通过任务)
-18. [创建提醒(createRemind)](#18-创建提醒)
-19. [修改提醒(modifyRemind)](#19-修改提醒)
-20. [推送提醒通知(pushRemindNotice)](#20-推送提醒通知)
-21. [创建日程(createSchedule)](#21-创建日程)
-22. [修改日程(modifySchedule)](#22-修改日程)
-23. [删除日程(removeSchedule)](#23-删除日程)
-24. [获取日程列表(getScheduleList)](#24-获取日程列表)
-25. [修改进度(modifyProgress)](#25-修改进度)
-26. [获取进度列表(getProgressList)](#26-获取进度列表)
+##### 2. [注册(register)](#2-注册)
+##### 3. [获取个人信息(getPersonalInfo)](#3-获取个人信息)
+##### 4. [修改个人信息(modifyPersonalInfo)](#4-修改个人信息)
+##### 5. [修改密码(modifyPassword)](#5-修改密码)
+##### 6. [获取用户列表(getClientList)](#6-获取用户列表)
+##### 7. [获取用户详情(getClientDetail)](#7-获取用户详情)
+##### 8. [获取任务类型列表(getTaskTypeList)](#8-获取任务类型列表)
+##### 9. [通过类型获取任务列表(getTaskListByType)](#9-通过类型获取任务列表)
+##### 10. [创建单一任务(leaderCreateTask)](#10-创建单一任务)
+##### 11. [创建综合任务(secretaryCreateTask)](#11-创建综合任务)
+##### 12. [领导获取待审批的任务列表(getToExamineTaskList)](#12-领导获取待审批的任务列表)
+##### 13. [根据类型获取的任务列表(getTaskListByType)](#13-根据类型获取的任务列表)
+##### 14. [获取单一任务的详情(getSingleTaskDetail)](#14-获取单一任务的详情)
+##### 15. [获取群组任务的详情(getGroupTaskDetail)](#15-获取群组任务的详情)
+##### 16. [打回任务(rejectPublishTask)](#16-打回任务)
+##### 17. [通过任务(agreePublishTask)](#17-通过任务)
+##### 18. [创建提醒(createRemind)](#18-创建提醒)
+##### 19. [修改提醒(modifyRemind)](#19-修改提醒)
+##### 20. [推送提醒通知(pushRemindNotice)](#20-推送提醒通知)
+##### 21. [创建日程(createSchedule)](#21-创建日程)
+##### 22. [修改日程(modifySchedule)](#22-修改日程)
+##### 23. [删除日程(removeSchedule)](#23-删除日程)
+##### 24. [获取日程列表(getScheduleList)](#24-获取日程列表)
+##### 25. [修改进度(modifyProgress)](#25-修改进度)
+##### 26. [获取进度列表(getProgressList)](#26-获取进度列表)
 
 ---
 
-### 1. [登录](#目录)
+### 14. [登录](#14-登录login)
 - `login`
 - 请求方式：`POST`
 
@@ -48,7 +48,7 @@
 
 ---
 
-### 2. [注册](#目录)
+### 15. [注册](#15-注册register)
 - `register`
 - 请求方式：`POST`
 
@@ -67,7 +67,7 @@
 
 ---
 
-### 3. [获取个人信息](#目录)
+### 16. [获取个人信息](#16-获取个人信息getPersonalInfo)
 - `getPersonalInfo`
 - 请求方式：`POST`
 
@@ -89,7 +89,7 @@
 ```
 ---
 
-### 4. [修改个人信息](#目录)
+### 17. [修改个人信息](#17-修改个人信息modifyPersonalInfo)
 - `modifyPersonalInfo`
 - 请求方式：`POST`
 
@@ -110,7 +110,7 @@
 
 ---
 
-### 5. [修改密码](#目录)
+### 18. [修改密码](#18-修改密码modifyPassword)
 - `modifyPassword`
 - 请求方式：`POST`
 
@@ -128,7 +128,7 @@
 
 ---
 
-### 6. [获取用户列表](#目录)
+### 19. [获取用户列表](#19-获取用户列表getClientList)
 - `getClientList`
 - 请求方式：`POST`
 
@@ -165,7 +165,7 @@
 
 ---
 
-### 7. [获取用户详情](#目录)
+### 20. [获取用户详情](#20-获取用户详情getClientDetail)
 - `getClientDetail`
 - 请求方式：`POST`
 
@@ -217,7 +217,7 @@
 
 ---
 
-### 8. [获取任务类型列表](#目录)
+### 21. [获取任务类型列表](#21-获取任务类型列表getTaskTypeList)
 - `getTaskTypeList`
 - 请求方式：`POST`
 
@@ -240,7 +240,7 @@
 
 ---
 
-### 9. [通过类型获取任务列表](#目录)
+### 22. [通过类型获取任务列表](#22-通过类型获取任务列表getTaskListByType)
 - `getTaskListByType`
 - 请求方式：`POST`
 
@@ -263,7 +263,7 @@
 
 ---
 
-### 10. [创建单一任务](#目录)
+### 23. [创建单一任务](#23-创建单一任务leaderCreateTask)
 - `leaderCreateTask`
 - 请求方式：`POST`
 
@@ -302,7 +302,7 @@
 
 ---
 
-### 11. [创建综合任务](#目录)
+### 24. [创建综合任务](#24-创建综合任务secretaryCreateTask)
 - `secretaryCreateTask`
 - 请求方式：`POST`
 
@@ -350,7 +350,7 @@
 
 ---
 
-### 12. [领导获取待审批的任务列表](#目录)
+### 25. [领导获取待审批的任务列表](#25-领导获取待审批的任务列表getToExamineTaskList)
 - `getToExamineTaskList`
 - 请求方式：`POST`
 
@@ -382,7 +382,7 @@
 
 ---
 
-### 13. [根据类型获取的任务列表](#目录)
+### 26. [根据类型获取的任务列表](#26-根据类型获取的任务列表getTaskListByType)
 - `getTaskListByType`
 - 请求方式：`POST`
 
@@ -413,7 +413,7 @@
 
 ---
 
-### 14. [获取单一任务的详情](#目录)
+### 27. [获取单一任务的详情](#27-获取单一任务的详情getSingleTaskDetail)
 - `getSingleTaskDetail`
 - 请求方式：`POST`
 
@@ -464,7 +464,7 @@
 
 ---
 
-### 15. [获取群组任务的详情](#目录)
+### 28. [获取群组任务的详情](#28-获取群组任务的详情getGroupTaskDetail)
 - `getGroupTaskDetail`
 - 请求方式：`POST`
 
@@ -522,7 +522,7 @@
 
 ---
 
-### 16. [打回任务](#目录)
+### 29. [打回任务](#29-打回任务rejectPublishTask)
 - `rejectPublishTask`
 - 请求方式：`POST`
 
@@ -538,7 +538,7 @@
 }
 ```
 
-### 17. [通过任务](#目录)
+### 30. [通过任务](#30-通过任务agreePublishTask)
 - `agreePublishTask`
 - 请求方式：`POST`
 
@@ -555,7 +555,7 @@
 
 ---
 
-### 18. [创建提醒](#目录)
+### 31. [创建提醒](#31-创建提醒createRemind)
 - `createRemind`
 - 请求方式：`POST`
 
@@ -572,7 +572,7 @@
 
 ---
 
-### 19. [修改提醒](#目录)
+### 32. [修改提醒](#32-修改提醒modifyRemind)
 - `modifyRemind`
 - 请求方式：`POST`
 
@@ -590,7 +590,7 @@
 
 ---
 
-### 20. [推送提醒通知](#目录)
+### 33. [推送提醒通知](#33-推送提醒通知pushRemindNotice)
 - `pushRemindNotice`
 - 请求方式：`POST`
 
@@ -608,7 +608,7 @@
 
 ---
 
-### 21. [创建日程](#目录)
+### 34. [创建日程](#34-创建日程createSchedule)
 - `createSchedule`
 - 请求方式：`POST`
 
@@ -627,7 +627,7 @@
 
 ---
 
-### 22. [修改日程](#目录)
+### 35. [修改日程](#35-修改日程modifySchedule)
 - `modifySchedule`
 - 请求方式：`POST`
 
@@ -646,7 +646,7 @@
 
 ---
 
-### 23. [删除日程](#目录)
+### 36. [删除日程](#36-删除日程removeSchedule)
 - `removeSchedule`
 - 请求方式：`POST`
 
@@ -662,7 +662,7 @@
 
 ---
 
-### 24. [获取日程列表](#目录)
+### 37. [获取日程列表](#37-获取日程列表getScheduleList)
 - `getScheduleList`
 - 请求方式：`POST`
 
@@ -691,7 +691,7 @@
 
 ---
 
-### 25. [修改进度](#目录)
+### 38. [修改进度](#38-修改进度modifyProgress)
 - `modifyProgress`
 - 请求方式：`POST`
 
@@ -709,7 +709,7 @@
 
 ---
 
-### 26. [获取进度列表](#目录)
+### 39. [获取进度列表](#39-获取进度列表getProgressList)
 - `getProgressList`
 - 请求方式：`POST`
 
