@@ -12,18 +12,22 @@
 ##### 11. [领导获取待审批的任务列表(getToExamineTaskList)](#11-领导获取待审批的任务列表)
 ##### 12. [根据类型获取的任务列表(getTaskListByType)](#12-根据类型获取的任务列表)
 ##### 13. [获取单一任务的详情(getSingleTaskDetail)](#13-获取单一任务的详情)
-##### 14. [获取群组任务的详情(getGroupTaskDetail)](#14-获取群组任务的详情)
-##### 15. [打回任务(rejectPublishTask)](#15-打回任务)
-##### 16. [通过任务(agreePublishTask)](#16-通过任务)
-##### 17. [创建提醒(createRemind)](#17-创建提醒)
-##### 18. [修改提醒(modifyRemind)](#18-修改提醒)
-##### 19. [推送提醒通知(pushRemindNotice)](#19-推送提醒通知)
-##### 20. [创建日程(createSchedule)](#20-创建日程)
-##### 21. [修改日程(modifySchedule)](#21-修改日程)
-##### 22. [删除日程(removeSchedule)](#22-删除日程)
-##### 23. [获取日程列表(getScheduleList)](#23-获取日程列表)
-##### 24. [修改进度(modifyProgress)](#24-修改进度)
-##### 25. [获取进度列表(getProgressList)](#25-获取进度列表)
+##### 14. [修改任务(modifyTask)](#14-修改任务)
+##### 15. [修改群组任务(modifyGroupTask)](#15-修改群组任务)
+##### 16. [删除群组任务(removeGroupTask)](#16-删除群组任务)
+##### 17. [删除任务(removeGroupTask)](#17-删除任务)
+##### 18. [获取群组任务的详情(getGroupTaskDetail)](#18-获取群组任务的详情)
+##### 19. [打回任务(rejectPublishTask)](#19-打回任务)
+##### 20. [通过任务(agreePublishTask)](#20-通过任务)
+##### 21. [创建提醒(createRemind)](#21-创建提醒)
+##### 22. [修改提醒(modifyRemind)](#22-修改提醒)
+##### 23. [推送提醒通知(pushRemindNotice)](#23-推送提醒通知)
+##### 24. [创建日程(createSchedule)](#24-创建日程)
+##### 25. [修改日程(modifySchedule)](#25-修改日程)
+##### 26. [删除日程(removeSchedule)](#26-删除日程)
+##### 27. [获取日程列表(getScheduleList)](#27-获取日程列表)
+##### 28. [修改进度(modifyProgress)](#28-修改进度)
+##### 29. [获取进度列表(getProgressList)](#29-获取进度列表)
 
 ---
 
@@ -250,20 +254,21 @@
 | supervisorId | String | 监督人Id |
 | title | String | 标题 |
 | content | String | 内容 |
-| audioList | Array | 音频列表 |
+| audioList | Array | [音频列表](#audioList格式：) |
 | imageList | Array | 图片列表 |
-| remindList | Array | 提醒列表 |
+| remindList | Array | [提醒列表](#remindList格式：) |
 | type | Number | 任务类型 |
 | expectStartTime | String | 期望开始时间 |
 | expectFinishTime | String | 期望结束时间 |
-- audioList 格式：
+
+###### audioList格式：
 
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
 | url | String | 上传音频文件返回的url |
 | duration | Number | 音频文件的时长 |
 
--  remindList 格式：
+###### remindList格式：
 
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
@@ -298,26 +303,13 @@
 | supervisorId | String | 监督人Id |
 | title | String | 标题 |
 | content | String | 内容 |
-| audioList | Array | 音频列表 |
+| audioList | Array | [音频列表](#audioList格式：) |
 | imageList | Array | 图片列表 |
-| remindList | Array | 提醒列表 |
+| remindList | Array | [提醒列表](#remindList格式：) |
 | type | Number | 任务类型(0：一般任务， 1：紧急任务，2：加急任务) |
 | expectStartTime | String | 期望开始时间 |
 | expectFinishTime | String | 期望结束时间 |
 
-- audioList 格式：
-
-| 参数名称 | 参数类型  | 描述 |
-| :- |:-:| :-:|
-| url | String | 上传音频文件返回的url |
-| duration | Number | 音频文件的时长 |
-
-- remindList 格式：
-
-| 参数名称 | 参数类型  | 描述 |
-| :- |:-:| :-:|
-| info | String | 提醒的内容 |
-| time | String | 提醒的时间 |
 ```js
 {
     "success": true,
@@ -365,7 +357,7 @@
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
 | userId | ID | 用户Id |
-| type | Number | 类型(#9-通过类型获取任务列表) |
+| type | Number | [类型](#8-获取任务类型列表) |
 | keyword | String | 搜索关键字 |
 | pageNo | Number | 页号 |
 | pageSize | Number | 每页数量 |
@@ -440,7 +432,88 @@
 
 ---
 
-### 14. [获取群组任务的详情](#14-获取群组任务的详情getgrouptaskdetail)
+### 14. [修改任务](#14-修改任务modifytask)
+- `modifyTask`
+- 请求方式：`POST`
+
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| userId | String | 用户Id |
+| taskId | String | 任务Id |
+| executorId | String | 执行人Id |
+| supervisorId | String | 监督人Id |
+| title | String | 标题 |
+| content | String | 内容 |
+| audioList | Array | [音频列表](#audioList格式：) |
+| imageList | Array | 图片列表 |
+| remindList | Array | [提醒列表](#remindList格式：) |
+| type | Number | 任务类型 |
+| expectStartTime | String | 期望开始时间 |
+| expectFinishTime | String | 期望结束时间 |
+
+```js
+{
+    "success": true,
+}
+```
+
+---
+
+### 15. [修改群组任务](#15-修改群组任务modifygrouptask)
+- `modifyGroupTask`
+- 请求方式：`POST`
+
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| userId | ID | 用户Id |
+| taskId | ID | 任务Id |
+| examinerId | ID | 审核人Id |
+| title | String | 标题 |
+| content | String | 内容 |
+
+```js
+{
+    "success": true,
+}
+```
+
+---
+
+### 16. [删除群组任务](#16-删除群组任务removegrouptask)
+- `removeGroupTask`
+- 请求方式：`POST`
+
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| userId | ID | 用户Id |
+| taskId | ID | 任务Id |
+
+```js
+{
+    "success": true,
+}
+```
+
+---
+
+### 17. [删除任务](#17-删除任务removegrouptask)
+- `removeGroupTask`
+- 请求方式：`POST`
+
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| userId | ID | 用户Id |
+| taskId | ID | 任务Id |
+
+```js
+{
+    "success": true,
+}
+```
+
+---
+
+### 18. [获取群组任务的详情](#18-获取群组任务的详情getgrouptaskdetail)
 - `getGroupTaskDetail`
 - 请求方式：`POST`
 
@@ -498,7 +571,7 @@
 
 ---
 
-### 15. [打回任务](#15-打回任务rejectpublishtask)
+### 19. [打回任务](#19-打回任务rejectpublishtask)
 - `rejectPublishTask`
 - 请求方式：`POST`
 
@@ -514,7 +587,7 @@
 }
 ```
 
-### 16. [通过任务](#16-通过任务agreepublishtask)
+### 20. [通过任务](#20-通过任务agreepublishtask)
 - `agreePublishTask`
 - 请求方式：`POST`
 
@@ -531,7 +604,7 @@
 
 ---
 
-### 17. [创建提醒](#17-创建提醒createremind)
+### 21. [创建提醒](#21-创建提醒createremind)
 - `createRemind`
 - 请求方式：`POST`
 
@@ -548,7 +621,7 @@
 
 ---
 
-### 18. [修改提醒](#18-修改提醒modifyremind)
+### 22. [修改提醒](#22-修改提醒modifyremind)
 - `modifyRemind`
 - 请求方式：`POST`
 
@@ -566,7 +639,7 @@
 
 ---
 
-### 19. [推送提醒通知](#19-推送提醒通知pushremindnotice)
+### 23. [推送提醒通知](#23-推送提醒通知pushremindnotice)
 - `pushRemindNotice`
 - 请求方式：`POST`
 
@@ -584,7 +657,7 @@
 
 ---
 
-### 20. [创建日程](#20-创建日程createschedule)
+### 24. [创建日程](#24-创建日程createschedule)
 - `createSchedule`
 - 请求方式：`POST`
 
@@ -603,7 +676,7 @@
 
 ---
 
-### 21. [修改日程](#21-修改日程modifyschedule)
+### 25. [修改日程](#25-修改日程modifyschedule)
 - `modifySchedule`
 - 请求方式：`POST`
 
@@ -622,7 +695,7 @@
 
 ---
 
-### 22. [删除日程](#22-删除日程removeschedule)
+### 26. [删除日程](#26-删除日程removeschedule)
 - `removeSchedule`
 - 请求方式：`POST`
 
@@ -638,7 +711,7 @@
 
 ---
 
-### 23. [获取日程列表](#23-获取日程列表getschedulelist)
+### 27. [获取日程列表](#27-获取日程列表getschedulelist)
 - `getScheduleList`
 - 请求方式：`POST`
 
@@ -667,7 +740,7 @@
 
 ---
 
-### 24. [修改进度](#24-修改进度modifyprogress)
+### 28. [修改进度](#28-修改进度modifyprogress)
 - `modifyProgress`
 - 请求方式：`POST`
 
@@ -685,7 +758,7 @@
 
 ---
 
-### 25. [获取进度列表](#25-获取进度列表getprogresslist)
+### 29. [获取进度列表](#29-获取进度列表getprogresslist)
 - `getProgressList`
 - 请求方式：`POST`
 
