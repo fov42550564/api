@@ -28,7 +28,7 @@
 
 ---
 
-### 14. [登录](#14-登录login)
+### 1. [登录](#1-登录login)
 - `login`
 - 请求方式：`POST`
 
@@ -48,7 +48,7 @@
 
 ---
 
-### 15. [注册](#15-注册register)
+### 2. [注册](#2-注册register)
 - `register`
 - 请求方式：`POST`
 
@@ -67,7 +67,7 @@
 
 ---
 
-### 16. [获取个人信息](#16-获取个人信息getPersonalInfo)
+### 3. [获取个人信息](#3-获取个人信息getpersonalinfo)
 - `getPersonalInfo`
 - 请求方式：`POST`
 
@@ -89,7 +89,7 @@
 ```
 ---
 
-### 17. [修改个人信息](#17-修改个人信息modifyPersonalInfo)
+### 4. [修改个人信息](#4-修改个人信息modifypersonalinfo)
 - `modifyPersonalInfo`
 - 请求方式：`POST`
 
@@ -110,7 +110,7 @@
 
 ---
 
-### 18. [修改密码](#18-修改密码modifyPassword)
+### 5. [修改密码](#5-修改密码modifypassword)
 - `modifyPassword`
 - 请求方式：`POST`
 
@@ -128,7 +128,7 @@
 
 ---
 
-### 19. [获取用户列表](#19-获取用户列表getClientList)
+### 6. [获取用户列表](#6-获取用户列表getclientlist)
 - `getClientList`
 - 请求方式：`POST`
 
@@ -165,7 +165,7 @@
 
 ---
 
-### 20. [获取用户详情](#20-获取用户详情getClientDetail)
+### 7. [获取用户详情](#7-获取用户详情getclientdetail)
 - `getClientDetail`
 - 请求方式：`POST`
 
@@ -217,7 +217,7 @@
 
 ---
 
-### 21. [获取任务类型列表](#21-获取任务类型列表getTaskTypeList)
+### 8. [获取任务类型列表](#8-获取任务类型列表gettasktypelist)
 - `getTaskTypeList`
 - 请求方式：`POST`
 
@@ -240,7 +240,7 @@
 
 ---
 
-### 22. [通过类型获取任务列表](#22-通过类型获取任务列表getTaskListByType)
+### 9. [通过类型获取任务列表](#9-通过类型获取任务列表gettasklistbytype)
 - `getTaskListByType`
 - 请求方式：`POST`
 
@@ -263,7 +263,7 @@
 
 ---
 
-### 23. [创建单一任务](#23-创建单一任务leaderCreateTask)
+### 10. [创建单一任务](#10-创建单一任务leadercreatetask)
 - `leaderCreateTask`
 - 请求方式：`POST`
 
@@ -302,7 +302,7 @@
 
 ---
 
-### 24. [创建综合任务](#24-创建综合任务secretaryCreateTask)
+### 11. [创建综合任务](#11-创建综合任务secretarycreatetask)
 - `secretaryCreateTask`
 - 请求方式：`POST`
 
@@ -350,7 +350,7 @@
 
 ---
 
-### 25. [领导获取待审批的任务列表](#25-领导获取待审批的任务列表getToExamineTaskList)
+### 12. [领导获取待审批的任务列表](#12-领导获取待审批的任务列表gettoexaminetasklist)
 - `getToExamineTaskList`
 - 请求方式：`POST`
 
@@ -382,7 +382,7 @@
 
 ---
 
-### 26. [根据类型获取的任务列表](#26-根据类型获取的任务列表getTaskListByType)
+### 13. [根据类型获取的任务列表](#13-根据类型获取的任务列表gettasklistbytype)
 - `getTaskListByType`
 - 请求方式：`POST`
 
@@ -413,7 +413,7 @@
 
 ---
 
-### 27. [获取单一任务的详情](#27-获取单一任务的详情getSingleTaskDetail)
+### 14. [获取单一任务的详情](#14-获取单一任务的详情getsingletaskdetail)
 - `getSingleTaskDetail`
 - 请求方式：`POST`
 
@@ -464,7 +464,7 @@
 
 ---
 
-### 28. [获取群组任务的详情](#28-获取群组任务的详情getGroupTaskDetail)
+### 15. [获取群组任务的详情](#15-获取群组任务的详情getgrouptaskdetail)
 - `getGroupTaskDetail`
 - 请求方式：`POST`
 
@@ -522,7 +522,7 @@
 
 ---
 
-### 29. [打回任务](#29-打回任务rejectPublishTask)
+### 16. [打回任务](#16-打回任务rejectpublishtask)
 - `rejectPublishTask`
 - 请求方式：`POST`
 
@@ -538,7 +538,7 @@
 }
 ```
 
-### 30. [通过任务](#30-通过任务agreePublishTask)
+### 17. [通过任务](#17-通过任务agreepublishtask)
 - `agreePublishTask`
 - 请求方式：`POST`
 
@@ -555,7 +555,7 @@
 
 ---
 
-### 31. [创建提醒](#31-创建提醒createRemind)
+### 18. [创建提醒](#18-创建提醒createremind)
 - `createRemind`
 - 请求方式：`POST`
 
@@ -572,7 +572,7 @@
 
 ---
 
-### 32. [修改提醒](#32-修改提醒modifyRemind)
+### 19. [修改提醒](#19-修改提醒modifyremind)
 - `modifyRemind`
 - 请求方式：`POST`
 
@@ -590,7 +590,7 @@
 
 ---
 
-### 33. [推送提醒通知](#33-推送提醒通知pushRemindNotice)
+### 20. [推送提醒通知](#20-推送提醒通知pushremindnotice)
 - `pushRemindNotice`
 - 请求方式：`POST`
 
@@ -608,7 +608,7 @@
 
 ---
 
-### 34. [创建日程](#34-创建日程createSchedule)
+### 21. [创建日程](#21-创建日程createschedule)
 - `createSchedule`
 - 请求方式：`POST`
 
@@ -627,7 +627,7 @@
 
 ---
 
-### 35. [修改日程](#35-修改日程modifySchedule)
+### 22. [修改日程](#22-修改日程modifyschedule)
 - `modifySchedule`
 - 请求方式：`POST`
 
@@ -646,7 +646,7 @@
 
 ---
 
-### 36. [删除日程](#36-删除日程removeSchedule)
+### 23. [删除日程](#23-删除日程removeschedule)
 - `removeSchedule`
 - 请求方式：`POST`
 
@@ -662,7 +662,7 @@
 
 ---
 
-### 37. [获取日程列表](#37-获取日程列表getScheduleList)
+### 24. [获取日程列表](#24-获取日程列表getschedulelist)
 - `getScheduleList`
 - 请求方式：`POST`
 
@@ -691,7 +691,7 @@
 
 ---
 
-### 38. [修改进度](#38-修改进度modifyProgress)
+### 25. [修改进度](#25-修改进度modifyprogress)
 - `modifyProgress`
 - 请求方式：`POST`
 
@@ -709,7 +709,7 @@
 
 ---
 
-### 39. [获取进度列表](#39-获取进度列表getProgressList)
+### 26. [获取进度列表](#26-获取进度列表getprogresslist)
 - `getProgressList`
 - 请求方式：`POST`
 
