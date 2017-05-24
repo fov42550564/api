@@ -7,34 +7,33 @@
 ##### 6. [修改密码(modifyPassword)](#6-修改密码)
 ##### 7. [意见反馈(submitFeedback)](#7-意见反馈)
 ##### 8. [获取用户列表(getClientList)](#8-获取用户列表)
-##### 9. [获取用户详情(getClientDetail)](#9-获取用户详情)
-##### 10. [获取任务类型列表(getTaskTypeList)](#10-获取任务类型列表)
-##### 11. [创建单一任务(leaderCreateTask)](#11-创建单一任务)
-##### 12. [创建综合任务(secretaryCreateTask)](#12-创建综合任务)
-##### 13. [领导获取待审批发布的任务列表(getApplyPublishTaskList)](#13-领导获取待审批发布的任务列表)
-##### 14. [领导或者综合部获取待审批完成的任务列表(getApplyFinishTaskList)](#14-领导或者综合部获取待审批完成的任务列表)
-##### 15. [根据类型获取的任务列表(getTaskListByType)](#15-根据类型获取的任务列表)
-##### 16. [获取打回申请发布任务列表(getRejectTaskList)](#16-获取打回申请发布任务列表)
-##### 17. [获取最关心任务列表(getMostCaredTaskList)](#17-获取最关心任务列表)
-##### 18. [获取单一任务的详情(getSingleTaskDetail)](#18-获取单一任务的详情)
-##### 19. [获取群组任务的详情(getGroupTaskDetail)](#19-获取群组任务的详情)
-##### 20. [修改任务(modifyTask)](#20-修改任务)
-##### 21. [修改群组任务(modifyGroupTask)](#21-修改群组任务)
-##### 22. [删除群组任务(removeGroupTask)](#22-删除群组任务)
-##### 23. [删除任务(removeGroupTask)](#23-删除任务)
-##### 24. [打回申请发布任务(rejectPublishTask)](#24-打回申请发布任务)
-##### 25. [通过发布任务的申请(agreePublishTask)](#25-通过发布任务的申请)
-##### 26. [申请完成任务(applyFinishTask)](#26-申请完成任务)
-##### 27. [同意完成任务的申请(agreeFinishTask)](#27-同意完成任务的申请)
-##### 28. [打回完成发布任务(rejectFinishTask)](#28-打回完成发布任务)
-##### 29. [创建日程(createSchedule)](#29-创建日程)
-##### 30. [完成日程(finishSchedule)](#30-完成日程)
-##### 31. [修改日程(modifySchedule)](#31-修改日程)
-##### 32. [删除日程(removeSchedule)](#32-删除日程)
-##### 33. [获取日程列表(getScheduleList)](#33-获取日程列表)
-##### 34. [提醒任务(remindTask)](#34-提醒任务)
-##### 35. [更新任务进度(updateTaskProgress)](#35-更新任务进度)
-##### 36. [获取进度列表(getTaskProgressList)](#36-获取进度列表)
+##### 9. [获取任务类型列表(getTaskTypeList)](#9-获取任务类型列表)
+##### 10. [创建单一任务(leaderCreateTask)](#10-创建单一任务)
+##### 11. [创建综合任务(secretaryCreateTask)](#11-创建综合任务)
+##### 12. [领导获取待审批发布的任务列表(getApplyPublishTaskList)](#12-领导获取待审批发布的任务列表)
+##### 13. [领导或者综合部获取待审批完成的任务列表(getApplyFinishTaskList)](#13-领导或者综合部获取待审批完成的任务列表)
+##### 14. [根据类型获取的任务列表(getTaskListByType)](#14-根据类型获取的任务列表)
+##### 15. [获取打回申请发布任务列表(getRejectTaskList)](#15-获取打回申请发布任务列表)
+##### 16. [获取最关心任务列表(getMostCaredTaskList)](#16-获取最关心任务列表)
+##### 17. [获取单一任务的详情(getSingleTaskDetail)](#17-获取单一任务的详情)
+##### 18. [获取群组任务的详情(getGroupTaskDetail)](#18-获取群组任务的详情)
+##### 19. [修改任务(modifyTask)](#19-修改任务)
+##### 20. [修改群组任务(modifyGroupTask)](#20-修改群组任务)
+##### 21. [删除群组任务(removeGroupTask)](#21-删除群组任务)
+##### 22. [删除任务(removeGroupTask)](#22-删除任务)
+##### 23. [打回申请发布任务(rejectPublishTask)](#23-打回申请发布任务)
+##### 24. [通过发布任务的申请(agreePublishTask)](#24-通过发布任务的申请)
+##### 25. [申请完成任务(applyFinishTask)](#25-申请完成任务)
+##### 26. [同意完成任务的申请(agreeFinishTask)](#26-同意完成任务的申请)
+##### 27. [打回完成发布任务(rejectFinishTask)](#27-打回完成发布任务)
+##### 28. [创建日程(createSchedule)](#28-创建日程)
+##### 29. [完成日程(finishSchedule)](#29-完成日程)
+##### 30. [修改日程(modifySchedule)](#30-修改日程)
+##### 31. [删除日程(removeSchedule)](#31-删除日程)
+##### 32. [获取日程列表(getScheduleList)](#32-获取日程列表)
+##### 33. [提醒任务(remindTask)](#33-提醒任务)
+##### 34. [更新任务进度(updateTaskProgress)](#34-更新任务进度)
+##### 35. [获取进度列表(getTaskProgressList)](#35-获取进度列表)
 
 ---
 
@@ -140,9 +139,14 @@ uploadErrorCallback () {
         "phone": "手机号码"
         "name": "用户名"
         "head": "头像"
-        "position": "职位"
+        "position": "职位",
+        "authority": 1
     }
 }
+```
+####### authority的说明：
+```
+authority为用户权限， 1：普通权限 2：拥有领导权限，4：拥有综合部权限，8：拥有监督者权限
 ```
 ---
 
@@ -210,9 +214,7 @@ uploadErrorCallback () {
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
 | userId | String | 用户Id |
-| keyword | String | 搜索关键字 |
-| pageNo | Number | 第几页 |
-| pageSize | Number | 每页的数量 |
+| authority | Number | [权限](#authority的说明) |
 
 ```js
 {
@@ -224,13 +226,6 @@ uploadErrorCallback () {
                 "email": "42550564@qq.com",
                 "name": "方运江",
                 "head": "http://localhost:3000/api/image?id=59117df95150c20e08b560af",
-                "partment": {
-                    "name": "123",
-                    "id": "591fa902b526bebf009d92c3"
-                },
-                "reservePhone": [
-                    "18085192480"
-                ],
                 "id": "59117ddb5150c20e08b560ac"
             }
         ]
@@ -240,59 +235,7 @@ uploadErrorCallback () {
 
 ---
 
-### 9. [获取用户详情](#9-获取用户详情getclientdetail)
-- `getClientDetail`
-- 请求方式：`POST`
-
-| 参数名称 | 参数类型  | 描述 |
-| :- |:-:| :-:|
-| userId | String | 用户Id |
-| clientId | String | 获取详情的用户Id |
-
-```js
-{
-    "success": true,
-    "context": {
-        "phone": "18085192480",
-        "email": "42550564@qq.com",
-        "name": "方运江",
-        "head": "http://localhost:3000/api/image?id=59117df95150c20e08b560af",
-        "birthday": "1982-02-25",
-        "partment": {
-            "name": "123",
-            "descript": "123",
-            "chargeMan": {
-                "phone": "18085192480",
-                "name": "方运江",
-                "head": "http://localhost:3000/api/image?id=59117df95150c20e08b560af",
-                "id": "59117ddb5150c20e08b560ac"
-            },
-            "superior": {
-                "name": "工信部",
-                "id": "591cf488f6a0636b34d64985"
-            },
-            "phoneList": [
-                "18085192480"
-            ],
-            "id": "591fa902b526bebf009d92c3",
-            "membersNum": 1,
-            "suborsNum": 1
-        },
-        "registerTime": "2017-05-09 16:29:15",
-        "salary": 0,
-        "reservePhone": [
-            "18085192480"
-        ],
-        "age": 35,
-        "sex": 0,
-        "id": "59117ddb5150c20e08b560ac"
-    }
-}
-```
-
----
-
-### 10. [获取任务类型列表](#10-获取任务类型列表gettasktypelist)
+### 9. [获取任务类型列表](#9-获取任务类型列表gettasktypelist)
 - `getTaskTypeList`
 - 请求方式：`POST`
 
@@ -315,7 +258,7 @@ uploadErrorCallback () {
 
 ---
 
-### 11. [创建单一任务](#11-创建单一任务leadercreatetask)
+### 10. [创建单一任务](#10-创建单一任务leadercreatetask)
 - `leaderCreateTask`
 - 请求方式：`POST`
 
@@ -362,7 +305,7 @@ uploadErrorCallback () {
 
 ---
 
-### 12. [创建综合任务](#12-创建综合任务secretarycreatetask)
+### 11. [创建综合任务](#11-创建综合任务secretarycreatetask)
 - `secretaryCreateTask`
 - 请求方式：`POST`
 
@@ -397,7 +340,7 @@ uploadErrorCallback () {
 
 ---
 
-### 13. [领导获取待审批发布的任务列表](#13-领导获取待审批发布的任务列表getapplypublishtasklist)
+### 12. [领导获取待审批发布的任务列表](#12-领导获取待审批发布的任务列表getapplypublishtasklist)
 - `getApplyPublishTaskList`
 - 请求方式：`POST`
 - 备注：获取到的是多任务或者单任务
@@ -430,7 +373,7 @@ uploadErrorCallback () {
 
 ---
 
-### 14. [领导或者综合部获取待审批完成的任务列表](#14-领导或者综合部获取待审批完成的任务列表getapplyfinishtasklist)
+### 13. [领导或者综合部获取待审批完成的任务列表](#13-领导或者综合部获取待审批完成的任务列表getapplyfinishtasklist)
 - `getApplyFinishTaskList`
 - 请求方式：`POST`
 - 备注：谁发布的任务谁来审批完成
@@ -462,7 +405,7 @@ uploadErrorCallback () {
 
 ---
 
-### 15. [根据类型获取的任务列表](#15-根据类型获取的任务列表gettasklistbytype)
+### 14. [根据类型获取的任务列表](#14-根据类型获取的任务列表gettasklistbytype)
 - `getTaskListByType`
 - 请求方式：`POST`
 
@@ -494,7 +437,7 @@ uploadErrorCallback () {
 
 ---
 
-### 16. [获取打回申请发布任务列表](#16-获取打回申请发布任务列表getrejecttasklist)
+### 15. [获取打回申请发布任务列表](#15-获取打回申请发布任务列表getrejecttasklist)
 - `getRejectTaskList`
 - 请求方式：`POST`
 
@@ -531,7 +474,7 @@ uploadErrorCallback () {
 
 ---
 
-### 17. [获取最关心任务列表](#17-获取最关心任务列表getmostcaredtasklist)
+### 16. [获取最关心任务列表](#16-获取最关心任务列表getmostcaredtasklist)
 - `getMostCaredTaskList`
 - 请求方式：`POST`
 
@@ -550,8 +493,10 @@ uploadErrorCallback () {
                 "title": "测试任务",
                 "content": "认真测试",
                 "modifyTime": "2017-05-23 08:44:58",
+                "expectStartTime": "2017-05-16 03:00:00",
                 "expectFinishTime": "2017-05-16 03:00:00",
                 "rejectPublishReason": "不合格",
+                "rejectFinishReason": "不合格",
                 "type": 1,
                 "state": 1,
                 "id": "5923860a5c1070c1e96defd2"
@@ -563,7 +508,7 @@ uploadErrorCallback () {
 
 ---
 
-### 18. [获取单一任务的详情](#18-获取单一任务的详情getsingletaskdetail)
+### 17. [获取单一任务的详情](#17-获取单一任务的详情getsingletaskdetail)
 - `getSingleTaskDetail`
 - 请求方式：`POST`
 
@@ -614,7 +559,7 @@ uploadErrorCallback () {
 
 ---
 
-### 19. [获取群组任务的详情](#19-获取群组任务的详情getgrouptaskdetail)
+### 18. [获取群组任务的详情](#18-获取群组任务的详情getgrouptaskdetail)
 - `getGroupTaskDetail`
 - 请求方式：`POST`
 
@@ -672,7 +617,7 @@ uploadErrorCallback () {
 
 ---
 
-### 20. [修改任务](#20-修改任务modifytask)
+### 19. [修改任务](#19-修改任务modifytask)
 - `modifyTask`
 - 请求方式：`POST`
 
@@ -699,7 +644,7 @@ uploadErrorCallback () {
 
 ---
 
-### 21. [修改群组任务](#21-修改群组任务modifygrouptask)
+### 20. [修改群组任务](#20-修改群组任务modifygrouptask)
 - `modifyGroupTask`
 - 请求方式：`POST`
 
@@ -719,7 +664,7 @@ uploadErrorCallback () {
 
 ---
 
-### 22. [删除群组任务](#22-删除群组任务removegrouptask)
+### 21. [删除群组任务](#21-删除群组任务removegrouptask)
 - `removeGroupTask`
 - 请求方式：`POST`
 
@@ -736,7 +681,7 @@ uploadErrorCallback () {
 
 ---
 
-### 23. [删除任务](#23-删除任务removegrouptask)
+### 22. [删除任务](#22-删除任务removegrouptask)
 - `removeGroupTask`
 - 请求方式：`POST`
 
@@ -753,7 +698,7 @@ uploadErrorCallback () {
 
 ---
 
-### 24. [打回申请发布任务](#24-打回申请发布任务rejectpublishtask)
+### 23. [打回申请发布任务](#23-打回申请发布任务rejectpublishtask)
 - `rejectPublishTask`
 - 请求方式：`POST`
 
@@ -771,7 +716,7 @@ uploadErrorCallback () {
 
 ---
 
-### 25. [通过发布任务的申请](#25-通过发布任务的申请agreepublishtask)
+### 24. [通过发布任务的申请](#24-通过发布任务的申请agreepublishtask)
 - `agreePublishTask`
 - 请求方式：`POST`
 
@@ -788,7 +733,7 @@ uploadErrorCallback () {
 
 ---
 
-### 26. [申请完成任务](#26-申请完成任务applyfinishtask)
+### 25. [申请完成任务](#25-申请完成任务applyfinishtask)
 - `applyFinishTask`
 - 请求方式：`POST`
 
@@ -805,7 +750,7 @@ uploadErrorCallback () {
 
 ---
 
-### 27. [同意完成任务的申请](#27-同意完成任务的申请agreefinishtask)
+### 26. [同意完成任务的申请](#26-同意完成任务的申请agreefinishtask)
 - `agreeFinishTask`
 - 请求方式：`POST`
 
@@ -822,7 +767,7 @@ uploadErrorCallback () {
 
 ---
 
-### 28. [打回完成发布任务](#28-打回完成发布任务rejectfinishtask)
+### 27. [打回完成发布任务](#27-打回完成发布任务rejectfinishtask)
 - `rejectFinishTask`
 - 请求方式：`POST`
 
@@ -840,7 +785,7 @@ uploadErrorCallback () {
 
 ---
 
-### 29. [创建日程](#29-创建日程createschedule)
+### 28. [创建日程](#28-创建日程createschedule)
 - `createSchedule`
 - 请求方式：`POST`
 
@@ -857,7 +802,7 @@ uploadErrorCallback () {
 
 ---
 
-### 30. [完成日程](#30-完成日程finishschedule)
+### 29. [完成日程](#29-完成日程finishschedule)
 - `finishSchedule`
 - 请求方式：`POST`
 
@@ -874,7 +819,7 @@ uploadErrorCallback () {
 
 ---
 
-### 31. [修改日程](#31-修改日程modifyschedule)
+### 30. [修改日程](#30-修改日程modifyschedule)
 - `modifySchedule`
 - 请求方式：`POST`
 
@@ -892,7 +837,7 @@ uploadErrorCallback () {
 
 ---
 
-### 32. [删除日程](#32-删除日程removeschedule)
+### 31. [删除日程](#31-删除日程removeschedule)
 - `removeSchedule`
 - 请求方式：`POST`
 
@@ -909,7 +854,7 @@ uploadErrorCallback () {
 
 ---
 
-### 33. [获取日程列表](#33-获取日程列表getschedulelist)
+### 32. [获取日程列表](#32-获取日程列表getschedulelist)
 - `getScheduleList`
 - 请求方式：`POST`
 
@@ -935,7 +880,7 @@ uploadErrorCallback () {
 
 ---
 
-### 34. [提醒任务](#34-提醒任务remindtask)
+### 33. [提醒任务](#33-提醒任务remindtask)
 - `remindTask`
 - 请求方式：`POST`
 
@@ -952,7 +897,7 @@ uploadErrorCallback () {
 
 ---
 
-### 35. [更新任务进度](#35-更新任务进度updatetaskprogress)
+### 34. [更新任务进度](#34-更新任务进度updatetaskprogress)
 - `updateTaskProgress`
 - 请求方式：`POST`
 
@@ -970,7 +915,7 @@ uploadErrorCallback () {
 
 ---
 
-### 36. [获取进度列表](#36-获取进度列表gettaskprogresslist)
+### 35. [获取进度列表](#35-获取进度列表gettaskprogresslist)
 - `getTaskProgressList`
 - 请求方式：`POST`
 
