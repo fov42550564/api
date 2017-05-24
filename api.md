@@ -27,17 +27,14 @@
 ##### 26. [申请完成任务(applyFinishTask)](#26-申请完成任务)
 ##### 27. [同意完成任务的申请(agreeFinishTask)](#27-同意完成任务的申请)
 ##### 28. [打回完成发布任务(rejectFinishTask)](#28-打回完成发布任务)
-##### 29. [创建提醒(createRemind)](#29-创建提醒)
-##### 30. [修改提醒(modifyRemind)](#30-修改提醒)
-##### 31. [推送提醒通知(pushRemindNotice)](#31-推送提醒通知)
-##### 32. [创建日程(createSchedule)](#32-创建日程)
-##### 33. [完成日程(finishSchedule)](#33-完成日程)
-##### 34. [修改日程(modifySchedule)](#34-修改日程)
-##### 35. [删除日程(removeSchedule)](#35-删除日程)
-##### 36. [获取日程列表(getScheduleList)](#36-获取日程列表)
-##### 37. [提醒任务(remaindTask)](#37-提醒任务)
-##### 38. [更新任务进度(updateTaskProgress)](#38-更新任务进度)
-##### 39. [获取进度列表(getTaskProgressList)](#39-获取进度列表)
+##### 29. [创建日程(createSchedule)](#29-创建日程)
+##### 30. [完成日程(finishSchedule)](#30-完成日程)
+##### 31. [修改日程(modifySchedule)](#31-修改日程)
+##### 32. [删除日程(removeSchedule)](#32-删除日程)
+##### 33. [获取日程列表(getScheduleList)](#33-获取日程列表)
+##### 34. [提醒任务(remindTask)](#34-提醒任务)
+##### 35. [更新任务进度(updateTaskProgress)](#35-更新任务进度)
+##### 36. [获取进度列表(getTaskProgressList)](#36-获取进度列表)
 
 ---
 
@@ -344,11 +341,18 @@ uploadErrorCallback () {
 | duration | Number | 音频文件的时长 |
 
 ###### remindList格式：
-
-| 参数名称 | 参数类型  | 描述 |
-| :- |:-:| :-:|
-| info | String | 提醒的内容 |
-| time | String | 提醒的时间 |
+```
+默认列表：
+1：每天提醒1次（早上8:00）
+2：每天提醒2次（早上8：00，下午13:00）
+3：任务结束的最后10天提醒（每天提醒一次 早上9:00）
+4：任务结束的最后5天提醒（每天提醒一次 早上9:00）
+5：任务结束的最后3天提醒（每天提醒一次 早上9:00）
+6：任务结束的最后1天提醒（每天提醒2次早上8：00，下午13:00）
+7：任务执行的中间时期  提醒2天（早上8：00，下午13:00)
+上传参数时，如果为默认的，填写默认列表的序号，如果为自定义，则填写时间
+如： [1, 2, 4, '2017-06-01 08:00:00']
+```
 
 ```js
 {
@@ -836,60 +840,7 @@ uploadErrorCallback () {
 
 ---
 
-### 29. [创建提醒](#29-创建提醒createremind)
-- `createRemind`
-- 请求方式：`POST`
-
-| 参数名称 | 参数类型  | 描述 |
-| :- |:-:| :-:|
-| defaultRemindRule | String | 默认提醒规则 |
-| customRemindTime | Date | 自定义提醒时间 |
-
-```js
-{
-    "success": true,
-}
-```
-
----
-
-### 30. [修改提醒](#30-修改提醒modifyremind)
-- `modifyRemind`
-- 请求方式：`POST`
-
-| 参数名称 | 参数类型  | 描述 |
-| :- |:-:| :-:|
-| remindId | String | 提醒Id |
-| defaultRemindRule | String | 默认提醒规则 |
-| customRemindTime | Date | 自定义提醒时间 |
-
-```js
-{
-    "success": true,
-}
-```
-
----
-
-### 31. [推送提醒通知](#31-推送提醒通知pushremindnotice)
-- `pushRemindNotice`
-- 请求方式：`POST`
-
-| 参数名称 | 参数类型  | 描述 |
-| :- |:-:| :-:|
-| receiveUserId | String | 接受者用户Id |
-| remindId | String | 提醒Id |
-
-
-```js
-{
-    "success": true,
-}
-```
-
----
-
-### 32. [创建日程](#32-创建日程createschedule)
+### 29. [创建日程](#29-创建日程createschedule)
 - `createSchedule`
 - 请求方式：`POST`
 
@@ -906,7 +857,7 @@ uploadErrorCallback () {
 
 ---
 
-### 33. [完成日程](#33-完成日程finishschedule)
+### 30. [完成日程](#30-完成日程finishschedule)
 - `finishSchedule`
 - 请求方式：`POST`
 
@@ -923,7 +874,7 @@ uploadErrorCallback () {
 
 ---
 
-### 34. [修改日程](#34-修改日程modifyschedule)
+### 31. [修改日程](#31-修改日程modifyschedule)
 - `modifySchedule`
 - 请求方式：`POST`
 
@@ -941,7 +892,7 @@ uploadErrorCallback () {
 
 ---
 
-### 35. [删除日程](#35-删除日程removeschedule)
+### 32. [删除日程](#32-删除日程removeschedule)
 - `removeSchedule`
 - 请求方式：`POST`
 
@@ -958,7 +909,7 @@ uploadErrorCallback () {
 
 ---
 
-### 36. [获取日程列表](#36-获取日程列表getschedulelist)
+### 33. [获取日程列表](#33-获取日程列表getschedulelist)
 - `getScheduleList`
 - 请求方式：`POST`
 
@@ -984,8 +935,8 @@ uploadErrorCallback () {
 
 ---
 
-### 37. [提醒任务](#37-提醒任务remaindtask)
-- `remaindTask`
+### 34. [提醒任务](#34-提醒任务remindtask)
+- `remindTask`
 - 请求方式：`POST`
 
 | 参数名称 | 参数类型  | 描述 |
@@ -1001,7 +952,7 @@ uploadErrorCallback () {
 
 ---
 
-### 38. [更新任务进度](#38-更新任务进度updatetaskprogress)
+### 35. [更新任务进度](#35-更新任务进度updatetaskprogress)
 - `updateTaskProgress`
 - 请求方式：`POST`
 
@@ -1019,7 +970,7 @@ uploadErrorCallback () {
 
 ---
 
-### 39. [获取进度列表](#39-获取进度列表gettaskprogresslist)
+### 36. [获取进度列表](#36-获取进度列表gettaskprogresslist)
 - `getTaskProgressList`
 - 请求方式：`POST`
 
