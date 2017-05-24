@@ -1,45 +1,94 @@
 ## 目录
-##### 1. [登录(login)](#1-登录)
-##### 2. [注册(register)](#2-注册)
-##### 3. [获取个人信息(getPersonalInfo)](#3-获取个人信息)
-##### 4. [修改个人信息(modifyPersonalInfo)](#4-修改个人信息)
-##### 5. [修改密码(modifyPassword)](#5-修改密码)
-##### 6. [获取用户列表(getClientList)](#6-获取用户列表)
-##### 7. [获取用户详情(getClientDetail)](#7-获取用户详情)
-##### 8. [获取任务类型列表(getTaskTypeList)](#8-获取任务类型列表)
-##### 9. [创建单一任务(leaderCreateTask)](#9-创建单一任务)
-##### 10. [创建综合任务(secretaryCreateTask)](#10-创建综合任务)
-##### 11. [领导获取待审批发布的任务列表(getApplyPublishTaskList)](#11-领导获取待审批发布的任务列表)
-##### 12. [领导或者综合部获取待审批完成的任务列表(getApplyFinishTaskList)](#12-领导或者综合部获取待审批完成的任务列表)
-##### 13. [根据类型获取的任务列表(getTaskListByType)](#13-根据类型获取的任务列表)
-##### 14. [获取打回申请发布任务列表(getRejectTaskList)](#14-获取打回申请发布任务列表)
-##### 15. [获取最关心任务列表(getMostCaredTaskList)](#15-获取最关心任务列表)
-##### 16. [获取单一任务的详情(getSingleTaskDetail)](#16-获取单一任务的详情)
-##### 17. [获取群组任务的详情(getGroupTaskDetail)](#17-获取群组任务的详情)
-##### 18. [修改任务(modifyTask)](#18-修改任务)
-##### 19. [修改群组任务(modifyGroupTask)](#19-修改群组任务)
-##### 20. [删除群组任务(removeGroupTask)](#20-删除群组任务)
-##### 21. [删除任务(removeGroupTask)](#21-删除任务)
-##### 22. [打回申请发布任务(rejectPublishTask)](#22-打回申请发布任务)
-##### 23. [通过发布任务的申请(agreePublishTask)](#23-通过发布任务的申请)
-##### 24. [申请完成任务(applyFinishTask)](#24-申请完成任务)
-##### 25. [同意完成任务的申请(agreeFinishTask)](#25-同意完成任务的申请)
-##### 26. [打回完成发布任务(rejectFinishTask)](#26-打回完成发布任务)
-##### 27. [创建提醒(createRemind)](#27-创建提醒)
-##### 28. [修改提醒(modifyRemind)](#28-修改提醒)
-##### 29. [推送提醒通知(pushRemindNotice)](#29-推送提醒通知)
-##### 30. [创建日程(createSchedule)](#30-创建日程)
-##### 31. [完成日程(finishSchedule)](#31-完成日程)
-##### 32. [修改日程(modifySchedule)](#32-修改日程)
-##### 33. [删除日程(removeSchedule)](#33-删除日程)
-##### 34. [获取日程列表(getScheduleList)](#34-获取日程列表)
-##### 35. [提醒任务(remaindTask)](#35-提醒任务)
-##### 36. [更新任务进度(updateTaskProgress)](#36-更新任务进度)
-##### 37. [获取进度列表(getTaskProgressList)](#37-获取进度列表)
+##### 1. [上传文件(uploadFile)](#1-上传文件)
+##### 2. [登录(login)](#2-登录)
+##### 3. [注册(register)](#3-注册)
+##### 4. [获取个人信息(getPersonalInfo)](#4-获取个人信息)
+##### 5. [修改个人信息(modifyPersonalInfo)](#5-修改个人信息)
+##### 6. [修改密码(modifyPassword)](#6-修改密码)
+##### 7. [意见反馈(submitFeedback)](#7-意见反馈)
+##### 8. [获取用户列表(getClientList)](#8-获取用户列表)
+##### 9. [获取用户详情(getClientDetail)](#9-获取用户详情)
+##### 10. [获取任务类型列表(getTaskTypeList)](#10-获取任务类型列表)
+##### 11. [创建单一任务(leaderCreateTask)](#11-创建单一任务)
+##### 12. [创建综合任务(secretaryCreateTask)](#12-创建综合任务)
+##### 13. [领导获取待审批发布的任务列表(getApplyPublishTaskList)](#13-领导获取待审批发布的任务列表)
+##### 14. [领导或者综合部获取待审批完成的任务列表(getApplyFinishTaskList)](#14-领导或者综合部获取待审批完成的任务列表)
+##### 15. [根据类型获取的任务列表(getTaskListByType)](#15-根据类型获取的任务列表)
+##### 16. [获取打回申请发布任务列表(getRejectTaskList)](#16-获取打回申请发布任务列表)
+##### 17. [获取最关心任务列表(getMostCaredTaskList)](#17-获取最关心任务列表)
+##### 18. [获取单一任务的详情(getSingleTaskDetail)](#18-获取单一任务的详情)
+##### 19. [获取群组任务的详情(getGroupTaskDetail)](#19-获取群组任务的详情)
+##### 20. [修改任务(modifyTask)](#20-修改任务)
+##### 21. [修改群组任务(modifyGroupTask)](#21-修改群组任务)
+##### 22. [删除群组任务(removeGroupTask)](#22-删除群组任务)
+##### 23. [删除任务(removeGroupTask)](#23-删除任务)
+##### 24. [打回申请发布任务(rejectPublishTask)](#24-打回申请发布任务)
+##### 25. [通过发布任务的申请(agreePublishTask)](#25-通过发布任务的申请)
+##### 26. [申请完成任务(applyFinishTask)](#26-申请完成任务)
+##### 27. [同意完成任务的申请(agreeFinishTask)](#27-同意完成任务的申请)
+##### 28. [打回完成发布任务(rejectFinishTask)](#28-打回完成发布任务)
+##### 29. [创建提醒(createRemind)](#29-创建提醒)
+##### 30. [修改提醒(modifyRemind)](#30-修改提醒)
+##### 31. [推送提醒通知(pushRemindNotice)](#31-推送提醒通知)
+##### 32. [创建日程(createSchedule)](#32-创建日程)
+##### 33. [完成日程(finishSchedule)](#33-完成日程)
+##### 34. [修改日程(modifySchedule)](#34-修改日程)
+##### 35. [删除日程(removeSchedule)](#35-删除日程)
+##### 36. [获取日程列表(getScheduleList)](#36-获取日程列表)
+##### 37. [提醒任务(remaindTask)](#37-提醒任务)
+##### 38. [更新任务进度(updateTaskProgress)](#38-更新任务进度)
+##### 39. [获取进度列表(getTaskProgressList)](#39-获取进度列表)
 
 ---
 
-### 1. [登录](#1-登录login)
+### 1. [上传文件](#1-上传文件uploadfile)
+- `uploadFile`
+- 请求方式：`POST`
+
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| fileKey | String | key值 |
+| fileName | String | 文件名 |
+| mimeType | String | mimeType |
+| params | String | params |
+
+###### params结构
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| userId | ID | 用户Id |
+
+使用方法：
+
+```js
+...
+uploadHead(filePath) {
+    const options = {};
+    options.fileKey = 'file';
+    options.fileName = filePath.substr(filePath.lastIndexOf('/') + 1);
+    options.mimeType = 'image/png';
+    options.params = {
+        userId: app.personal.info.userId,
+    };
+    UPLOAD(filePath, app.route.ROUTE_UPDATE_FILE, options, (progress) => console.log(progress), this.uploadSuccessCallback, this.uploadErrorCallback, true);
+},
+
+uploadSuccessCallback (data) {
+    if (data.success) {
+        this.modifyUserInfo(data.context.url);
+    } else {
+        Toast('上传头像失败');
+        this.goBack();
+    }
+},
+uploadErrorCallback () {
+    Toast('上传头像失败');
+    this.goBack();
+},
+...
+```
+
+
+### 2. [登录](#2-登录login)
 - `login`
 - 请求方式：`POST`
 
@@ -59,7 +108,7 @@
 
 ---
 
-### 2. [注册](#2-注册register)
+### 3. [注册](#3-注册register)
 - `register`
 - 请求方式：`POST`
 
@@ -78,13 +127,13 @@
 
 ---
 
-### 3. [获取个人信息](#3-获取个人信息getpersonalinfo)
+### 4. [获取个人信息](#4-获取个人信息getpersonalinfo)
 - `getPersonalInfo`
 - 请求方式：`POST`
 
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
-| userId | String | 用户Id |
+| userId | ID | 用户Id |
 
 
 ```js
@@ -100,13 +149,13 @@
 ```
 ---
 
-### 4. [修改个人信息](#4-修改个人信息modifypersonalinfo)
+### 5. [修改个人信息](#5-修改个人信息modifypersonalinfo)
 - `modifyPersonalInfo`
 - 请求方式：`POST`
 
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
-| userId | String | 用户Id |
+| userId | ID | 用户Id |
 | phone | String | 登录手机号码 |
 | name | String | 用户名 |
 | head | String | 头像 |
@@ -121,13 +170,13 @@
 
 ---
 
-### 5. [修改密码](#5-修改密码modifypassword)
+### 6. [修改密码](#6-修改密码modifypassword)
 - `modifyPassword`
 - 请求方式：`POST`
 
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
-| userId | String | 用户Id |
+| userId | ID | 用户Id |
 | oldPassword | String | 旧密码 |
 | newPassword | String | 新密码 |
 
@@ -139,7 +188,25 @@
 
 ---
 
-### 6. [获取用户列表](#6-获取用户列表getclientlist)
+### 7. [意见反馈](#7-意见反馈submitfeedback)
+- `submitFeedback`
+- 请求方式：`POST`
+
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| userId | ID | 用户Id |
+| content | String | 内容 |
+| email | String | 联系邮箱 |
+
+```js
+{
+    "success": true,
+}
+```
+
+---
+
+### 8. [获取用户列表](#8-获取用户列表getclientlist)
 - `getClientList`
 - 请求方式：`POST`
 
@@ -176,7 +243,7 @@
 
 ---
 
-### 7. [获取用户详情](#7-获取用户详情getclientdetail)
+### 9. [获取用户详情](#9-获取用户详情getclientdetail)
 - `getClientDetail`
 - 请求方式：`POST`
 
@@ -228,7 +295,7 @@
 
 ---
 
-### 8. [获取任务类型列表](#8-获取任务类型列表gettasktypelist)
+### 10. [获取任务类型列表](#10-获取任务类型列表gettasktypelist)
 - `getTaskTypeList`
 - 请求方式：`POST`
 
@@ -251,7 +318,7 @@
 
 ---
 
-### 9. [创建单一任务](#9-创建单一任务leadercreatetask)
+### 11. [创建单一任务](#11-创建单一任务leadercreatetask)
 - `leaderCreateTask`
 - 请求方式：`POST`
 
@@ -291,7 +358,7 @@
 
 ---
 
-### 10. [创建综合任务](#10-创建综合任务secretarycreatetask)
+### 12. [创建综合任务](#12-创建综合任务secretarycreatetask)
 - `secretaryCreateTask`
 - 请求方式：`POST`
 
@@ -326,7 +393,7 @@
 
 ---
 
-### 11. [领导获取待审批发布的任务列表](#11-领导获取待审批发布的任务列表getapplypublishtasklist)
+### 13. [领导获取待审批发布的任务列表](#13-领导获取待审批发布的任务列表getapplypublishtasklist)
 - `getApplyPublishTaskList`
 - 请求方式：`POST`
 - 备注：获取到的是多任务或者单任务
@@ -359,7 +426,7 @@
 
 ---
 
-### 12. [领导或者综合部获取待审批完成的任务列表](#12-领导或者综合部获取待审批完成的任务列表getapplyfinishtasklist)
+### 14. [领导或者综合部获取待审批完成的任务列表](#14-领导或者综合部获取待审批完成的任务列表getapplyfinishtasklist)
 - `getApplyFinishTaskList`
 - 请求方式：`POST`
 - 备注：谁发布的任务谁来审批完成
@@ -391,7 +458,7 @@
 
 ---
 
-### 13. [根据类型获取的任务列表](#13-根据类型获取的任务列表gettasklistbytype)
+### 15. [根据类型获取的任务列表](#15-根据类型获取的任务列表gettasklistbytype)
 - `getTaskListByType`
 - 请求方式：`POST`
 
@@ -423,7 +490,7 @@
 
 ---
 
-### 14. [获取打回申请发布任务列表](#14-获取打回申请发布任务列表getrejecttasklist)
+### 16. [获取打回申请发布任务列表](#16-获取打回申请发布任务列表getrejecttasklist)
 - `getRejectTaskList`
 - 请求方式：`POST`
 
@@ -460,7 +527,7 @@
 
 ---
 
-### 15. [获取最关心任务列表](#15-获取最关心任务列表getmostcaredtasklist)
+### 17. [获取最关心任务列表](#17-获取最关心任务列表getmostcaredtasklist)
 - `getMostCaredTaskList`
 - 请求方式：`POST`
 
@@ -492,7 +559,7 @@
 
 ---
 
-### 16. [获取单一任务的详情](#16-获取单一任务的详情getsingletaskdetail)
+### 18. [获取单一任务的详情](#18-获取单一任务的详情getsingletaskdetail)
 - `getSingleTaskDetail`
 - 请求方式：`POST`
 
@@ -543,7 +610,7 @@
 
 ---
 
-### 17. [获取群组任务的详情](#17-获取群组任务的详情getgrouptaskdetail)
+### 19. [获取群组任务的详情](#19-获取群组任务的详情getgrouptaskdetail)
 - `getGroupTaskDetail`
 - 请求方式：`POST`
 
@@ -601,7 +668,7 @@
 
 ---
 
-### 18. [修改任务](#18-修改任务modifytask)
+### 20. [修改任务](#20-修改任务modifytask)
 - `modifyTask`
 - 请求方式：`POST`
 
@@ -628,7 +695,7 @@
 
 ---
 
-### 19. [修改群组任务](#19-修改群组任务modifygrouptask)
+### 21. [修改群组任务](#21-修改群组任务modifygrouptask)
 - `modifyGroupTask`
 - 请求方式：`POST`
 
@@ -648,7 +715,7 @@
 
 ---
 
-### 20. [删除群组任务](#20-删除群组任务removegrouptask)
+### 22. [删除群组任务](#22-删除群组任务removegrouptask)
 - `removeGroupTask`
 - 请求方式：`POST`
 
@@ -665,7 +732,7 @@
 
 ---
 
-### 21. [删除任务](#21-删除任务removegrouptask)
+### 23. [删除任务](#23-删除任务removegrouptask)
 - `removeGroupTask`
 - 请求方式：`POST`
 
@@ -682,7 +749,7 @@
 
 ---
 
-### 22. [打回申请发布任务](#22-打回申请发布任务rejectpublishtask)
+### 24. [打回申请发布任务](#24-打回申请发布任务rejectpublishtask)
 - `rejectPublishTask`
 - 请求方式：`POST`
 
@@ -700,7 +767,7 @@
 
 ---
 
-### 23. [通过发布任务的申请](#23-通过发布任务的申请agreepublishtask)
+### 25. [通过发布任务的申请](#25-通过发布任务的申请agreepublishtask)
 - `agreePublishTask`
 - 请求方式：`POST`
 
@@ -717,7 +784,7 @@
 
 ---
 
-### 24. [申请完成任务](#24-申请完成任务applyfinishtask)
+### 26. [申请完成任务](#26-申请完成任务applyfinishtask)
 - `applyFinishTask`
 - 请求方式：`POST`
 
@@ -734,7 +801,7 @@
 
 ---
 
-### 25. [同意完成任务的申请](#25-同意完成任务的申请agreefinishtask)
+### 27. [同意完成任务的申请](#27-同意完成任务的申请agreefinishtask)
 - `agreeFinishTask`
 - 请求方式：`POST`
 
@@ -751,7 +818,7 @@
 
 ---
 
-### 26. [打回完成发布任务](#26-打回完成发布任务rejectfinishtask)
+### 28. [打回完成发布任务](#28-打回完成发布任务rejectfinishtask)
 - `rejectFinishTask`
 - 请求方式：`POST`
 
@@ -769,7 +836,7 @@
 
 ---
 
-### 27. [创建提醒](#27-创建提醒createremind)
+### 29. [创建提醒](#29-创建提醒createremind)
 - `createRemind`
 - 请求方式：`POST`
 
@@ -786,7 +853,7 @@
 
 ---
 
-### 28. [修改提醒](#28-修改提醒modifyremind)
+### 30. [修改提醒](#30-修改提醒modifyremind)
 - `modifyRemind`
 - 请求方式：`POST`
 
@@ -804,7 +871,7 @@
 
 ---
 
-### 29. [推送提醒通知](#29-推送提醒通知pushremindnotice)
+### 31. [推送提醒通知](#31-推送提醒通知pushremindnotice)
 - `pushRemindNotice`
 - 请求方式：`POST`
 
@@ -822,7 +889,7 @@
 
 ---
 
-### 30. [创建日程](#30-创建日程createschedule)
+### 32. [创建日程](#32-创建日程createschedule)
 - `createSchedule`
 - 请求方式：`POST`
 
@@ -839,7 +906,7 @@
 
 ---
 
-### 31. [完成日程](#31-完成日程finishschedule)
+### 33. [完成日程](#33-完成日程finishschedule)
 - `finishSchedule`
 - 请求方式：`POST`
 
@@ -856,7 +923,7 @@
 
 ---
 
-### 32. [修改日程](#32-修改日程modifyschedule)
+### 34. [修改日程](#34-修改日程modifyschedule)
 - `modifySchedule`
 - 请求方式：`POST`
 
@@ -874,7 +941,7 @@
 
 ---
 
-### 33. [删除日程](#33-删除日程removeschedule)
+### 35. [删除日程](#35-删除日程removeschedule)
 - `removeSchedule`
 - 请求方式：`POST`
 
@@ -891,7 +958,7 @@
 
 ---
 
-### 34. [获取日程列表](#34-获取日程列表getschedulelist)
+### 36. [获取日程列表](#36-获取日程列表getschedulelist)
 - `getScheduleList`
 - 请求方式：`POST`
 
@@ -917,7 +984,7 @@
 
 ---
 
-### 35. [提醒任务](#35-提醒任务remaindtask)
+### 37. [提醒任务](#37-提醒任务remaindtask)
 - `remaindTask`
 - 请求方式：`POST`
 
@@ -934,7 +1001,7 @@
 
 ---
 
-### 36. [更新任务进度](#36-更新任务进度updatetaskprogress)
+### 38. [更新任务进度](#38-更新任务进度updatetaskprogress)
 - `updateTaskProgress`
 - 请求方式：`POST`
 
@@ -952,7 +1019,7 @@
 
 ---
 
-### 37. [获取进度列表](#37-获取进度列表gettaskprogresslist)
+### 39. [获取进度列表](#39-获取进度列表gettaskprogresslist)
 - `getTaskProgressList`
 - 请求方式：`POST`
 
