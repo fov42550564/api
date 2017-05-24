@@ -9,27 +9,33 @@
 ##### 8. [获取任务类型列表(getTaskTypeList)](#8-获取任务类型列表)
 ##### 9. [创建单一任务(leaderCreateTask)](#9-创建单一任务)
 ##### 10. [创建综合任务(secretaryCreateTask)](#10-创建综合任务)
-##### 11. [领导获取待审批的任务列表(getToExamineTaskList)](#11-领导获取待审批的任务列表)
-##### 12. [根据类型获取的任务列表(getTaskListByType)](#12-根据类型获取的任务列表)
-##### 13. [获取单一任务的详情(getSingleTaskDetail)](#13-获取单一任务的详情)
-##### 14. [修改任务(modifyTask)](#14-修改任务)
-##### 15. [修改群组任务(modifyGroupTask)](#15-修改群组任务)
-##### 16. [删除群组任务(removeGroupTask)](#16-删除群组任务)
-##### 17. [删除任务(removeGroupTask)](#17-删除任务)
-##### 18. [获取群组任务的详情(getGroupTaskDetail)](#18-获取群组任务的详情)
-##### 19. [打回任务(rejectPublishTask)](#19-打回任务)
-##### 20. [通过任务(agreePublishTask)](#20-通过任务)
-##### 21. [创建提醒(createRemind)](#21-创建提醒)
-##### 22. [修改提醒(modifyRemind)](#22-修改提醒)
-##### 23. [推送提醒通知(pushRemindNotice)](#23-推送提醒通知)
-##### 24. [创建日程(createSchedule)](#24-创建日程)
-##### 25. [完成日程(finishSchedule)](#25-完成日程)
-##### 26. [修改日程(modifySchedule)](#26-修改日程)
-##### 27. [删除日程(removeSchedule)](#27-删除日程)
-##### 28. [获取日程列表(getScheduleList)](#28-获取日程列表)
-##### 29. [提醒任务(remaindTask)](#29-提醒任务)
-##### 30. [更新任务进度(updateTaskProgress)](#30-更新任务进度)
-##### 31. [获取进度列表(getTaskProgressList)](#31-获取进度列表)
+##### 11. [领导获取待审批发布的任务列表(getApplyPublishTaskList)](#11-领导获取待审批发布的任务列表)
+##### 12. [领导或者综合部获取待审批完成的任务列表(getApplyFinishTaskList)](#12-领导或者综合部获取待审批完成的任务列表)
+##### 13. [根据类型获取的任务列表(getTaskListByType)](#13-根据类型获取的任务列表)
+##### 14. [获取打回申请发布任务列表(getRejectTaskList)](#14-获取打回申请发布任务列表)
+##### 15. [获取最关心任务列表(getMostCaredTaskList)](#15-获取最关心任务列表)
+##### 16. [获取单一任务的详情(getSingleTaskDetail)](#16-获取单一任务的详情)
+##### 17. [获取群组任务的详情(getGroupTaskDetail)](#17-获取群组任务的详情)
+##### 18. [修改任务(modifyTask)](#18-修改任务)
+##### 19. [修改群组任务(modifyGroupTask)](#19-修改群组任务)
+##### 20. [删除群组任务(removeGroupTask)](#20-删除群组任务)
+##### 21. [删除任务(removeGroupTask)](#21-删除任务)
+##### 22. [打回申请发布任务(rejectPublishTask)](#22-打回申请发布任务)
+##### 23. [通过发布任务的申请(agreePublishTask)](#23-通过发布任务的申请)
+##### 24. [申请完成任务(applyFinishTask)](#24-申请完成任务)
+##### 25. [同意完成任务的申请(agreeFinishTask)](#25-同意完成任务的申请)
+##### 26. [打回完成发布任务(rejectFinishTask)](#26-打回完成发布任务)
+##### 27. [创建提醒(createRemind)](#27-创建提醒)
+##### 28. [修改提醒(modifyRemind)](#28-修改提醒)
+##### 29. [推送提醒通知(pushRemindNotice)](#29-推送提醒通知)
+##### 30. [创建日程(createSchedule)](#30-创建日程)
+##### 31. [完成日程(finishSchedule)](#31-完成日程)
+##### 32. [修改日程(modifySchedule)](#32-修改日程)
+##### 33. [删除日程(removeSchedule)](#33-删除日程)
+##### 34. [获取日程列表(getScheduleList)](#34-获取日程列表)
+##### 35. [提醒任务(remaindTask)](#35-提醒任务)
+##### 36. [更新任务进度(updateTaskProgress)](#36-更新任务进度)
+##### 37. [获取进度列表(getTaskProgressList)](#37-获取进度列表)
 
 ---
 
@@ -320,9 +326,10 @@
 
 ---
 
-### 11. [领导获取待审批的任务列表](#11-领导获取待审批的任务列表gettoexaminetasklist)
-- `getToExamineTaskList`
+### 11. [领导获取待审批发布的任务列表](#11-领导获取待审批发布的任务列表getapplypublishtasklist)
+- `getApplyPublishTaskList`
 - 请求方式：`POST`
+- 备注：获取到的是多任务或者单任务
 
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
@@ -352,7 +359,39 @@
 
 ---
 
-### 12. [根据类型获取的任务列表](#12-根据类型获取的任务列表gettasklistbytype)
+### 12. [领导或者综合部获取待审批完成的任务列表](#12-领导或者综合部获取待审批完成的任务列表getapplyfinishtasklist)
+- `getApplyFinishTaskList`
+- 请求方式：`POST`
+- 备注：谁发布的任务谁来审批完成
+
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| userId | ID | 用户Id |
+| pageNo | Number | 页号 |
+| pageSize | Number | 每页数量 |
+
+```js
+{
+    "success": true,
+    "context": {
+        "taskList": [
+            {
+                "id": "5922b7726df4409ec01c425d",
+                "title": "总测试标题",
+                "content": "总测试内容",
+                "modifyTime": "2017-05-22 18:03:30",
+                "expectFinishTime": "2017-05-16 03:00:00",
+                "expectStartTime": "2017-05-15 03:00:00",
+                "taskNumbers": 1,
+            }
+        ]
+    }
+}
+```
+
+---
+
+### 13. [根据类型获取的任务列表](#13-根据类型获取的任务列表gettasklistbytype)
 - `getTaskListByType`
 - 请求方式：`POST`
 
@@ -384,7 +423,76 @@
 
 ---
 
-### 13. [获取单一任务的详情](#13-获取单一任务的详情getsingletaskdetail)
+### 14. [获取打回申请发布任务列表](#14-获取打回申请发布任务列表getrejecttasklist)
+- `getRejectTaskList`
+- 请求方式：`POST`
+
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| userId | ID | 用户Id |
+| role | String | 角色 = ['`leader`', '`secretary`', '`executor`'] |
+| pageNo | Number | 页号 |
+| pageSize | Number | 每页数量 |
+
+```js
+{
+    "success": true,
+    "context": {
+        "taskList": [
+            {
+                "title": "测试任务",
+                "content": "认真测试",
+                "modifyTime": "2017-05-23 08:44:58",
+                "expectFinishTime": "2017-05-16 03:00:00",
+                "rejectPublishReason": "不合格",
+                "rejectFinishReason": "不合格",
+                "type": 1,
+                "state": 1,
+                "id": "5923860a5c1070c1e96defd2"
+            }
+        ]
+    }
+}
+```
+
+###### 状态说明：
+`1：待审批，2：驳回审批，4：通过审批，8：待执行， 16：进行中，32：待完成审核，64：驳回完成审核，128：完成`
+
+---
+
+### 15. [获取最关心任务列表](#15-获取最关心任务列表getmostcaredtasklist)
+- `getMostCaredTaskList`
+- 请求方式：`POST`
+
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| userId | ID | 用户Id |
+| pageNo | Number | 页号 |
+| pageSize | Number | 每页数量 |
+
+```js
+{
+    "success": true,
+    "context": {
+        "taskList": [
+            {
+                "title": "测试任务",
+                "content": "认真测试",
+                "modifyTime": "2017-05-23 08:44:58",
+                "expectFinishTime": "2017-05-16 03:00:00",
+                "rejectPublishReason": "不合格",
+                "type": 1,
+                "state": 1,
+                "id": "5923860a5c1070c1e96defd2"
+            }
+        ]
+    }
+}
+```
+
+---
+
+### 16. [获取单一任务的详情](#16-获取单一任务的详情getsingletaskdetail)
 - `getSingleTaskDetail`
 - 请求方式：`POST`
 
@@ -435,88 +543,7 @@
 
 ---
 
-### 14. [修改任务](#14-修改任务modifytask)
-- `modifyTask`
-- 请求方式：`POST`
-
-| 参数名称 | 参数类型  | 描述 |
-| :- |:-:| :-:|
-| userId | String | 用户Id |
-| taskId | String | 任务Id |
-| executorId | String | 执行人Id |
-| supervisorId | String | 监督人Id |
-| title | String | 标题 |
-| content | String | 内容 |
-| audioList | Array | [音频列表](#audiolist格式) |
-| imageList | Array | 图片列表 |
-| remindList | Array | [提醒列表](#remindlist格式) |
-| type | Number | 任务类型 |
-| expectStartTime | String | 期望开始时间 |
-| expectFinishTime | String | 期望结束时间 |
-
-```js
-{
-    "success": true,
-}
-```
-
----
-
-### 15. [修改群组任务](#15-修改群组任务modifygrouptask)
-- `modifyGroupTask`
-- 请求方式：`POST`
-
-| 参数名称 | 参数类型  | 描述 |
-| :- |:-:| :-:|
-| userId | ID | 用户Id |
-| taskId | ID | 任务Id |
-| examinerId | ID | 审核人Id |
-| title | String | 标题 |
-| content | String | 内容 |
-
-```js
-{
-    "success": true,
-}
-```
-
----
-
-### 16. [删除群组任务](#16-删除群组任务removegrouptask)
-- `removeGroupTask`
-- 请求方式：`POST`
-
-| 参数名称 | 参数类型  | 描述 |
-| :- |:-:| :-:|
-| userId | ID | 用户Id |
-| taskId | ID | 任务Id |
-
-```js
-{
-    "success": true,
-}
-```
-
----
-
-### 17. [删除任务](#17-删除任务removegrouptask)
-- `removeGroupTask`
-- 请求方式：`POST`
-
-| 参数名称 | 参数类型  | 描述 |
-| :- |:-:| :-:|
-| userId | ID | 用户Id |
-| taskId | ID | 任务Id |
-
-```js
-{
-    "success": true,
-}
-```
-
----
-
-### 18. [获取群组任务的详情](#18-获取群组任务的详情getgrouptaskdetail)
+### 17. [获取群组任务的详情](#17-获取群组任务的详情getgrouptaskdetail)
 - `getGroupTaskDetail`
 - 请求方式：`POST`
 
@@ -574,7 +601,88 @@
 
 ---
 
-### 19. [打回任务](#19-打回任务rejectpublishtask)
+### 18. [修改任务](#18-修改任务modifytask)
+- `modifyTask`
+- 请求方式：`POST`
+
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| userId | String | 用户Id |
+| taskId | String | 任务Id |
+| executorId | String | 执行人Id |
+| supervisorId | String | 监督人Id |
+| title | String | 标题 |
+| content | String | 内容 |
+| audioList | Array | [音频列表](#audiolist格式) |
+| imageList | Array | 图片列表 |
+| remindList | Array | [提醒列表](#remindlist格式) |
+| type | Number | 任务类型 |
+| expectStartTime | String | 期望开始时间 |
+| expectFinishTime | String | 期望结束时间 |
+
+```js
+{
+    "success": true,
+}
+```
+
+---
+
+### 19. [修改群组任务](#19-修改群组任务modifygrouptask)
+- `modifyGroupTask`
+- 请求方式：`POST`
+
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| userId | ID | 用户Id |
+| taskId | ID | 任务Id |
+| examinerId | ID | 审核人Id |
+| title | String | 标题 |
+| content | String | 内容 |
+
+```js
+{
+    "success": true,
+}
+```
+
+---
+
+### 20. [删除群组任务](#20-删除群组任务removegrouptask)
+- `removeGroupTask`
+- 请求方式：`POST`
+
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| userId | ID | 用户Id |
+| taskId | ID | 任务Id |
+
+```js
+{
+    "success": true,
+}
+```
+
+---
+
+### 21. [删除任务](#21-删除任务removegrouptask)
+- `removeGroupTask`
+- 请求方式：`POST`
+
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| userId | ID | 用户Id |
+| taskId | ID | 任务Id |
+
+```js
+{
+    "success": true,
+}
+```
+
+---
+
+### 22. [打回申请发布任务](#22-打回申请发布任务rejectpublishtask)
 - `rejectPublishTask`
 - 请求方式：`POST`
 
@@ -590,7 +698,9 @@
 }
 ```
 
-### 20. [通过任务](#20-通过任务agreepublishtask)
+---
+
+### 23. [通过发布任务的申请](#23-通过发布任务的申请agreepublishtask)
 - `agreePublishTask`
 - 请求方式：`POST`
 
@@ -607,7 +717,59 @@
 
 ---
 
-### 21. [创建提醒](#21-创建提醒createremind)
+### 24. [申请完成任务](#24-申请完成任务applyfinishtask)
+- `applyFinishTask`
+- 请求方式：`POST`
+
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| userId | ID | 用户Id |
+| taskId | String | 任务Id |
+
+```js
+{
+    "success": true,
+}
+```
+
+---
+
+### 25. [同意完成任务的申请](#25-同意完成任务的申请agreefinishtask)
+- `agreeFinishTask`
+- 请求方式：`POST`
+
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| userId | ID | 用户Id |
+| taskId | String | 任务Id |
+
+```js
+{
+    "success": true,
+}
+```
+
+---
+
+### 26. [打回完成发布任务](#26-打回完成发布任务rejectfinishtask)
+- `rejectFinishTask`
+- 请求方式：`POST`
+
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| userId | ID | 用户Id |
+| taskId | String | 任务Id |
+| reason | String | 被打回的原因 |
+
+```js
+{
+    "success": true,
+}
+```
+
+---
+
+### 27. [创建提醒](#27-创建提醒createremind)
 - `createRemind`
 - 请求方式：`POST`
 
@@ -624,7 +786,7 @@
 
 ---
 
-### 22. [修改提醒](#22-修改提醒modifyremind)
+### 28. [修改提醒](#28-修改提醒modifyremind)
 - `modifyRemind`
 - 请求方式：`POST`
 
@@ -642,7 +804,7 @@
 
 ---
 
-### 23. [推送提醒通知](#23-推送提醒通知pushremindnotice)
+### 29. [推送提醒通知](#29-推送提醒通知pushremindnotice)
 - `pushRemindNotice`
 - 请求方式：`POST`
 
@@ -660,7 +822,7 @@
 
 ---
 
-### 24. [创建日程](#24-创建日程createschedule)
+### 30. [创建日程](#30-创建日程createschedule)
 - `createSchedule`
 - 请求方式：`POST`
 
@@ -677,7 +839,7 @@
 
 ---
 
-### 25. [完成日程](#25-完成日程finishschedule)
+### 31. [完成日程](#31-完成日程finishschedule)
 - `finishSchedule`
 - 请求方式：`POST`
 
@@ -694,7 +856,7 @@
 
 ---
 
-### 26. [修改日程](#26-修改日程modifyschedule)
+### 32. [修改日程](#32-修改日程modifyschedule)
 - `modifySchedule`
 - 请求方式：`POST`
 
@@ -712,7 +874,7 @@
 
 ---
 
-### 27. [删除日程](#27-删除日程removeschedule)
+### 33. [删除日程](#33-删除日程removeschedule)
 - `removeSchedule`
 - 请求方式：`POST`
 
@@ -729,7 +891,7 @@
 
 ---
 
-### 28. [获取日程列表](#28-获取日程列表getschedulelist)
+### 34. [获取日程列表](#34-获取日程列表getschedulelist)
 - `getScheduleList`
 - 请求方式：`POST`
 
@@ -755,7 +917,7 @@
 
 ---
 
-### 29. [提醒任务](#29-提醒任务remaindtask)
+### 35. [提醒任务](#35-提醒任务remaindtask)
 - `remaindTask`
 - 请求方式：`POST`
 
@@ -772,7 +934,7 @@
 
 ---
 
-### 30. [更新任务进度](#30-更新任务进度updatetaskprogress)
+### 36. [更新任务进度](#36-更新任务进度updatetaskprogress)
 - `updateTaskProgress`
 - 请求方式：`POST`
 
@@ -790,7 +952,7 @@
 
 ---
 
-### 31. [获取进度列表](#31-获取进度列表gettaskprogresslist)
+### 37. [获取进度列表](#37-获取进度列表gettaskprogresslist)
 - `getTaskProgressList`
 - 请求方式：`POST`
 
