@@ -1,4 +1,5 @@
-## 目录
+# 目录
+## 基础api
 ##### 1. [上传文件(uploadFile)](#1-上传文件)
 ##### 2. [登录(login)](#2-登录)
 ##### 3. [注册(register)](#3-注册)
@@ -6,6 +7,7 @@
 ##### 5. [修改个人信息(modifyPersonalInfo)](#5-修改个人信息)
 ##### 6. [修改密码(modifyPassword)](#6-修改密码)
 ##### 7. [意见反馈(submitFeedback)](#7-意见反馈)
+## 应用api
 ##### 8. [获取用户列表(getClientList)](#8-获取用户列表)
 ##### 9. [获取任务类型列表(getTaskTypeList)](#9-获取任务类型列表)
 ##### 10. [创建单一任务(leaderCreateTask)](#10-创建单一任务)
@@ -34,6 +36,7 @@
 ##### 33. [提醒任务(remindTask)](#33-提醒任务)
 ##### 34. [更新任务进度(updateTaskProgress)](#34-更新任务进度)
 ##### 35. [获取进度列表(getTaskProgressList)](#35-获取进度列表)
+## 通知
 ##### 36. [综合部创建群组任务的通知(NEW_PUBLISH_TASK_NF)](#36-综合部创建群组任务的通知)
 ##### 37. [领导同意申请发布任务的通知和领导发布单任务的通知(AGREE_PUBLISH_TASK_NF)](#37-领导同意申请发布任务的通知和领导发布单任务的通知)
 ##### 38. [领导拒绝申请发布任务通知(REJECT_PUBLISH_TASK_NF)](#38-领导拒绝申请发布任务通知)
@@ -43,6 +46,7 @@
 
 ---
 
+## 基础api
 
 ### 1. [上传文件](#1-上传文件uploadfile)
 - `uploadFile`
@@ -90,6 +94,7 @@ uploadErrorCallback () {
 ...
 ```
 
+---
 
 ### 2. [登录](#2-登录login)
 - `login`
@@ -212,6 +217,8 @@ authority为用户权限， 1：普通权限 2：拥有领导权限，4：拥有
 }
 ```
 
+## 应用api
+
 ---
 
 ### 8. [获取用户列表](#8-获取用户列表getclientlist)
@@ -220,7 +227,7 @@ authority为用户权限， 1：普通权限 2：拥有领导权限，4：拥有
 
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
-| userId | String | 用户Id |
+| userId | ID | 用户Id |
 | authority | Number | [权限](#authority的说明) |
 
 ```js
@@ -248,7 +255,7 @@ authority为用户权限， 1：普通权限 2：拥有领导权限，4：拥有
 
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
-| userId | String | 用户Id |
+| userId | ID | 用户Id |
 ```js
 {
     "success": true,
@@ -271,9 +278,9 @@ authority为用户权限， 1：普通权限 2：拥有领导权限，4：拥有
 
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
-| userId | String | 用户Id |
-| executorId | String | 执行人Id |
-| supervisorId | String | 监督人Id |
+| userId | ID | 用户Id |
+| executorId | ID | 执行人Id |
+| supervisorId | ID | 监督人Id |
 | title | String | 标题 |
 | content | String | 内容 |
 | audioList | Array | [音频列表](#audiolist格式) |
@@ -318,8 +325,8 @@ authority为用户权限， 1：普通权限 2：拥有领导权限，4：拥有
 
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
-| userId | String | 用户Id |
-| examinerId | String | 审核人Id |
+| userId | ID | 用户Id |
+| examinerId | ID | 审核人Id |
 | title | String | 标题 |
 | content | String | 内容 |
 | taskList | Array | 任务列表 |
@@ -328,8 +335,8 @@ authority为用户权限， 1：普通权限 2：拥有领导权限，4：拥有
 
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
-| executorId | String | 执行人Id |
-| supervisorId | String | 监督人Id |
+| executorId | ID | 执行人Id |
+| supervisorId | ID | 监督人Id |
 | title | String | 标题 |
 | content | String | 内容 |
 | audioList | Array | [音频列表](#audiolist格式) |
@@ -630,10 +637,10 @@ authority为用户权限， 1：普通权限 2：拥有领导权限，4：拥有
 
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
-| userId | String | 用户Id |
-| taskId | String | 任务Id |
-| executorId | String | 执行人Id |
-| supervisorId | String | 监督人Id |
+| userId | ID | 用户Id |
+| taskId | ID | 任务Id |
+| executorId | ID | 执行人Id |
+| supervisorId | ID | 监督人Id |
 | title | String | 标题 |
 | content | String | 内容 |
 | audioList | Array | [音频列表](#audiolist格式) |
@@ -712,7 +719,7 @@ authority为用户权限， 1：普通权限 2：拥有领导权限，4：拥有
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
 | userId | ID | 用户Id |
-| taskId | String | 任务Id |
+| taskId | ID | 任务Id |
 | reason | String | 被打回的原因 |
 
 ```js
@@ -730,7 +737,7 @@ authority为用户权限， 1：普通权限 2：拥有领导权限，4：拥有
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
 | userId | ID | 用户Id |
-| taskId | String | 任务Id |
+| taskId | ID | 任务Id |
 
 ```js
 {
@@ -747,7 +754,7 @@ authority为用户权限， 1：普通权限 2：拥有领导权限，4：拥有
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
 | userId | ID | 用户Id |
-| taskId | String | 任务Id |
+| taskId | ID | 任务Id |
 
 ```js
 {
@@ -764,7 +771,7 @@ authority为用户权限， 1：普通权限 2：拥有领导权限，4：拥有
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
 | userId | ID | 用户Id |
-| taskId | String | 任务Id |
+| taskId | ID | 任务Id |
 
 ```js
 {
@@ -781,7 +788,7 @@ authority为用户权限， 1：普通权限 2：拥有领导权限，4：拥有
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
 | userId | ID | 用户Id |
-| taskId | String | 任务Id |
+| taskId | ID | 任务Id |
 | reason | String | 被打回的原因 |
 
 ```js
@@ -798,7 +805,7 @@ authority为用户权限， 1：普通权限 2：拥有领导权限，4：拥有
 
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
-| userId | String | 用户Id |
+| userId | ID | 用户Id |
 | content | String | 日程内容 |
 
 ```js
@@ -815,8 +822,8 @@ authority为用户权限， 1：普通权限 2：拥有领导权限，4：拥有
 
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
-| userId | String | 用户Id |
-| scheduleId | String | 日程Id |
+| userId | ID | 用户Id |
+| scheduleId | ID | 日程Id |
 
 ```js
 {
@@ -832,8 +839,8 @@ authority为用户权限， 1：普通权限 2：拥有领导权限，4：拥有
 
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
-| userId | String | 用户Id |
-| scheduleId | String | 日程Id |
+| userId | ID | 用户Id |
+| scheduleId | ID | 日程Id |
 | content | String | 日程内容 |
 
 ```js
@@ -850,8 +857,8 @@ authority为用户权限， 1：普通权限 2：拥有领导权限，4：拥有
 
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
-| userId | String | 用户Id |
-| scheduleId | String | 日程Id |
+| userId | ID | 用户Id |
+| scheduleId | ID | 日程Id |
 
 ```js
 {
@@ -867,7 +874,7 @@ authority为用户权限， 1：普通权限 2：拥有领导权限，4：拥有
 
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
-| userId | String | 用户Id |
+| userId | ID | 用户Id |
 | time | String | 日程时间 |
 
 ```js
@@ -954,6 +961,8 @@ authority为用户权限， 1：普通权限 2：拥有领导权限，4：拥有
 ```
 
 ---
+
+## 通知
 
 ### 36. [综合部创建群组任务的通知](#36-综合部创建群组任务的通知new_publish_task_nf)
 - `NEW_PUBLISH_TASK_NF`
