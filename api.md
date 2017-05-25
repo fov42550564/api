@@ -34,8 +34,15 @@
 ##### 33. [提醒任务(remindTask)](#33-提醒任务)
 ##### 34. [更新任务进度(updateTaskProgress)](#34-更新任务进度)
 ##### 35. [获取进度列表(getTaskProgressList)](#35-获取进度列表)
+##### 36. [综合部创建群组任务的通知(NEW_PUBLISH_TASK_NF)](#36-综合部创建群组任务的通知)
+##### 37. [领导同意申请发布任务的通知和领导发布单任务的通知(AGREE_PUBLISH_TASK_NF)](#37-领导同意申请发布任务的通知和领导发布单任务的通知)
+##### 38. [领导拒绝申请发布任务通知(REJECT_PUBLISH_TASK_NF)](#38-领导拒绝申请发布任务通知)
+##### 39. [申请完成任务的通知(APPLY_FINISH_TASK_NF)](#39-申请完成任务的通知)
+##### 40. [同意完成任务的通知(AGREE_FINISH_TASK_NF)](#40-同意完成任务的通知)
+##### 41. [拒绝完成任务的通知(REJECT_FINISH_TASK_NF)](#41-拒绝完成任务的通知)
 
 ---
+
 
 ### 1. [上传文件](#1-上传文件uploadfile)
 - `uploadFile`
@@ -144,7 +151,7 @@ uploadErrorCallback () {
     }
 }
 ```
-####### authority的说明：
+###### authority的说明：
 ```
 authority为用户权限， 1：普通权限 2：拥有领导权限，4：拥有综合部权限，8：拥有监督者权限
 ```
@@ -943,5 +950,100 @@ authority为用户权限， 1：普通权限 2：拥有领导权限，4：拥有
             }
         ]
     }
+}
+```
+
+---
+
+### 36. [综合部创建群组任务的通知](#36-综合部创建群组任务的通知new_publish_task_nf)
+- `NEW_PUBLISH_TASK_NF`
+- 接收方式：`Socket.io`
+- 接收方：待审核任务的人(examinerId)
+
+```js
+{
+    "examinerId": "59117ddb5150c20e08b560ac", //审核者 Id
+    "taskId": "5923dad54de89411bfe28053", //任务 Id
+    "examineFinishTime": "2017-05-24T11:29:45.229Z", //审核时间
+    "title": "测试任务2" //任务title
+}
+```
+---
+
+### 37. [领导同意申请发布任务的通知和领导发布单任务的通知](#37-领导同意申请发布任务的通知和领导发布单任务的通知agree_publish_task_nf)
+- `AGREE_PUBLISH_TASK_NF`
+- 接收方式：`Socket.io`
+- 接收方：待审核任务的人(examinerId)
+
+```js
+{
+    "examinerId": "59117ddb5150c20e08b560ac", //审核者 Id
+    "taskId": "5923dad54de89411bfe28053", //任务 Id
+    "examineFinishTime": "2017-05-24T11:29:45.229Z", //审核时间
+    "title": "测试任务2" //任务title
+}
+```
+
+---
+
+### 38. [领导拒绝申请发布任务通知](#38-领导拒绝申请发布任务通知reject_publish_task_nf)
+- `REJECT_PUBLISH_TASK_NF`
+- 接收方式：`Socket.io`
+- 接收方：申请发布任务的人(publisherId)
+
+```js
+{
+    "examinerId": "59117ddb5150c20e08b560ac", //审核者 Id
+    "taskId": "5923dad54de89411bfe28053", //任务 Id
+    "examineFinishTime": "2017-05-24T11:29:45.229Z", //审核时间
+    "title": "测试任务2" //任务title
+}
+```
+
+---
+
+### 39. [申请完成任务的通知](#39-申请完成任务的通知apply_finish_task_nf)
+- `APPLY_FINISH_TASK_NF`
+- 接收方式：`Socket.io`
+- 接收方：发布任务的人(publisherId)
+
+```js
+{
+    "examinerId": "59117ddb5150c20e08b560ac", //审核者 Id
+    "taskId": "5923dad54de89411bfe28053", //任务 Id
+    "examineFinishTime": "2017-05-24T11:29:45.229Z", //审核时间
+    "title": "测试任务2" //任务title
+}
+```
+
+---
+
+### 40. [同意完成任务的通知](#40-同意完成任务的通知agree_finish_task_nf)
+- `AGREE_FINISH_TASK_NF`
+- 接收方式：`Socket.io`
+- 接收方：申请完成任务的人
+
+```js
+{
+    "examinerId": "59117ddb5150c20e08b560ac", //审核者 Id
+    "taskId": "5923dad54de89411bfe28053", //任务 Id
+    "examineFinishTime": "2017-05-24T11:29:45.229Z", //审核时间
+    "title": "测试任务2" //任务title
+}
+```
+
+---
+
+### 41. [拒绝完成任务的通知](#41-拒绝完成任务的通知reject_finish_task_nf)
+- `REJECT_FINISH_TASK_NF`
+- 接收方式：`Socket.io`
+- 接收方：申请完成任务的人(executorId)
+
+```js
+{
+    "examinerId": "59117ddb5150c20e08b560ac", //审核者 Id
+    "taskId": "5923dad54de89411bfe28053", //任务 Id
+    "examineFinishTime": "2017-05-24T11:29:45.229Z", //审核时间
+    "title": "测试任务2" //任务title
 }
 ```
