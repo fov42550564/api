@@ -1,12 +1,12 @@
 # 目录
 ## 基础api
-##### 1. [上传文件(uploadFile)](#1-上传文件)
-##### 2. [登录(login)](#2-登录)
-##### 3. [注册(register)](#3-注册)
-##### 4. [获取个人信息(getPersonalInfo)](#4-获取个人信息)
-##### 5. [修改个人信息(modifyPersonalInfo)](#5-修改个人信息)
-##### 6. [修改密码(modifyPassword)](#6-修改密码)
-##### 7. [意见反馈(submitFeedback)](#7-意见反馈)
+##### 1. [登录(login)](#1-登录)
+##### 2. [注册(register)](#2-注册)
+##### 3. [获取个人信息(getPersonalInfo)](#3-获取个人信息)
+##### 4. [修改个人信息(modifyPersonalInfo)](#4-修改个人信息)
+##### 5. [修改密码(modifyPassword)](#5-修改密码)
+##### 6. [意见反馈(submitFeedback)](#6-意见反馈)
+##### 7. [上传文件(uploadFile)](#7-上传文件)
 ## 应用api
 ##### 8. [获取用户列表(getClientList)](#8-获取用户列表)
 ##### 9. [获取任务类型列表(getTaskTypeList)](#9-获取任务类型列表)
@@ -48,7 +48,132 @@
 
 ## 基础api
 
-### 1. [上传文件](#1-上传文件uploadfile)
+---
+
+### 1. [登录](#1-登录login)
+- `login`
+- 请求方式：`POST`
+
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| phone | String | 登录手机号码 |
+| password | String | 登录密码 |
+
+```js
+{
+    "success": true,
+    "context": {
+        "userId": "10000"
+    }
+}
+```
+
+---
+
+### 2. [注册](#2-注册register)
+- `register`
+- 请求方式：`POST`
+
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| phone | String | 登录手机号码 |
+| email | String | 找回密码的邮箱 |
+| password | String | 登录密码 |
+
+
+```js
+{
+    "success": true
+}
+```
+
+---
+
+### 3. [获取个人信息](#3-获取个人信息getpersonalinfo)
+- `getPersonalInfo`
+- 请求方式：`POST`
+
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| userId | ID | 用户Id |
+
+
+```js
+{
+    "success": true,
+    "context": {
+        "phone": "手机号码"
+        "name": "用户名"
+        "head": "头像"
+        "position": "职位",
+        "authority": 1
+    }
+}
+```
+###### authority的说明：
+```
+authority为用户权限， 1：普通权限 2：拥有领导权限，4：拥有综合部权限，8：拥有监督者权限
+```
+---
+
+### 4. [修改个人信息](#4-修改个人信息modifypersonalinfo)
+- `modifyPersonalInfo`
+- 请求方式：`POST`
+
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| userId | ID | 用户Id |
+| phone | String | 登录手机号码 |
+| name | String | 用户名 |
+| head | String | 头像 |
+| position | String | 职位 |
+
+
+```js
+{
+    "success": true,
+}
+```
+
+---
+
+### 5. [修改密码](#5-修改密码modifypassword)
+- `modifyPassword`
+- 请求方式：`POST`
+
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| userId | ID | 用户Id |
+| oldPassword | String | 旧密码 |
+| newPassword | String | 新密码 |
+
+```js
+{
+    "success": true,
+}
+```
+
+---
+
+### 6. [意见反馈](#6-意见反馈submitfeedback)
+- `submitFeedback`
+- 请求方式：`POST`
+
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| userId | ID | 用户Id |
+| content | String | 内容 |
+| email | String | 联系邮箱 |
+
+```js
+{
+    "success": true,
+}
+```
+
+---
+
+### 7. [上传文件](#7-上传文件uploadfile)
 - `uploadFile`
 - 请求方式：`POST`
 
@@ -95,127 +220,6 @@ uploadErrorCallback () {
 ```
 
 ---
-
-### 2. [登录](#2-登录login)
-- `login`
-- 请求方式：`POST`
-
-| 参数名称 | 参数类型  | 描述 |
-| :- |:-:| :-:|
-| phone | String | 登录手机号码 |
-| password | String | 登录密码 |
-
-```js
-{
-    "success": true,
-    "context": {
-        "userId": "10000"
-    }
-}
-```
-
----
-
-### 3. [注册](#3-注册register)
-- `register`
-- 请求方式：`POST`
-
-| 参数名称 | 参数类型  | 描述 |
-| :- |:-:| :-:|
-| phone | String | 登录手机号码 |
-| email | String | 找回密码的邮箱 |
-| password | String | 登录密码 |
-
-
-```js
-{
-    "success": true
-}
-```
-
----
-
-### 4. [获取个人信息](#4-获取个人信息getpersonalinfo)
-- `getPersonalInfo`
-- 请求方式：`POST`
-
-| 参数名称 | 参数类型  | 描述 |
-| :- |:-:| :-:|
-| userId | ID | 用户Id |
-
-
-```js
-{
-    "success": true,
-    "context": {
-        "phone": "手机号码"
-        "name": "用户名"
-        "head": "头像"
-        "position": "职位",
-        "authority": 1
-    }
-}
-```
-###### authority的说明：
-```
-authority为用户权限， 1：普通权限 2：拥有领导权限，4：拥有综合部权限，8：拥有监督者权限
-```
----
-
-### 5. [修改个人信息](#5-修改个人信息modifypersonalinfo)
-- `modifyPersonalInfo`
-- 请求方式：`POST`
-
-| 参数名称 | 参数类型  | 描述 |
-| :- |:-:| :-:|
-| userId | ID | 用户Id |
-| phone | String | 登录手机号码 |
-| name | String | 用户名 |
-| head | String | 头像 |
-| position | String | 职位 |
-
-
-```js
-{
-    "success": true,
-}
-```
-
----
-
-### 6. [修改密码](#6-修改密码modifypassword)
-- `modifyPassword`
-- 请求方式：`POST`
-
-| 参数名称 | 参数类型  | 描述 |
-| :- |:-:| :-:|
-| userId | ID | 用户Id |
-| oldPassword | String | 旧密码 |
-| newPassword | String | 新密码 |
-
-```js
-{
-    "success": true,
-}
-```
-
----
-
-### 7. [意见反馈](#7-意见反馈submitfeedback)
-- `submitFeedback`
-- 请求方式：`POST`
-
-| 参数名称 | 参数类型  | 描述 |
-| :- |:-:| :-:|
-| userId | ID | 用户Id |
-| content | String | 内容 |
-| email | String | 联系邮箱 |
-
-```js
-{
-    "success": true,
-}
-```
 
 ## 应用api
 
@@ -963,6 +967,8 @@ authority为用户权限， 1：普通权限 2：拥有领导权限，4：拥有
 ---
 
 ## 通知
+
+---
 
 ### 36. [综合部创建群组任务的通知](#36-综合部创建群组任务的通知new_publish_task_nf)
 - `NEW_PUBLISH_TASK_NF`
