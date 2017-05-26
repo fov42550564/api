@@ -43,6 +43,11 @@
 ##### 39. [申请完成任务的通知(APPLY_FINISH_TASK_NF)](#39-申请完成任务的通知)
 ##### 40. [同意完成任务的通知(AGREE_FINISH_TASK_NF)](#40-同意完成任务的通知)
 ##### 41. [拒绝完成任务的通知(REJECT_FINISH_TASK_NF)](#41-拒绝完成任务的通知)
+##### 42. [定时任务通知(REMIND_TASK_NF)](#42-定时任务通知)
+## 协议文档
+##### 43. [用户协议(user)](#43-用户协议)
+##### 44. [获取软件许可协议(software)](#44-获取软件许可协议)
+##### 45. [关于(about)](#45-关于)
 
 ---
 
@@ -975,12 +980,41 @@ uploadErrorCallback () {
 - 接收方式：`Socket.io`
 - 接收方：待审核任务的人(examinerId)
 
+###### 通知的数据
 ```js
 {
-    "examinerId": "59117ddb5150c20e08b560ac", //审核者 Id
-    "taskId": "5923dad54de89411bfe28053", //任务 Id
-    "examineFinishTime": "2017-05-24T11:29:45.229Z", //审核时间
-    "title": "测试任务2" //任务title
+    "title": "测试标题",
+    "content": "测试内容",
+    "examineFinishTime": "2017-05-22 18:03:30",
+    "applyFinishTime": "2017-05-22 18:03:30",
+    "modifyTime": "2017-05-22 18:03:30",
+    "startExecTime": "2017-05-22 18:03:30",
+    "examineTime": "2017-05-22 18:03:30",
+    "publishTime": "2017-05-22 18:03:30",
+    "expectFinishTime": "2017-05-16 03:00:00",
+    "expectStartTime": "2017-05-15 03:00:00",
+    "state": 1,
+    "type": 1,
+    "imageList": [
+        "http://localhost:3000/api/image?id=5922b7726df4409ec01c425b"
+    ],
+    "audioList": [
+        {
+            "url": "http://localhost:3000/api/image?id=5922b7726df4409ec01c425c",
+            "duration": 10
+        }
+    ],
+    "supervisor": {
+        "phone": "18085192480",
+        "name": "方运江",
+        "id": "59117ddb5150c20e08b560ac"
+    },
+    "executor": {
+        "phone": "18085192480",
+        "name": "方运江",
+        "id": "59117ddb5150c20e08b560ac"
+    },
+    "id": "5922b7726df4409ec01c425e"
 }
 ```
 ---
@@ -989,15 +1023,8 @@ uploadErrorCallback () {
 - `AGREE_PUBLISH_TASK_NF`
 - 接收方式：`Socket.io`
 - 接收方：待审核任务的人(examinerId)
+- [通知的数据](#通知的数据)
 
-```js
-{
-    "examinerId": "59117ddb5150c20e08b560ac", //审核者 Id
-    "taskId": "5923dad54de89411bfe28053", //任务 Id
-    "examineFinishTime": "2017-05-24T11:29:45.229Z", //审核时间
-    "title": "测试任务2" //任务title
-}
-```
 
 ---
 
@@ -1005,15 +1032,7 @@ uploadErrorCallback () {
 - `REJECT_PUBLISH_TASK_NF`
 - 接收方式：`Socket.io`
 - 接收方：申请发布任务的人(publisherId)
-
-```js
-{
-    "examinerId": "59117ddb5150c20e08b560ac", //审核者 Id
-    "taskId": "5923dad54de89411bfe28053", //任务 Id
-    "examineFinishTime": "2017-05-24T11:29:45.229Z", //审核时间
-    "title": "测试任务2" //任务title
-}
-```
+- [通知的数据](#通知的数据)
 
 ---
 
@@ -1021,15 +1040,7 @@ uploadErrorCallback () {
 - `APPLY_FINISH_TASK_NF`
 - 接收方式：`Socket.io`
 - 接收方：发布任务的人(publisherId)
-
-```js
-{
-    "examinerId": "59117ddb5150c20e08b560ac", //审核者 Id
-    "taskId": "5923dad54de89411bfe28053", //任务 Id
-    "examineFinishTime": "2017-05-24T11:29:45.229Z", //审核时间
-    "title": "测试任务2" //任务title
-}
-```
+- [通知的数据](#通知的数据)
 
 ---
 
@@ -1037,15 +1048,7 @@ uploadErrorCallback () {
 - `AGREE_FINISH_TASK_NF`
 - 接收方式：`Socket.io`
 - 接收方：申请完成任务的人
-
-```js
-{
-    "examinerId": "59117ddb5150c20e08b560ac", //审核者 Id
-    "taskId": "5923dad54de89411bfe28053", //任务 Id
-    "examineFinishTime": "2017-05-24T11:29:45.229Z", //审核时间
-    "title": "测试任务2" //任务title
-}
-```
+- [通知的数据](#通知的数据)
 
 ---
 
@@ -1053,12 +1056,34 @@ uploadErrorCallback () {
 - `REJECT_FINISH_TASK_NF`
 - 接收方式：`Socket.io`
 - 接收方：申请完成任务的人(executorId)
+- [通知的数据](#通知的数据)
 
-```js
-{
-    "examinerId": "59117ddb5150c20e08b560ac", //审核者 Id
-    "taskId": "5923dad54de89411bfe28053", //任务 Id
-    "examineFinishTime": "2017-05-24T11:29:45.229Z", //审核时间
-    "title": "测试任务2" //任务title
-}
-```
+---
+
+### 42. [定时任务通知](#42-定时任务通知remind_task_nf)
+- `REMIND_TASK_NF`
+- 接收方式：`Socket.io`
+- 接收方：和任务相关的人
+- [通知的数据](#通知的数据)
+
+---
+
+## 协议文档
+
+---
+
+### 43. [用户协议](#43-用户协议user)
+- `user`
+- url: `protocals/user.html`
+
+---
+
+### 44. [获取软件许可协议](#44-获取软件许可协议software)
+- `software`
+- url: `protocals/software.html`
+
+---
+
+### 45. [关于](#45-关于about)
+- `about`
+- url: `protocals/about.html`
