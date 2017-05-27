@@ -7,7 +7,7 @@
 ##### 5. [修改密码(modifyPassword)](#5-修改密码)
 ##### 6. [意见反馈(submitFeedback)](#6-意见反馈)
 ##### 7. [上传文件(uploadFile)](#7-上传文件)
-## 应用api
+## 任务api
 ##### 8. [获取用户列表(getClientList)](#8-获取用户列表)
 ##### 9. [获取任务类型列表(getTaskTypeList)](#9-获取任务类型列表)
 ##### 10. [创建单一任务(leaderCreateTask)](#10-创建单一任务)
@@ -28,26 +28,29 @@
 ##### 25. [申请完成任务(applyFinishTask)](#25-申请完成任务)
 ##### 26. [同意完成任务的申请(agreeFinishTask)](#26-同意完成任务的申请)
 ##### 27. [打回完成发布任务(rejectFinishTask)](#27-打回完成发布任务)
-##### 28. [创建日程(createSchedule)](#28-创建日程)
-##### 29. [完成日程(finishSchedule)](#29-完成日程)
-##### 30. [修改日程(modifySchedule)](#30-修改日程)
-##### 31. [删除日程(removeSchedule)](#31-删除日程)
-##### 32. [获取日程列表(getScheduleList)](#32-获取日程列表)
-##### 33. [提醒任务(remindTask)](#33-提醒任务)
-##### 34. [更新任务进度(updateTaskProgress)](#34-更新任务进度)
-##### 35. [获取进度列表(getTaskProgressList)](#35-获取进度列表)
+##### 28. [获取统计数据(getStatics)](#28-获取统计数据)
+## 日程api
+##### 29. [创建日程(createSchedule)](#29-创建日程)
+##### 30. [完成日程(finishSchedule)](#30-完成日程)
+##### 31. [修改日程(modifySchedule)](#31-修改日程)
+##### 32. [删除日程(removeSchedule)](#32-删除日程)
+##### 33. [获取日程列表(getScheduleList)](#33-获取日程列表)
+## 提醒api
+##### 34. [提醒任务(remindTask)](#34-提醒任务)
+##### 35. [更新任务进度(updateTaskProgress)](#35-更新任务进度)
+##### 36. [获取进度列表(getTaskProgressList)](#36-获取进度列表)
 ## 通知
-##### 36. [综合部创建群组任务的通知(NEW_PUBLISH_TASK_NF)](#36-综合部创建群组任务的通知)
-##### 37. [领导同意申请发布任务的通知和领导发布单任务的通知(AGREE_PUBLISH_TASK_NF)](#37-领导同意申请发布任务的通知和领导发布单任务的通知)
-##### 38. [领导拒绝申请发布任务通知(REJECT_PUBLISH_TASK_NF)](#38-领导拒绝申请发布任务通知)
-##### 39. [申请完成任务的通知(APPLY_FINISH_TASK_NF)](#39-申请完成任务的通知)
-##### 40. [同意完成任务的通知(AGREE_FINISH_TASK_NF)](#40-同意完成任务的通知)
-##### 41. [拒绝完成任务的通知(REJECT_FINISH_TASK_NF)](#41-拒绝完成任务的通知)
-##### 42. [定时任务通知(REMIND_TASK_NF)](#42-定时任务通知)
+##### 37. [综合部创建群组任务的通知(NEW_PUBLISH_TASK_NF)](#37-综合部创建群组任务的通知)
+##### 38. [领导同意申请发布任务的通知和领导发布单任务的通知(AGREE_PUBLISH_TASK_NF)](#38-领导同意申请发布任务的通知和领导发布单任务的通知)
+##### 39. [领导拒绝申请发布任务通知(REJECT_PUBLISH_TASK_NF)](#39-领导拒绝申请发布任务通知)
+##### 40. [申请完成任务的通知(APPLY_FINISH_TASK_NF)](#40-申请完成任务的通知)
+##### 41. [同意完成任务的通知(AGREE_FINISH_TASK_NF)](#41-同意完成任务的通知)
+##### 42. [拒绝完成任务的通知(REJECT_FINISH_TASK_NF)](#42-拒绝完成任务的通知)
+##### 43. [定时任务通知(REMIND_TASK_NF)](#43-定时任务通知)
 ## 协议文档
-##### 43. [用户协议(user)](#43-用户协议)
-##### 44. [获取软件许可协议(software)](#44-获取软件许可协议)
-##### 45. [关于(about)](#45-关于)
+##### 44. [用户协议(user)](#44-用户协议)
+##### 45. [获取软件许可协议(software)](#45-获取软件许可协议)
+##### 46. [关于(about)](#46-关于)
 
 ---
 
@@ -226,7 +229,7 @@ uploadErrorCallback () {
 
 ---
 
-## 应用api
+## 任务api
 
 ---
 
@@ -808,7 +811,47 @@ uploadErrorCallback () {
 
 ---
 
-### 28. [创建日程](#28-创建日程createschedule)
+### 28. [获取统计数据](#28-获取统计数据getstatics)
+- `getStatics`
+- 请求方式：`POST`
+
+| 参数名称 | 参数类型  | 描述 |
+| :- |:-:| :-:|
+| userId | ID | 用户Id |
+
+```js
+{
+    "success": true,
+    "context": {
+        "mywork": {
+            "finish": 0,
+            "unfinish": 4
+        },
+        "publishTask": {
+            "month": [ 5, 5, 5 ],
+            "quarter": [ 0, 0, 0 ],
+            "year": [ 0, 0, 0 ]
+        },
+        "finishTask": {
+            "month": { "finish": 0, "unfinish": 0 },
+            "quarter": { "finish": 0, "unfinish": 0 },
+            "year": { "finish": 0, "unfinish": 0 }
+        },
+        "finishDetail": [
+            { "finish": 0, "unfinish": 4, "name": "fang" },
+            { "finish": 1, "unfinish": 0, "name": "方运江" }
+        ]
+    }
+}
+```
+
+---
+
+## 日程api
+
+---
+
+### 29. [创建日程](#29-创建日程createschedule)
 - `createSchedule`
 - 请求方式：`POST`
 
@@ -825,7 +868,7 @@ uploadErrorCallback () {
 
 ---
 
-### 29. [完成日程](#29-完成日程finishschedule)
+### 30. [完成日程](#30-完成日程finishschedule)
 - `finishSchedule`
 - 请求方式：`POST`
 
@@ -842,7 +885,7 @@ uploadErrorCallback () {
 
 ---
 
-### 30. [修改日程](#30-修改日程modifyschedule)
+### 31. [修改日程](#31-修改日程modifyschedule)
 - `modifySchedule`
 - 请求方式：`POST`
 
@@ -860,7 +903,7 @@ uploadErrorCallback () {
 
 ---
 
-### 31. [删除日程](#31-删除日程removeschedule)
+### 32. [删除日程](#32-删除日程removeschedule)
 - `removeSchedule`
 - 请求方式：`POST`
 
@@ -877,7 +920,7 @@ uploadErrorCallback () {
 
 ---
 
-### 32. [获取日程列表](#32-获取日程列表getschedulelist)
+### 33. [获取日程列表](#33-获取日程列表getschedulelist)
 - `getScheduleList`
 - 请求方式：`POST`
 
@@ -900,10 +943,13 @@ uploadErrorCallback () {
     }
 }
 ```
+---
+
+## 提醒api
 
 ---
 
-### 33. [提醒任务](#33-提醒任务remindtask)
+### 34. [提醒任务](#34-提醒任务remindtask)
 - `remindTask`
 - 请求方式：`POST`
 
@@ -920,7 +966,7 @@ uploadErrorCallback () {
 
 ---
 
-### 34. [更新任务进度](#34-更新任务进度updatetaskprogress)
+### 35. [更新任务进度](#35-更新任务进度updatetaskprogress)
 - `updateTaskProgress`
 - 请求方式：`POST`
 
@@ -938,7 +984,7 @@ uploadErrorCallback () {
 
 ---
 
-### 35. [获取进度列表](#35-获取进度列表gettaskprogresslist)
+### 36. [获取进度列表](#36-获取进度列表gettaskprogresslist)
 - `getTaskProgressList`
 - 请求方式：`POST`
 
@@ -975,7 +1021,7 @@ uploadErrorCallback () {
 
 ---
 
-### 36. [综合部创建群组任务的通知](#36-综合部创建群组任务的通知new_publish_task_nf)
+### 37. [综合部创建群组任务的通知](#37-综合部创建群组任务的通知new_publish_task_nf)
 - `NEW_PUBLISH_TASK_NF`
 - 接收方式：`Socket.io`
 - 接收方：待审核任务的人(examinerId)
@@ -1019,7 +1065,7 @@ uploadErrorCallback () {
 ```
 ---
 
-### 37. [领导同意申请发布任务的通知和领导发布单任务的通知](#37-领导同意申请发布任务的通知和领导发布单任务的通知agree_publish_task_nf)
+### 38. [领导同意申请发布任务的通知和领导发布单任务的通知](#38-领导同意申请发布任务的通知和领导发布单任务的通知agree_publish_task_nf)
 - `AGREE_PUBLISH_TASK_NF`
 - 接收方式：`Socket.io`
 - 接收方：待审核任务的人(examinerId)
@@ -1028,7 +1074,7 @@ uploadErrorCallback () {
 
 ---
 
-### 38. [领导拒绝申请发布任务通知](#38-领导拒绝申请发布任务通知reject_publish_task_nf)
+### 39. [领导拒绝申请发布任务通知](#39-领导拒绝申请发布任务通知reject_publish_task_nf)
 - `REJECT_PUBLISH_TASK_NF`
 - 接收方式：`Socket.io`
 - 接收方：申请发布任务的人(publisherId)
@@ -1036,7 +1082,7 @@ uploadErrorCallback () {
 
 ---
 
-### 39. [申请完成任务的通知](#39-申请完成任务的通知apply_finish_task_nf)
+### 40. [申请完成任务的通知](#40-申请完成任务的通知apply_finish_task_nf)
 - `APPLY_FINISH_TASK_NF`
 - 接收方式：`Socket.io`
 - 接收方：发布任务的人(publisherId)
@@ -1044,7 +1090,7 @@ uploadErrorCallback () {
 
 ---
 
-### 40. [同意完成任务的通知](#40-同意完成任务的通知agree_finish_task_nf)
+### 41. [同意完成任务的通知](#41-同意完成任务的通知agree_finish_task_nf)
 - `AGREE_FINISH_TASK_NF`
 - 接收方式：`Socket.io`
 - 接收方：申请完成任务的人
@@ -1052,7 +1098,7 @@ uploadErrorCallback () {
 
 ---
 
-### 41. [拒绝完成任务的通知](#41-拒绝完成任务的通知reject_finish_task_nf)
+### 42. [拒绝完成任务的通知](#42-拒绝完成任务的通知reject_finish_task_nf)
 - `REJECT_FINISH_TASK_NF`
 - 接收方式：`Socket.io`
 - 接收方：申请完成任务的人(executorId)
@@ -1060,7 +1106,7 @@ uploadErrorCallback () {
 
 ---
 
-### 42. [定时任务通知](#42-定时任务通知remind_task_nf)
+### 43. [定时任务通知](#43-定时任务通知remind_task_nf)
 - `REMIND_TASK_NF`
 - 接收方式：`Socket.io`
 - 接收方：和任务相关的人
@@ -1072,18 +1118,18 @@ uploadErrorCallback () {
 
 ---
 
-### 43. [用户协议](#43-用户协议user)
+### 44. [用户协议](#44-用户协议user)
 - `user`
 - url: `protocals/user.html`
 
 ---
 
-### 44. [获取软件许可协议](#44-获取软件许可协议software)
+### 45. [获取软件许可协议](#45-获取软件许可协议software)
 - `software`
 - url: `protocals/software.html`
 
 ---
 
-### 45. [关于](#45-关于about)
+### 46. [关于](#46-关于about)
 - `about`
 - url: `protocals/about.html`
