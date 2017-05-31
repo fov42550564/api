@@ -818,7 +818,7 @@ uploadErrorCallback () {
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
 | userId | ID | 用户Id |
-| typeList | Array | [任务类型List](#8-获取任务类型列表) |
+| typeList | Array | [任务类型List](#9-获取任务类型列表) |
 
 ```js
 {
