@@ -438,7 +438,7 @@ uploadErrorCallback () {
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
 | userId | ID | 用户Id |
-| type | Number | [类型](#8-获取任务类型列表) |
+| type | Number | [类型](#9-获取任务类型列表) |
 | keyword | String | 搜索关键字 |
 | pageNo | Number | 页号 |
 | pageSize | Number | 每页数量 |
@@ -818,6 +818,7 @@ uploadErrorCallback () {
 | 参数名称 | 参数类型  | 描述 |
 | :- |:-:| :-:|
 | userId | ID | 用户Id |
+| typeList | Array | [任务类型List](#8-获取任务类型列表) |
 
 ```js
 {
