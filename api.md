@@ -1936,113 +1936,6 @@ export WarehouseModel from './WarehouseModel';
 
 ```
 
-* PDShopServer/project/App/routers/index.js
-
-```js
-import { Router } from 'express';
-import posts from './posts';
-import gets from './gets';
-import _ from 'lodash';
-import { timeout, apiRoot } from '../../config';
-
-const router = new Router();
-const LOG_FILTERS = [
-    'getRegionAddress',
-    'getRegionAddressFromLastCode',
-    'getSendDoorRegionAddressFromLastCode',
-    'getStartPointAddress',
-    'getStartPoint',
-    'getRegionAddressWithOrder',
-    'getRegionAddressWithRegion',
-];
-
-async function DEBUG (func, ...params) {
-    try {
-        return await func(...params);
-    } catch (e) {
-        console.log(e);
-    }
-}
-
-function registerPostRouter (root, posts) {
-    _.map(posts, (func, api) => {
-        const url = root + '/' + api;
-        if (typeof func === 'object') {
-            registerPostRouter(url, func);
-        } else {
-            // console.log('register:', url);
-            router.post(url, async (req, res) => {
-                if (process.env.NODE_ENV === 'production') {
-                    console.log(url + ' recv:', req.body, req.file || '');
-                    let result = await func(req.body, req);
-                    _.includes(LOG_FILTERS, api) || console.log(url + ' send:', JSON.stringify(result, null, 2));
-                    if (!result || typeof result === 'number') {
-                        res.sendStatus(result || 500);
-                    } else {
-                        res.send(result);
-                    }
-                } else {
-                    console.log(url + ' recv:', req.body, req.file || '');
-                    let result = await DEBUG(func, req.body, req);
-                    _.includes(LOG_FILTERS, api) || console.log(url + ' send:', JSON.stringify(result, null, 2));
-                    setTimeout(() => {
-                        if (!result || typeof result === 'number') {
-                            res.sendStatus(result || 500);
-                        } else {
-                            res.send(result);
-                        }
-                    }, timeout);
-                }
-            });
-        }
-    });
-}
-
-function registerGetRouter (root, gets) {
-    _.map(gets, (func, api) => {
-        const url = root + '/' + api;
-        if (typeof func === 'object') {
-            registerGetRouter(url, func);
-        } else {
-            // console.log('register:', url);
-            router.get(url, async (req, res) => {
-                if (process.env.NODE_ENV === 'production') {
-                    console.log(url + ' recv:', req.query);
-                    let result = await func(req.query, req);
-                    _.includes(LOG_FILTERS, api) || console.log(url + ' send:', result.readable ? 'image' : result);
-                    if (!result || typeof result === 'number') {
-                        res.sendStatus(result || 500);
-                    } else if (result.readable) {
-                        result.pipe(res);
-                    } else {
-                        res.send(result);
-                    }
-                } else {
-                    console.log(url + ' recv:', req.query);
-                    let result = await DEBUG(func, req.query, req);
-                    _.includes(LOG_FILTERS, api) || console.log(url + ' send:', result.readable ? 'image' : result);
-                    setTimeout(() => {
-                        if (!result || typeof result === 'number') {
-                            res.sendStatus(result || 500);
-                        } else if (result.readable) {
-                            result.pipe(res);
-                        } else {
-                            res.send(result);
-                        }
-                    }, timeout);
-                }
-            });
-        }
-    });
-}
-
-registerPostRouter(apiRoot, posts);
-registerGetRouter(apiRoot, gets);
-
-export default router;
-
-```
-
 * PDShopServer/project/App/mysql/AccountModel.js
 
 ```js
@@ -2205,6 +2098,113 @@ import Sequelize from 'sequelize';
 import config from '../../config';
 
 export default new Sequelize(config.mysql.database, config.mysql.username, config.mysql.password, config.mysql);
+
+```
+
+* PDShopServer/project/App/routers/index.js
+
+```js
+import { Router } from 'express';
+import posts from './posts';
+import gets from './gets';
+import _ from 'lodash';
+import { timeout, apiRoot } from '../../config';
+
+const router = new Router();
+const LOG_FILTERS = [
+    'getRegionAddress',
+    'getRegionAddressFromLastCode',
+    'getSendDoorRegionAddressFromLastCode',
+    'getStartPointAddress',
+    'getStartPoint',
+    'getRegionAddressWithOrder',
+    'getRegionAddressWithRegion',
+];
+
+async function DEBUG (func, ...params) {
+    try {
+        return await func(...params);
+    } catch (e) {
+        console.log(e);
+    }
+}
+
+function registerPostRouter (root, posts) {
+    _.map(posts, (func, api) => {
+        const url = root + '/' + api;
+        if (typeof func === 'object') {
+            registerPostRouter(url, func);
+        } else {
+            // console.log('register:', url);
+            router.post(url, async (req, res) => {
+                if (process.env.NODE_ENV === 'production') {
+                    console.log(url + ' recv:', req.body, req.file || '');
+                    let result = await func(req.body, req);
+                    _.includes(LOG_FILTERS, api) || console.log(url + ' send:', JSON.stringify(result, null, 2));
+                    if (!result || typeof result === 'number') {
+                        res.sendStatus(result || 500);
+                    } else {
+                        res.send(result);
+                    }
+                } else {
+                    console.log(url + ' recv:', req.body, req.file || '');
+                    let result = await DEBUG(func, req.body, req);
+                    _.includes(LOG_FILTERS, api) || console.log(url + ' send:', JSON.stringify(result, null, 2));
+                    setTimeout(() => {
+                        if (!result || typeof result === 'number') {
+                            res.sendStatus(result || 500);
+                        } else {
+                            res.send(result);
+                        }
+                    }, timeout);
+                }
+            });
+        }
+    });
+}
+
+function registerGetRouter (root, gets) {
+    _.map(gets, (func, api) => {
+        const url = root + '/' + api;
+        if (typeof func === 'object') {
+            registerGetRouter(url, func);
+        } else {
+            // console.log('register:', url);
+            router.get(url, async (req, res) => {
+                if (process.env.NODE_ENV === 'production') {
+                    console.log(url + ' recv:', req.query);
+                    let result = await func(req.query, req);
+                    _.includes(LOG_FILTERS, api) || console.log(url + ' send:', result.readable ? 'image' : result);
+                    if (!result || typeof result === 'number') {
+                        res.sendStatus(result || 500);
+                    } else if (result.readable) {
+                        result.pipe(res);
+                    } else {
+                        res.send(result);
+                    }
+                } else {
+                    console.log(url + ' recv:', req.query);
+                    let result = await DEBUG(func, req.query, req);
+                    _.includes(LOG_FILTERS, api) || console.log(url + ' send:', result.readable ? 'image' : result);
+                    setTimeout(() => {
+                        if (!result || typeof result === 'number') {
+                            res.sendStatus(result || 500);
+                        } else if (result.readable) {
+                            result.pipe(res);
+                        } else {
+                            res.send(result);
+                        }
+                    }, timeout);
+                }
+            });
+        }
+    });
+}
+
+registerPostRouter(apiRoot, posts);
+registerGetRouter(apiRoot, gets);
+
+export default router;
 
 ```
 
@@ -2684,6 +2684,30 @@ export audio from './audio';
 
 ```
 
+* PDShopServer/project/App/routers/gets/test/getVerifyCode.js
+
+```js
+import { VerifyCodeModel } from '../../../models';
+
+export default async ({
+    phone,
+}) => {
+    let doc = await VerifyCodeModel.findOne({ phone });
+    if (!doc) {
+        return { msg: '没有验证码' };
+    }
+    return { code: (doc.codeList[0] || {}).code };
+};
+
+```
+
+* PDShopServer/project/App/routers/gets/test/index.js
+
+```js
+export getVerifyCode from './getVerifyCode';
+
+```
+
 * PDShopServer/project/App/routers/posts/admin/index.js
 
 ```js
@@ -2716,30 +2740,6 @@ export modifyClientAuthority from './authority/modifyClientAuthority'; // 修改
 
 // test
 export test from './test/test'; // 测试接口
-
-```
-
-* PDShopServer/project/App/routers/gets/test/getVerifyCode.js
-
-```js
-import { VerifyCodeModel } from '../../../models';
-
-export default async ({
-    phone,
-}) => {
-    let doc = await VerifyCodeModel.findOne({ phone });
-    if (!doc) {
-        return { msg: '没有验证码' };
-    }
-    return { code: (doc.codeList[0] || {}).code };
-};
-
-```
-
-* PDShopServer/project/App/routers/gets/test/index.js
-
-```js
-export getVerifyCode from './getVerifyCode';
 
 ```
 
@@ -2848,6 +2848,27 @@ export getClientList from './client/getClientList'; // 获取客户列表
 
 ```
 
+* PDShopServer/project/App/routers/posts/driver/index.js
+
+```js
+// personal
+export register from './personal/register'; // 注册
+export login from './personal/login'; // 登录
+export findPassword from './personal/findPassword'; // 找回密码
+export modifyPassword from './personal/modifyPassword'; // 修改密码
+export getPersonalInfo from './personal/getPersonalInfo'; // 获取个人信息
+export modifyPersonalInfo from './personal/modifyPersonalInfo'; // 修改个人信息
+export getUserNameByPhone from './personal/getUserNameByPhone'; // 通过电话号码获取用户名
+export submitFeedback from './personal/submitFeedback'; // 提交反馈意见
+
+// truck
+export getOnWayTruck from './truck/getOnWayTruck'; // 获取当前车辆
+export getLocationList from './truck/getLocationList'; // 获取当前车辆的位置列表
+export uploadLocation from './truck/uploadLocation'; // 上传位置
+export confirmReach from './truck/confirmReach'; // 确认到达
+
+```
+
 * PDShopServer/project/App/routers/posts/common/index.js
 
 ```js
@@ -2873,27 +2894,6 @@ export requestSendVerifyCode from './verifyCode/requestSendVerifyCode'; // 请�
 
 // weixinPay
 export weixinNotifyCallBack from '../libs/weixinPay/notifyCallBack'; // 微信支付通知回调
-
-```
-
-* PDShopServer/project/App/routers/posts/driver/index.js
-
-```js
-// personal
-export register from './personal/register'; // 注册
-export login from './personal/login'; // 登录
-export findPassword from './personal/findPassword'; // 找回密码
-export modifyPassword from './personal/modifyPassword'; // 修改密码
-export getPersonalInfo from './personal/getPersonalInfo'; // 获取个人信息
-export modifyPersonalInfo from './personal/modifyPersonalInfo'; // 修改个人信息
-export getUserNameByPhone from './personal/getUserNameByPhone'; // 通过电话号码获取用户名
-export submitFeedback from './personal/submitFeedback'; // 提交反馈意见
-
-// truck
-export getOnWayTruck from './truck/getOnWayTruck'; // 获取当前车辆
-export getLocationList from './truck/getLocationList'; // 获取当前车辆的位置列表
-export uploadLocation from './truck/uploadLocation'; // 上传位置
-export confirmReach from './truck/confirmReach'; // 确认到达
 
 ```
 
@@ -3405,123 +3405,6 @@ export default async ({
 
 ```
 
-* PDShopServer/project/App/routers/posts/admin/personal/findPassword.js
-
-```js
-import { AdminModel } from '../../../../models';
-import { setPassword, genRandomPassword, sendFindPasswordMail } from '../../../../utils';
-
-export default async ({ phone, email }) => {
-    const user = await AdminModel.findOne({ phone });
-    if (!user) {
-        return { msg: '该电话号码没有注册' };
-    }
-    if (user.email !== email) {
-        return { msg: '邮箱和注册的时候的邮箱不一致' };
-    }
-    let newPassword = genRandomPassword();
-    let ret = await sendFindPasswordMail(email, newPassword);
-    if (!ret) {
-        return { msg: '发送邮件失败' };
-    }
-    const error = await setPassword(user, newPassword);
-    if (error) {
-        return { msg: '服务器错误' };
-    }
-    await user.save();
-    return { success: true };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/admin/personal/login.js
-
-```js
-import { AdminModel } from '../../../../models';
-import { authenticatePassword } from '../../../../utils';
-
-export default async ({ phone, password }) => {
-    const user = await AdminModel.findOne({ phone });
-    if (!user) {
-        return { msg: '该电话号码没有注册' };
-    }
-    const error = await authenticatePassword(user, password);
-    if (error) {
-        return { msg: '密码错误' };
-    } else {
-        return { success: true, context: { userId: user.id } };
-    }
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/admin/personal/modifyPassword.js
-
-```js
-import { AdminModel } from '../../../../models';
-import { setPassword, authenticatePassword } from '../../../../utils';
-
-export default async ({ userId, oldPassword, newPassword }) => {
-    const user = await AdminModel.findById(userId);
-    if (!user) {
-        return { msg: '该电话号码没有注册' };
-    }
-    let error = await authenticatePassword(user, oldPassword);
-    if (error) {
-        return { msg: '密码错误' };
-    }
-    error = await setPassword(user, newPassword);
-    if (error) {
-        return { msg: '设置密码失败' };
-    }
-    await user.save();
-    return { success: true };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/admin/personal/register.js
-
-```js
-import { AdminModel } from '../../../../models';
-import { registerUser } from '../../../../utils';
-
-export default async ({ phone, password, email }) => {
-    const user = new AdminModel({
-        phone,
-        email,
-    });
-    const error = await registerUser(AdminModel, user, password);
-    if (!error) {
-        return { success: true };
-    } else if (error === 'UserExistsError') {
-        return { msg: '该账号已经被占用' };
-    } else {
-        return { msg: '注册失败' };
-    }
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/admin/personal/removeUnusedMedia.js
-
-```js
-import mongoose from 'mongoose';
-import { MediaModel } from '../../../../models';
-
-export default async ({
-    userId,
-}) => {
-    const docs = await MediaModel.find({ ref: 0 });
-    docs.forEach(doc => {
-        mongoose.gfs.remove({ _id: doc.gridId });
-        doc.remove();
-    });
-    return { success: true };
-};
-
-```
-
 * PDShopServer/project/App/routers/posts/admin/feedback/acceptDeelFeedback.js
 
 ```js
@@ -3743,6 +3626,123 @@ export default async ({
 
 ```
 
+* PDShopServer/project/App/routers/posts/admin/personal/findPassword.js
+
+```js
+import { AdminModel } from '../../../../models';
+import { setPassword, genRandomPassword, sendFindPasswordMail } from '../../../../utils';
+
+export default async ({ phone, email }) => {
+    const user = await AdminModel.findOne({ phone });
+    if (!user) {
+        return { msg: '该电话号码没有注册' };
+    }
+    if (user.email !== email) {
+        return { msg: '邮箱和注册的时候的邮箱不一致' };
+    }
+    let newPassword = genRandomPassword();
+    let ret = await sendFindPasswordMail(email, newPassword);
+    if (!ret) {
+        return { msg: '发送邮件失败' };
+    }
+    const error = await setPassword(user, newPassword);
+    if (error) {
+        return { msg: '服务器错误' };
+    }
+    await user.save();
+    return { success: true };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/admin/personal/login.js
+
+```js
+import { AdminModel } from '../../../../models';
+import { authenticatePassword } from '../../../../utils';
+
+export default async ({ phone, password }) => {
+    const user = await AdminModel.findOne({ phone });
+    if (!user) {
+        return { msg: '该电话号码没有注册' };
+    }
+    const error = await authenticatePassword(user, password);
+    if (error) {
+        return { msg: '密码错误' };
+    } else {
+        return { success: true, context: { userId: user.id } };
+    }
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/admin/personal/modifyPassword.js
+
+```js
+import { AdminModel } from '../../../../models';
+import { setPassword, authenticatePassword } from '../../../../utils';
+
+export default async ({ userId, oldPassword, newPassword }) => {
+    const user = await AdminModel.findById(userId);
+    if (!user) {
+        return { msg: '该电话号码没有注册' };
+    }
+    let error = await authenticatePassword(user, oldPassword);
+    if (error) {
+        return { msg: '密码错误' };
+    }
+    error = await setPassword(user, newPassword);
+    if (error) {
+        return { msg: '设置密码失败' };
+    }
+    await user.save();
+    return { success: true };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/admin/personal/register.js
+
+```js
+import { AdminModel } from '../../../../models';
+import { registerUser } from '../../../../utils';
+
+export default async ({ phone, password, email }) => {
+    const user = new AdminModel({
+        phone,
+        email,
+    });
+    const error = await registerUser(AdminModel, user, password);
+    if (!error) {
+        return { success: true };
+    } else if (error === 'UserExistsError') {
+        return { msg: '该账号已经被占用' };
+    } else {
+        return { msg: '注册失败' };
+    }
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/admin/personal/removeUnusedMedia.js
+
+```js
+import mongoose from 'mongoose';
+import { MediaModel } from '../../../../models';
+
+export default async ({
+    userId,
+}) => {
+    const docs = await MediaModel.find({ ref: 0 });
+    docs.forEach(doc => {
+        mongoose.gfs.remove({ _id: doc.gridId });
+        doc.remove();
+    });
+    return { success: true };
+};
+
+```
+
 * PDShopServer/project/App/routers/posts/admin/test/test.js
 
 ```js
@@ -3951,6 +3951,68 @@ export default async ({
     const context = client.toObject();
     context.authority = authority || [];
     return { success: true, context };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/agent/referShop/getReferShopList.js
+
+```js
+import { ShopModel } from '../../../../models';
+
+export default async ({ userId }) => {
+    const query = ShopModel.find({ isMasterShop: false }).sort({ createTime: 'desc' });
+    const docs = await query
+    .select({
+        name: 1,
+        addressRegion: 1,
+        addressRegionLastCode: 1,
+        address: 1,
+        location: 1,
+        profitRate: 1,
+        phoneList: 1,
+        chairManId: 1,
+    })
+    .populate({
+        path: 'chairManId',
+        select: { name: 1, phone: 1 },
+    });
+
+    return { success: true, context: {
+        branchShopList: docs,
+    } };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/agent/referShop/setReferShop.js
+
+```js
+import { ClientModel, AgentModel, AgentRegionProfitModel } from '../../../../models';
+import { hasAuthority, actionLog } from '../../../../utils';
+import CONSTANTS from '../../../../constants';
+
+export default async ({
+    userId,
+    shopId,
+}) => {
+    const member = await ClientModel.findById(userId);
+    if (!hasAuthority(member, CONSTANTS.AH_MODIFY_AGENT_INFO)) {
+        return { msg: '你没有修改指定收货点信息的权限' };
+    }
+    const doc = await AgentModel.findByIdAndUpdate(member.agentId, { referShopId: shopId });
+    if (!doc) {
+        return { msg: '修改失败' };
+    }
+
+    let agentRegion = await AgentRegionProfitModel.findOne({ agentId: member.agentId, shopId, regionLastCode: 0 });
+    if (!agentRegion) {
+        agentRegion = new AgentRegionProfitModel({ agentId: member.agentId, shopId, profitRate: 0.2, level: 1 });
+        await agentRegion.save();
+    }
+
+    actionLog(userId, 'Client', shopId, 'Shop', 'setReferShop');
+    return { success: true };
 };
 
 ```
@@ -4714,68 +4776,6 @@ export default async ({
     }
 
     actionLog(userId, 'Client', orderId, 'Order', 'removeOrder');
-    return { success: true };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/agent/referShop/getReferShopList.js
-
-```js
-import { ShopModel } from '../../../../models';
-
-export default async ({ userId }) => {
-    const query = ShopModel.find({ isMasterShop: false }).sort({ createTime: 'desc' });
-    const docs = await query
-    .select({
-        name: 1,
-        addressRegion: 1,
-        addressRegionLastCode: 1,
-        address: 1,
-        location: 1,
-        profitRate: 1,
-        phoneList: 1,
-        chairManId: 1,
-    })
-    .populate({
-        path: 'chairManId',
-        select: { name: 1, phone: 1 },
-    });
-
-    return { success: true, context: {
-        branchShopList: docs,
-    } };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/agent/referShop/setReferShop.js
-
-```js
-import { ClientModel, AgentModel, AgentRegionProfitModel } from '../../../../models';
-import { hasAuthority, actionLog } from '../../../../utils';
-import CONSTANTS from '../../../../constants';
-
-export default async ({
-    userId,
-    shopId,
-}) => {
-    const member = await ClientModel.findById(userId);
-    if (!hasAuthority(member, CONSTANTS.AH_MODIFY_AGENT_INFO)) {
-        return { msg: '你没有修改指定收货点信息的权限' };
-    }
-    const doc = await AgentModel.findByIdAndUpdate(member.agentId, { referShopId: shopId });
-    if (!doc) {
-        return { msg: '修改失败' };
-    }
-
-    let agentRegion = await AgentRegionProfitModel.findOne({ agentId: member.agentId, shopId, regionLastCode: 0 });
-    if (!agentRegion) {
-        agentRegion = new AgentRegionProfitModel({ agentId: member.agentId, shopId, profitRate: 0.2, level: 1 });
-        await agentRegion.save();
-    }
-
-    actionLog(userId, 'Client', shopId, 'Shop', 'setReferShop');
     return { success: true };
 };
 
@@ -7110,600 +7110,6 @@ export default async ({ userId, content, email }) => {
 
 ```
 
-* PDShopServer/project/App/routers/posts/client/preOrder/createPreOrderGroup.js
-
-```js
-import { OrderModel, OrderGroupModel } from '../../../../models';
-import { actionLog } from '../../../../utils';
-
-export default async ({
-    userId,
-    startPoint,
-    startPointLastCode,
-    shopId,
-    agentId,
-    groupName, // 如果是合并，groupName应该为第一个group的名字，这里由客户端判断
-    orderGroupIdList = [], // 批次列表
-    orderIdList = [], // 货单列表
-}) => {
-    let senderId, firstGroup, totalNumbers = 0, totalWeight = 0, totalSize = 0, orderCount = 0;
-
-    if (orderIdList.length) {
-        const orderList = await OrderModel.find({ _id: { $in: orderIdList } });
-        for (const order of orderList) {
-            !senderId && (senderId = order.senderId);
-            totalNumbers += order.totalNumbers;
-            totalWeight += order.weight;
-            totalSize += order.size;
-            orderCount++;
-        }
-    }
-    if (orderGroupIdList.length) {
-        const orderGroupList = await OrderGroupModel.find({ _id: { $in: orderGroupIdList } });
-        for (const group of orderGroupList) {
-            if (!firstGroup) {
-                firstGroup = group;
-                !senderId && (senderId = group.senderId);
-            } else {
-                await group.remove();
-            }
-            orderIdList = orderIdList.concat(group.orderIdList);
-            totalNumbers += group.totalNumbers;
-            totalWeight += group.totalNumbers;
-            totalSize += group.totalSize;
-            orderCount += group.orderCount;
-        }
-    }
-
-    if (!firstGroup) {
-        firstGroup = new OrderGroupModel({ name: groupName, senderId });
-    } else {
-        firstGroup.name = groupName;
-        firstGroup.modifyTime = Date.now();
-    }
-    firstGroup.startPoint = startPoint;
-    firstGroup.startPointLastCode = startPointLastCode;
-    firstGroup.shopId = shopId;
-    firstGroup.agentId = agentId;
-    firstGroup.totalNumbers = totalNumbers;
-    firstGroup.totalWeight = totalWeight;
-    firstGroup.totalSize = totalSize;
-    firstGroup.orderCount = orderCount;
-    firstGroup.orderIdList = orderIdList;
-
-    await firstGroup.save();
-    await OrderModel.update({ _id: { $in: orderIdList } }, { groupId: firstGroup.id }, { multi: true });
-
-    actionLog(userId, 'Client', firstGroup.id, 'OrderGroup', 'createPreOrderGroup');
-
-    return { success: true };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/client/preOrder/getPreOrderGroupList.js
-
-```js
-import { OrderGroupModel, ClientModel } from '../../../../models';
-
-export default async ({ userId, fromPC, pageNo, pageSize }) => {
-    const sender = await ClientModel.findById(userId)
-    .populate({
-        path: 'shipperId',
-        select: { chairManId: 1 },
-        populate: [{
-            path: 'chairManId',
-            select: { phone: 1 },
-        }],
-    })
-    .populate({
-        path: 'agentId',
-        select: { chairManId: 1 },
-        populate: [{
-            path: 'chairManId',
-            select: { phone: 1 },
-        }],
-    });
-    if (!sender) {
-        return { msg: '没有该用户' };
-    }
-    const senderId = sender.shipper ? sender.shipper.chairMan.id : sender.agent ? sender.agent.chairMan.id : userId; // 物流公司的人员预下单以物流公司的董事长为发货人
-    const orderGroupList = await OrderGroupModel.find({ senderId }).sort({ createTime: 'desc' }).skip(pageNo * pageSize).limit(pageSize)
-    .select({
-        name: 1,
-        totalNumbers: 1,
-        totalWeight: 1,
-        totalSize: 1,
-        orderCount: 1,
-        shopId: 1,
-        agentId: 1,
-        startPoint: 1,
-        startPointLastCode: 1,
-    })
-    .populate({
-        path: 'shopId',
-        select: { name: 1 },
-    })
-    .populate({
-        path: 'agentId',
-        select: { name: 1 },
-    });
-
-    return { success: true, context: {
-        orderGroupList,
-    } };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/client/preOrder/getPreOrderList.js
-
-```js
-import { OrderModel, ClientModel } from '../../../../models';
-import CONSTANTS from '../../../../constants';
-
-export default async ({ userId, fromPC, pageNo, pageSize }) => {
-    const sender = await ClientModel.findById(userId)
-    .populate({
-        path: 'shipperId',
-        select: { chairManId: 1 },
-    });
-    if (!sender) {
-        return { msg: '没有该用户' };
-    }
-    const senderId = sender.shipperId ? sender.shipper.chairManId : userId; // 物流公司的人员预下单以物流公司的董事长为发货人
-    const criteria = { senderId, 'stateList.state': CONSTANTS.OS_PREORDER, groupId: { $exists: false } };
-    const count = (fromPC && pageNo === 0) ? await OrderModel.count(criteria) : undefined;
-    const query = OrderModel.find(criteria).sort({ createTime: 'desc' }).skip(pageNo * pageSize).limit(pageSize);
-    const docs = await query
-    .select({
-        senderPhone: 1,
-        senderName: 1,
-        receiverPhone: 1,
-        receiverName: 1,
-        name: 1,
-        isCityDistribute: 1,
-        endPoint: 1,
-        endPointLastCode: 1,
-        sendDoorEndPoint: 1,
-        sendDoorEndPointLastCode: 1,
-        totalNumbers: 1,
-        weight: 1,
-        size: 1,
-        proxyCharge: 1,
-        isReachPay: 1,
-        totalDesignatedFee: 1,
-        isSendDoor: 1,
-        isInsuance: 1,
-        startPoint: 1,
-        startPointLastCode: 1,
-        shopId: 1,
-        agentId: 1,
-        photo: 1,
-    })
-    .populate({
-        path: 'shopId',
-        select: { name: 1 },
-    })
-    .populate({
-        path: 'agentId',
-        select: { name: 1 },
-    });
-
-    return { success: true, context: {
-        count,
-        orderList: docs,
-    } };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/client/preOrder/getPreOrderListInGroup.js
-
-```js
-import { OrderGroupModel } from '../../../../models';
-
-export default async ({ userId, orderGroupId }) => {
-    const group = await OrderGroupModel.findById(orderGroupId)
-    .populate({
-        path: 'orderIdList',
-        select: {
-            senderPhone: 1,
-            senderName: 1,
-            receiverPhone: 1,
-            receiverName: 1,
-            name: 1,
-            isCityDistribute: 1,
-            endPoint: 1,
-            endPointLastCode: 1,
-            sendDoorEndPoint: 1,
-            sendDoorEndPointLastCode: 1,
-            totalNumbers: 1,
-            weight: 1,
-            size: 1,
-            proxyCharge: 1,
-            isReachPay: 1,
-            totalDesignatedFee: 1,
-            isSendDoor: 1,
-            isInsuance: 1,
-            startPoint: 1,
-            startPointLastCode: 1,
-            shopId: 1,
-            agentId: 1,
-        },
-        populate: [{
-            path: 'shopId',
-            select: { name: 1 },
-        }, {
-            path: 'agentId',
-            select: { name: 1 },
-        }],
-    });
-    if (!group) {
-        return { msg: '没有该批次' };
-    }
-
-    return { success: true, context: {
-        orderList: group.orderIdList,
-    } };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/client/preOrder/modifyPreOrder.js
-
-```js
-import _ from 'lodash';
-import { OrderModel, OrderGroupModel, ClientModel, MediaModel } from '../../../../models';
-import { getMediaId, omitNil, actionLog } from '../../../../utils';
-import { setting } from '../../../../manager';
-import CONSTANTS from '../../../../constants';
-
-export default async ({
-    userId,
-    orderId,
-    orderGroupId,
-    senderName,
-    receiverPhone,
-    receiverName,
-    name,
-    shopId, // 指定的某家分店 (必传参数)
-    agentId, // 指定的某家收货点(必传参数)
-    startPoint, // 起点
-    startPointLastCode, // 起点 lastCode
-    isCityDistribute, // 是否是同城配送
-    endPoint, // 终点，精确到镇级别
-    endPointLastCode, // 终点镇级代码
-    sendDoorEndPoint,
-    sendDoorEndPointLastCode,
-    totalNumbers, // 一票货总的件数
-    weight, // 一票货总的重量
-    size, // 一票货总的方量
-    isSendDoor, // 是否送货上门
-    isReachPay, // 是否是到付 (如果是到付，并且设置了totalDesignatedFee，为指定向收货人收totalDesignatedFee的运费，否则向收货人收初始单计算出来的运费)
-    totalDesignatedFee, // 指定向收货人应该收多少钱
-    proxyCharge, // 代收货款金额
-    isInsuance, // 是否保价
-    photo, // 图片
-}) => {
-    let receiverId;
-    if (receiverPhone) {
-        receiverId = await ClientModel.checkExistElseCreate(receiverPhone, receiverName);
-        if (!receiverId) {
-            return { msg: '系统创建账号错误，请重试' };
-        }
-    }
-    const _startPoint = (shopId || agentId || startPointLastCode) ?
-    { shopId: undefined, agentId: undefined, startPoint, startPointLastCode, ...(shopId ? { shopId } : agentId ? { agentId } : {}) } :
-    {};
-
-    const _photo = getMediaId(photo);
-    const doc = await OrderModel.findOneAndUpdate({ _id: orderId, 'stateList.state': CONSTANTS.OS_PREORDER }, {
-        ..._startPoint,
-        ...omitNil({
-            senderName,
-            receiverId,
-            receiverPhone,
-            receiverName,
-            name,
-            isCityDistribute,
-            endPoint,
-            endPointLastCode,
-            sendDoorEndPoint,
-            sendDoorEndPointLastCode,
-            totalNumbers,
-            weight,
-            size,
-            isSendDoor,
-            proxyCharge,
-            proxyChargeProfit: proxyCharge !== undefined ? Math.ceil(proxyCharge * setting.proxyChargeProfitRate) : undefined,
-            isReachPay,
-            payMode: isReachPay !== undefined ? (isReachPay ? CONSTANTS.PM_REACH : CONSTANTS.PM_IMMEDIATE) : undefined,
-            totalDesignatedFee,
-            isInsuance,
-            photo: _photo,
-        }),
-    });
-    if (!doc) {
-        return { msg: '修改失败' };
-    }
-    if (orderGroupId) {
-        const options = _.omitBy({ totalNumbers: totalNumbers - doc.totalNumbers, weight: weight - doc.weight, size: size - doc.size }, o => !o);
-        if (_.size(options)) {
-            await OrderGroupModel.findByIdAndUpdate(orderGroupId, { $inc: options });
-        }
-    }
-
-    MediaModel._updateRef(
-        { [_photo]: 1 },
-        { [photo && doc.photo]: -1 },
-    );
-    actionLog(userId, 'Client', orderId, 'Order', 'modifyPreOrder');
-
-    const context = await OrderModel.findById(orderId)
-    .select({
-        senderPhone: 1,
-        senderName: 1,
-        receiverPhone: 1,
-        receiverName: 1,
-        name: 1,
-        isCityDistribute: 1,
-        endPoint: 1,
-        endPointLastCode: 1,
-        sendDoorEndPoint: 1,
-        sendDoorEndPointLastCode: 1,
-        totalNumbers: 1,
-        weight: 1,
-        size: 1,
-        proxyCharge: 1,
-        isReachPay: 1,
-        totalDesignatedFee: 1,
-        isSendDoor: 1,
-        isInsuance: 1,
-        startPoint: 1,
-        startPointLastCode: 1,
-        shopId: 1,
-        agentId: 1,
-    })
-    .populate({
-        path: 'shopId',
-        select: { name: 1 },
-    })
-    .populate({
-        path: 'agentId',
-        select: { name: 1 },
-    });
-
-    return { success: true, context };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/client/preOrder/modifyPreOrderGroup.js
-
-```js
-import { OrderGroupModel } from '../../../../models';
-import { omitNil, actionLog } from '../../../../utils';
-
-export default async ({
-    userId,
-    orderGroupId,
-    startPoint,
-    startPointLastCode,
-    shopId,
-    agentId,
-    groupName,
-}) => {
-    const _startPoint = (shopId || agentId || startPointLastCode) ?
-    { shopId: undefined, agentId: undefined, startPoint, startPointLastCode, ...(shopId ? { shopId } : agentId ? { agentId } : {}) } :
-    {};
-
-    const group = await OrderGroupModel.findByIdAndUpdate(orderGroupId, {
-        ..._startPoint,
-        ...omitNil({
-            name: groupName,
-        }),
-    });
-    if (!group) {
-        return { msg: '没有该货单批次' };
-    }
-    actionLog(userId, 'Client', orderGroupId, 'OrderGroup', 'modifyPreOrderGroup');
-
-    return { success: true };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/client/preOrder/placePreOrder.js
-
-```js
-import { OrderModel, ClientModel, MediaModel } from '../../../../models';
-import { actionLog, getMediaId } from '../../../../utils';
-import CONSTANTS from '../../../../constants';
-import { setting } from '../../../../manager';
-
-export default async ({
-    userId,
-    senderName,
-    receiverPhone,
-    receiverName,
-    name,
-    shopId, // 指定的某家分店
-    agentId, // 指定的某家收货点
-    startPoint, // 起点
-    startPointLastCode, // 起点 lastCode
-    isCityDistribute, // 是否是同城配送
-    endPoint, // 终点，精确到镇级别
-    endPointLastCode, // 终点镇级代码
-    sendDoorEndPoint, // 送货上门地址，精确到镇级别
-    sendDoorEndPointLastCode, // 送货上门地址镇级代码
-    totalNumbers, // 一票货总的件数
-    weight, // 一票货总的重量
-    size, // 一票货总的方量
-    isSendDoor, // 是否送货上门
-    isReachPay, // 是否是到付 (如果是到付，并且设置了totalDesignatedFee，为指定向收货人收totalDesignatedFee的运费，否则向收货人收初始单计算出来的运费)
-    totalDesignatedFee = 0, // 指定向收货人应该收多少钱
-    proxyCharge = 0, // 代收货款金额
-    isInsuance, // 是否保价
-    photo, // 图片
-}) => {
-    const receiverId = await ClientModel.checkExistElseCreate(receiverPhone, receiverName);
-    if (!receiverId) {
-        return { msg: '系统创建账号错误，请重试' };
-    }
-
-    const _photo = getMediaId(photo);
-    const sender = await ClientModel.findById(userId)
-    .populate({
-        path: 'shipperId',
-        select: { chairManId: 1 },
-        populate: [{
-            path: 'chairManId',
-            select: { phone: 1 },
-        }],
-    })
-    .populate({
-        path: 'agentId',
-        select: { chairManId: 1 },
-        populate: [{
-            path: 'chairManId',
-            select: { phone: 1 },
-        }],
-    });
-    const senderId = sender.shipper ? sender.shipper.chairMan.id : sender.agent ? sender.agent.chairMan.id : userId; // 物流公司的人员预下单以物流公司的董事长为发货人
-    const senderPhone = sender.shipper ? sender.shipper.chairMan.phone : sender.agent ? sender.agent.chairMan.phone : sender.phone; // 物流公司的人员预下单以物流公司的董事长为发货人
-    const doc = new OrderModel({
-        shopId,
-        agentId,
-        startPoint,
-        startPointLastCode,
-        senderId,
-        senderPhone,
-        senderName,
-        isSenderRepresentShipper: !!sender.shipper,
-        receiverId,
-        receiverPhone,
-        receiverName,
-        name,
-        isCityDistribute,
-        endPoint,
-        endPointLastCode,
-        sendDoorEndPoint,
-        sendDoorEndPointLastCode,
-        totalNumbers,
-        weight,
-        size,
-        isSendDoor,
-        proxyCharge: Math.floor(proxyCharge),
-        proxyChargeProfit: Math.floor(proxyCharge * setting.proxyChargeProfitRate),
-        isReachPay,
-        payMode: isReachPay ? CONSTANTS.PM_REACH : CONSTANTS.PM_IMMEDIATE,
-        totalDesignatedFee: Math.floor(totalDesignatedFee),
-        isInsuance,
-        stateList: [ { state: CONSTANTS.OS_PREORDER, count: totalNumbers } ],
-        photo: _photo,
-    });
-    await doc.save();
-    MediaModel._updateRef(
-        { [_photo]: 1 },
-    );
-    actionLog(userId, 'Client', doc.id, 'Order', 'placePreOrder');
-
-    const context = await OrderModel.findById(doc.id)
-    .select({
-        senderPhone: 1,
-        senderName: 1,
-        receiverPhone: 1,
-        receiverName: 1,
-        name: 1,
-        isCityDistribute: 1,
-        endPoint: 1,
-        endPointLastCode: 1,
-        sendDoorEndPoint: 1,
-        sendDoorEndPointLastCode: 1,
-        totalNumbers: 1,
-        weight: 1,
-        size: 1,
-        proxyCharge: 1,
-        isReachPay: 1,
-        totalDesignatedFee: 1,
-        isSendDoor: 1,
-        isInsuance: 1,
-        startPoint: 1,
-        startPointLastCode: 1,
-        shopId: 1,
-        agentId: 1,
-    })
-    .populate({
-        path: 'shopId',
-        select: { name: 1 },
-    })
-    .populate({
-        path: 'agentId',
-        select: { name: 1 },
-    });
-
-    return { success: true, context };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/client/preOrder/removePreOrder.js
-
-```js
-import { OrderModel } from '../../../../models';
-import { actionLog } from '../../../../utils';
-import CONSTANTS from '../../../../constants';
-
-export default async ({
-    userId,
-    orderId,
-}) => {
-    await OrderModel.findOneAndRemove({ _id: orderId, 'stateList.state': CONSTANTS.OS_PREORDER });
-
-    actionLog(userId, 'Client', orderId, 'Order', 'removePreOrder');
-    return { success: true };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/client/preOrder/removePreOrderFromGroup.js
-
-```js
-import { OrderModel, OrderGroupModel } from '../../../../models';
-import { actionLog } from '../../../../utils';
-
-export default async ({ userId, orderIdList, orderGroupId }) => {
-    const orderList = await OrderModel.find({ _id: { $in: orderIdList } });
-    let totalNumbers = 0, totalWeight = 0, totalSize = 0;
-    for (const order of orderList) {
-        totalNumbers += order.totalNumbers;
-        totalWeight += order.weight;
-        totalSize += order.size;
-    }
-
-    await OrderModel.update({ _id: { $in: orderIdList } }, { $unset: { groupId: 1 } }, { multi: true });
-    const group = await OrderGroupModel.findByIdAndUpdate(orderGroupId, { $inc: {
-        totalNumbers: -totalNumbers,
-        totalWeight: -totalWeight,
-        totalSize: -totalSize,
-        orderCount: -1,
-    }, $pull: { orderIdList: { $in: orderIdList } } }, { new: true });
-    if (!group) {
-        return { msg: '没有该货单批次' };
-    }
-
-    if (!group.orderIdList.length) {
-        await group.remove();
-    }
-
-    actionLog(userId, 'Client', orderGroupId, 'OrderGroup', 'removePreOrderFromGroup');
-
-    return { success: true };
-};
-
-```
-
 * PDShopServer/project/App/routers/posts/client/roadmap/getRoadmapDetail.js
 
 ```js
@@ -8566,155 +7972,596 @@ export default async ({
 
 ```
 
-* PDShopServer/project/App/routers/posts/common/address/getRegionAddress.js
+* PDShopServer/project/App/routers/posts/client/preOrder/createPreOrderGroup.js
 
 ```js
-import { RegionModel } from '../../../../mysql';
-import { RoadmapAddressModel, ClientModel, ShopMemberModel } from '../../../../models';
-import config from '../../../../../config';
-import _ from 'lodash';
+import { OrderModel, OrderGroupModel } from '../../../../models';
+import { actionLog } from '../../../../utils';
 
 export default async ({
     userId,
-    parentCode = 0,
-    type = 0, // 0: 长途地址，1：短途地址，2：所有地址, 3: 分店路线中存在的地址, 4: 收货点路线中存在的地址
+    startPoint,
+    startPointLastCode,
+    shopId,
+    agentId,
+    groupName, // 如果是合并，groupName应该为第一个group的名字，这里由客户端判断
+    orderGroupIdList = [], // 批次列表
+    orderIdList = [], // 货单列表
 }) => {
-    (!config.useOnlyExitRoadmap && (type === 3 || type === 4)) && (type = 0);
-    let addressList = [];
-    if (type < 3) {
-        const list = await RegionModel.findAll({ where: { parentCode } });
-        addressList = type === 0 ? _.reject(list, o => o.level === 8 || o.level === 9) : list;
-    } else if (type === 3) {
-        const member = await ShopMemberModel.findById(userId);
-        addressList = await RoadmapAddressModel.find({ shopId: member.shopId, parentCode });
-    } else if (type === 4) {
-        const member = await ClientModel.findById(userId).populate({ path: 'agentId', select: { referShopId: 1 } });
-        addressList = await RoadmapAddressModel.find({ shopId: ((member || {}).agent || {}).referShopId, parentCode });
+    let senderId, firstGroup, totalNumbers = 0, totalWeight = 0, totalSize = 0, orderCount = 0;
+
+    if (orderIdList.length) {
+        const orderList = await OrderModel.find({ _id: { $in: orderIdList } });
+        for (const order of orderList) {
+            !senderId && (senderId = order.senderId);
+            totalNumbers += order.totalNumbers;
+            totalWeight += order.weight;
+            totalSize += order.size;
+            orderCount++;
+        }
+    }
+    if (orderGroupIdList.length) {
+        const orderGroupList = await OrderGroupModel.find({ _id: { $in: orderGroupIdList } });
+        for (const group of orderGroupList) {
+            if (!firstGroup) {
+                firstGroup = group;
+                !senderId && (senderId = group.senderId);
+            } else {
+                await group.remove();
+            }
+            orderIdList = orderIdList.concat(group.orderIdList);
+            totalNumbers += group.totalNumbers;
+            totalWeight += group.totalNumbers;
+            totalSize += group.totalSize;
+            orderCount += group.orderCount;
+        }
     }
 
-    return { success: true, context: { addressList } };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/common/address/getRegionAddressFromLastCode.js
-
-```js
-import { ClientModel, ShopMemberModel } from '../../../../models';
-import { getAddressFromLastCode, getSendDoorAddressFromLastCode, getEndPointFromLastCode } from '../../libs/address';
-import config from '../../../../../config';
-
-export default async ({
-    userId,
-    addressLastCode = 0,
-    type = 0, // 0: 长途地址，1：短途地址，2：所有地址, 3: 分店路线中存在的地址, 4: 收货点路线中存在的地址
-}) => {
-    (!config.useOnlyExitRoadmap && (type === 3 || type === 4)) && (type = 0);
-    let addressList = [];
-    if (type === 0) {
-        addressList = await getAddressFromLastCode(addressLastCode);
-    } else if (type === 1) {
-        addressList = await getSendDoorAddressFromLastCode(addressLastCode);
-    } else if (type === 2) {
-        addressList = await getAddressFromLastCode(addressLastCode, true);
-    } else if (type === 3) {
-        const member = await ShopMemberModel.findById(userId);
-        addressList = await getEndPointFromLastCode(member.shopId, addressLastCode);
-    } else if (type === 4) {
-        const member = await ClientModel.findById(userId).populate({ path: 'agentId', select: { referShopId: 1 } });
-        addressList = await getEndPointFromLastCode(((member || {}).agent || {}).referShopId, addressLastCode);
-    }
-    return { success: true, context: {
-        addressList,
-    } };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/common/address/getRegionSendDoorAddressFromLastCode.js
-
-```js
-import { getSendDoorAddressFromLastCode } from '../../libs/address';
-
-export default async ({
-    userId,
-    addressLastCode,
-    parentCode,
-}) => {
-    const addressList = await getSendDoorAddressFromLastCode(addressLastCode, parentCode);
-
-    return { success: true, context: {
-        addressList,
-    } };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/common/address/getStartPointAddress.js
-
-```js
-import { ShopModel, AgentModel, StartPointAddressModel } from '../../../../models';
-import _ from 'lodash';
-
-export default async ({
-    userId,
-    parentCode = 0,
-}) => {
-    let list = [];
-    const item = await StartPointAddressModel.findOne({ code: parentCode });
-    if (!item || !_.includes([ 0, 4, 5, 6, 7 ], item.level)) {
-        list = await StartPointAddressModel.find({ parentCode });
+    if (!firstGroup) {
+        firstGroup = new OrderGroupModel({ name: groupName, senderId });
     } else {
-        const shopList = await ShopModel.find({ isMasterShop: false, addressRegionLastCode: parentCode }).select({ name: 1, addressRegionLastCode: 1 });
-        const agentList = await AgentModel.find({ addressRegionLastCode: parentCode }).select({ name: 1, addressRegionLastCode: 1 });
-        list = shopList.map(o => { o = o.toObject(); o.isShop = true; o.isLeaf = true; return o; });
-        list = list.concat(agentList.map(o => { o = o.toObject(); o.isAgent = true; o.isLeaf = true; return o; }));
+        firstGroup.name = groupName;
+        firstGroup.modifyTime = Date.now();
     }
-    return { success: true, context: { addressList: list } };
+    firstGroup.startPoint = startPoint;
+    firstGroup.startPointLastCode = startPointLastCode;
+    firstGroup.shopId = shopId;
+    firstGroup.agentId = agentId;
+    firstGroup.totalNumbers = totalNumbers;
+    firstGroup.totalWeight = totalWeight;
+    firstGroup.totalSize = totalSize;
+    firstGroup.orderCount = orderCount;
+    firstGroup.orderIdList = orderIdList;
+
+    await firstGroup.save();
+    await OrderModel.update({ _id: { $in: orderIdList } }, { groupId: firstGroup.id }, { multi: true });
+
+    actionLog(userId, 'Client', firstGroup.id, 'OrderGroup', 'createPreOrderGroup');
+
+    return { success: true };
 };
 
 ```
 
-* PDShopServer/project/App/routers/posts/common/address/getStartPointAddressFromLastCode.js
+* PDShopServer/project/App/routers/posts/client/preOrder/getPreOrderGroupList.js
 
 ```js
-import { ShopModel, AgentModel, StartPointAddressModel } from '../../../../models';
+import { OrderGroupModel, ClientModel } from '../../../../models';
+
+export default async ({ userId, fromPC, pageNo, pageSize }) => {
+    const sender = await ClientModel.findById(userId)
+    .populate({
+        path: 'shipperId',
+        select: { chairManId: 1 },
+        populate: [{
+            path: 'chairManId',
+            select: { phone: 1 },
+        }],
+    })
+    .populate({
+        path: 'agentId',
+        select: { chairManId: 1 },
+        populate: [{
+            path: 'chairManId',
+            select: { phone: 1 },
+        }],
+    });
+    if (!sender) {
+        return { msg: '没有该用户' };
+    }
+    const senderId = sender.shipper ? sender.shipper.chairMan.id : sender.agent ? sender.agent.chairMan.id : userId; // 物流公司的人员预下单以物流公司的董事长为发货人
+    const orderGroupList = await OrderGroupModel.find({ senderId }).sort({ createTime: 'desc' }).skip(pageNo * pageSize).limit(pageSize)
+    .select({
+        name: 1,
+        totalNumbers: 1,
+        totalWeight: 1,
+        totalSize: 1,
+        orderCount: 1,
+        shopId: 1,
+        agentId: 1,
+        startPoint: 1,
+        startPointLastCode: 1,
+    })
+    .populate({
+        path: 'shopId',
+        select: { name: 1 },
+    })
+    .populate({
+        path: 'agentId',
+        select: { name: 1 },
+    });
+
+    return { success: true, context: {
+        orderGroupList,
+    } };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/client/preOrder/getPreOrderList.js
+
+```js
+import { OrderModel, ClientModel } from '../../../../models';
+import CONSTANTS from '../../../../constants';
+
+export default async ({ userId, fromPC, pageNo, pageSize }) => {
+    const sender = await ClientModel.findById(userId)
+    .populate({
+        path: 'shipperId',
+        select: { chairManId: 1 },
+    });
+    if (!sender) {
+        return { msg: '没有该用户' };
+    }
+    const senderId = sender.shipperId ? sender.shipper.chairManId : userId; // 物流公司的人员预下单以物流公司的董事长为发货人
+    const criteria = { senderId, 'stateList.state': CONSTANTS.OS_PREORDER, groupId: { $exists: false } };
+    const count = (fromPC && pageNo === 0) ? await OrderModel.count(criteria) : undefined;
+    const query = OrderModel.find(criteria).sort({ createTime: 'desc' }).skip(pageNo * pageSize).limit(pageSize);
+    const docs = await query
+    .select({
+        senderPhone: 1,
+        senderName: 1,
+        receiverPhone: 1,
+        receiverName: 1,
+        name: 1,
+        isCityDistribute: 1,
+        endPoint: 1,
+        endPointLastCode: 1,
+        sendDoorEndPoint: 1,
+        sendDoorEndPointLastCode: 1,
+        totalNumbers: 1,
+        weight: 1,
+        size: 1,
+        proxyCharge: 1,
+        isReachPay: 1,
+        totalDesignatedFee: 1,
+        isSendDoor: 1,
+        isInsuance: 1,
+        startPoint: 1,
+        startPointLastCode: 1,
+        shopId: 1,
+        agentId: 1,
+        photo: 1,
+    })
+    .populate({
+        path: 'shopId',
+        select: { name: 1 },
+    })
+    .populate({
+        path: 'agentId',
+        select: { name: 1 },
+    });
+
+    return { success: true, context: {
+        count,
+        orderList: docs,
+    } };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/client/preOrder/getPreOrderListInGroup.js
+
+```js
+import { OrderGroupModel } from '../../../../models';
+
+export default async ({ userId, orderGroupId }) => {
+    const group = await OrderGroupModel.findById(orderGroupId)
+    .populate({
+        path: 'orderIdList',
+        select: {
+            senderPhone: 1,
+            senderName: 1,
+            receiverPhone: 1,
+            receiverName: 1,
+            name: 1,
+            isCityDistribute: 1,
+            endPoint: 1,
+            endPointLastCode: 1,
+            sendDoorEndPoint: 1,
+            sendDoorEndPointLastCode: 1,
+            totalNumbers: 1,
+            weight: 1,
+            size: 1,
+            proxyCharge: 1,
+            isReachPay: 1,
+            totalDesignatedFee: 1,
+            isSendDoor: 1,
+            isInsuance: 1,
+            startPoint: 1,
+            startPointLastCode: 1,
+            shopId: 1,
+            agentId: 1,
+        },
+        populate: [{
+            path: 'shopId',
+            select: { name: 1 },
+        }, {
+            path: 'agentId',
+            select: { name: 1 },
+        }],
+    });
+    if (!group) {
+        return { msg: '没有该批次' };
+    }
+
+    return { success: true, context: {
+        orderList: group.orderIdList,
+    } };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/client/preOrder/modifyPreOrder.js
+
+```js
+import _ from 'lodash';
+import { OrderModel, OrderGroupModel, ClientModel, MediaModel } from '../../../../models';
+import { getMediaId, omitNil, actionLog } from '../../../../utils';
+import { setting } from '../../../../manager';
+import CONSTANTS from '../../../../constants';
 
 export default async ({
     userId,
-    addressLastCode = 0,
-    isLeaf, //是否是分店或者收货点（该参数根据接收到的值确定）
+    orderId,
+    orderGroupId,
+    senderName,
+    receiverPhone,
+    receiverName,
+    name,
+    shopId, // 指定的某家分店 (必传参数)
+    agentId, // 指定的某家收货点(必传参数)
+    startPoint, // 起点
+    startPointLastCode, // 起点 lastCode
+    isCityDistribute, // 是否是同城配送
+    endPoint, // 终点，精确到镇级别
+    endPointLastCode, // 终点镇级代码
+    sendDoorEndPoint,
+    sendDoorEndPointLastCode,
+    totalNumbers, // 一票货总的件数
+    weight, // 一票货总的重量
+    size, // 一票货总的方量
+    isSendDoor, // 是否送货上门
+    isReachPay, // 是否是到付 (如果是到付，并且设置了totalDesignatedFee，为指定向收货人收totalDesignatedFee的运费，否则向收货人收初始单计算出来的运费)
+    totalDesignatedFee, // 指定向收货人应该收多少钱
+    proxyCharge, // 代收货款金额
+    isInsuance, // 是否保价
+    photo, // 图片
 }) => {
-    if (addressLastCode === 0) {
-        const list = await StartPointAddressModel.find({ parentCode: 0 });
-        return { success: true, context: { addressList: [ list ] } };
+    let receiverId;
+    if (receiverPhone) {
+        receiverId = await ClientModel.checkExistElseCreate(receiverPhone, receiverName);
+        if (!receiverId) {
+            return { msg: '系统创建账号错误，请重试' };
+        }
+    }
+    const _startPoint = (shopId || agentId || startPointLastCode) ?
+    { shopId: undefined, agentId: undefined, startPoint, startPointLastCode, ...(shopId ? { shopId } : agentId ? { agentId } : {}) } :
+    {};
+
+    const _photo = getMediaId(photo);
+    const doc = await OrderModel.findOneAndUpdate({ _id: orderId, 'stateList.state': CONSTANTS.OS_PREORDER }, {
+        ..._startPoint,
+        ...omitNil({
+            senderName,
+            receiverId,
+            receiverPhone,
+            receiverName,
+            name,
+            isCityDistribute,
+            endPoint,
+            endPointLastCode,
+            sendDoorEndPoint,
+            sendDoorEndPointLastCode,
+            totalNumbers,
+            weight,
+            size,
+            isSendDoor,
+            proxyCharge,
+            proxyChargeProfit: proxyCharge !== undefined ? Math.ceil(proxyCharge * setting.proxyChargeProfitRate) : undefined,
+            isReachPay,
+            payMode: isReachPay !== undefined ? (isReachPay ? CONSTANTS.PM_REACH : CONSTANTS.PM_IMMEDIATE) : undefined,
+            totalDesignatedFee,
+            isInsuance,
+            photo: _photo,
+        }),
+    });
+    if (!doc) {
+        return { msg: '修改失败' };
+    }
+    if (orderGroupId) {
+        const options = _.omitBy({ totalNumbers: totalNumbers - doc.totalNumbers, weight: weight - doc.weight, size: size - doc.size }, o => !o);
+        if (_.size(options)) {
+            await OrderGroupModel.findByIdAndUpdate(orderGroupId, { $inc: options });
+        }
     }
 
-    const addressList = [];
-    if (isLeaf) {
-        let list = [];
-        const shopList = await ShopModel.find({ isMasterShop: false, addressRegionLastCode: addressLastCode }).select({ name: 1, addressRegionLastCode: 1 });
-        const agentList = await AgentModel.find({ addressRegionLastCode: addressLastCode }).select({ name: 1, addressRegionLastCode: 1 });
-        list = shopList.map(o => { o = o.toObject(); o.isShop = true; o.isLeaf = true; return o; });
-        list = list.concat(agentList.map(o => { o = o.toObject(); o.isAgent = true; o.isLeaf = true; return o; }));
-        addressList.push(list);
+    MediaModel._updateRef(
+        { [_photo]: 1 },
+        { [photo && doc.photo]: -1 },
+    );
+    actionLog(userId, 'Client', orderId, 'Order', 'modifyPreOrder');
+
+    const context = await OrderModel.findById(orderId)
+    .select({
+        senderPhone: 1,
+        senderName: 1,
+        receiverPhone: 1,
+        receiverName: 1,
+        name: 1,
+        isCityDistribute: 1,
+        endPoint: 1,
+        endPointLastCode: 1,
+        sendDoorEndPoint: 1,
+        sendDoorEndPointLastCode: 1,
+        totalNumbers: 1,
+        weight: 1,
+        size: 1,
+        proxyCharge: 1,
+        isReachPay: 1,
+        totalDesignatedFee: 1,
+        isSendDoor: 1,
+        isInsuance: 1,
+        startPoint: 1,
+        startPointLastCode: 1,
+        shopId: 1,
+        agentId: 1,
+    })
+    .populate({
+        path: 'shopId',
+        select: { name: 1 },
+    })
+    .populate({
+        path: 'agentId',
+        select: { name: 1 },
+    });
+
+    return { success: true, context };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/client/preOrder/modifyPreOrderGroup.js
+
+```js
+import { OrderGroupModel } from '../../../../models';
+import { omitNil, actionLog } from '../../../../utils';
+
+export default async ({
+    userId,
+    orderGroupId,
+    startPoint,
+    startPointLastCode,
+    shopId,
+    agentId,
+    groupName,
+}) => {
+    const _startPoint = (shopId || agentId || startPointLastCode) ?
+    { shopId: undefined, agentId: undefined, startPoint, startPointLastCode, ...(shopId ? { shopId } : agentId ? { agentId } : {}) } :
+    {};
+
+    const group = await OrderGroupModel.findByIdAndUpdate(orderGroupId, {
+        ..._startPoint,
+        ...omitNil({
+            name: groupName,
+        }),
+    });
+    if (!group) {
+        return { msg: '没有该货单批次' };
     }
-    while (true) {
-        const item = await StartPointAddressModel.findOne({ code: addressLastCode });
-        if (!item) {
-            break;
-        }
-        if (item.parentCode === 0) {
-            const list = await StartPointAddressModel.find({ parentCode: 0 });
-            addressList.push(list);
-            break;
-        } else {
-            const list = await StartPointAddressModel.find({ parentCode: item.parentCode });
-            addressList.push(list);
-            addressLastCode = item.parentCode;
-        }
+    actionLog(userId, 'Client', orderGroupId, 'OrderGroup', 'modifyPreOrderGroup');
+
+    return { success: true };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/client/preOrder/placePreOrder.js
+
+```js
+import { OrderModel, ClientModel, MediaModel } from '../../../../models';
+import { actionLog, getMediaId } from '../../../../utils';
+import CONSTANTS from '../../../../constants';
+import { setting } from '../../../../manager';
+
+export default async ({
+    userId,
+    senderName,
+    receiverPhone,
+    receiverName,
+    name,
+    shopId, // 指定的某家分店
+    agentId, // 指定的某家收货点
+    startPoint, // 起点
+    startPointLastCode, // 起点 lastCode
+    isCityDistribute, // 是否是同城配送
+    endPoint, // 终点，精确到镇级别
+    endPointLastCode, // 终点镇级代码
+    sendDoorEndPoint, // 送货上门地址，精确到镇级别
+    sendDoorEndPointLastCode, // 送货上门地址镇级代码
+    totalNumbers, // 一票货总的件数
+    weight, // 一票货总的重量
+    size, // 一票货总的方量
+    isSendDoor, // 是否送货上门
+    isReachPay, // 是否是到付 (如果是到付，并且设置了totalDesignatedFee，为指定向收货人收totalDesignatedFee的运费，否则向收货人收初始单计算出来的运费)
+    totalDesignatedFee = 0, // 指定向收货人应该收多少钱
+    proxyCharge = 0, // 代收货款金额
+    isInsuance, // 是否保价
+    photo, // 图片
+}) => {
+    const receiverId = await ClientModel.checkExistElseCreate(receiverPhone, receiverName);
+    if (!receiverId) {
+        return { msg: '系统创建账号错误，请重试' };
     }
-    return { success: true, context: { addressList } };
+
+    const _photo = getMediaId(photo);
+    const sender = await ClientModel.findById(userId)
+    .populate({
+        path: 'shipperId',
+        select: { chairManId: 1 },
+        populate: [{
+            path: 'chairManId',
+            select: { phone: 1 },
+        }],
+    })
+    .populate({
+        path: 'agentId',
+        select: { chairManId: 1 },
+        populate: [{
+            path: 'chairManId',
+            select: { phone: 1 },
+        }],
+    });
+    const senderId = sender.shipper ? sender.shipper.chairMan.id : sender.agent ? sender.agent.chairMan.id : userId; // 物流公司的人员预下单以物流公司的董事长为发货人
+    const senderPhone = sender.shipper ? sender.shipper.chairMan.phone : sender.agent ? sender.agent.chairMan.phone : sender.phone; // 物流公司的人员预下单以物流公司的董事长为发货人
+    const doc = new OrderModel({
+        shopId,
+        agentId,
+        startPoint,
+        startPointLastCode,
+        senderId,
+        senderPhone,
+        senderName,
+        isSenderRepresentShipper: !!sender.shipper,
+        receiverId,
+        receiverPhone,
+        receiverName,
+        name,
+        isCityDistribute,
+        endPoint,
+        endPointLastCode,
+        sendDoorEndPoint,
+        sendDoorEndPointLastCode,
+        totalNumbers,
+        weight,
+        size,
+        isSendDoor,
+        proxyCharge: Math.floor(proxyCharge),
+        proxyChargeProfit: Math.floor(proxyCharge * setting.proxyChargeProfitRate),
+        isReachPay,
+        payMode: isReachPay ? CONSTANTS.PM_REACH : CONSTANTS.PM_IMMEDIATE,
+        totalDesignatedFee: Math.floor(totalDesignatedFee),
+        isInsuance,
+        stateList: [ { state: CONSTANTS.OS_PREORDER, count: totalNumbers } ],
+        photo: _photo,
+    });
+    await doc.save();
+    MediaModel._updateRef(
+        { [_photo]: 1 },
+    );
+    actionLog(userId, 'Client', doc.id, 'Order', 'placePreOrder');
+
+    const context = await OrderModel.findById(doc.id)
+    .select({
+        senderPhone: 1,
+        senderName: 1,
+        receiverPhone: 1,
+        receiverName: 1,
+        name: 1,
+        isCityDistribute: 1,
+        endPoint: 1,
+        endPointLastCode: 1,
+        sendDoorEndPoint: 1,
+        sendDoorEndPointLastCode: 1,
+        totalNumbers: 1,
+        weight: 1,
+        size: 1,
+        proxyCharge: 1,
+        isReachPay: 1,
+        totalDesignatedFee: 1,
+        isSendDoor: 1,
+        isInsuance: 1,
+        startPoint: 1,
+        startPointLastCode: 1,
+        shopId: 1,
+        agentId: 1,
+    })
+    .populate({
+        path: 'shopId',
+        select: { name: 1 },
+    })
+    .populate({
+        path: 'agentId',
+        select: { name: 1 },
+    });
+
+    return { success: true, context };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/client/preOrder/removePreOrder.js
+
+```js
+import { OrderModel } from '../../../../models';
+import { actionLog } from '../../../../utils';
+import CONSTANTS from '../../../../constants';
+
+export default async ({
+    userId,
+    orderId,
+}) => {
+    await OrderModel.findOneAndRemove({ _id: orderId, 'stateList.state': CONSTANTS.OS_PREORDER });
+
+    actionLog(userId, 'Client', orderId, 'Order', 'removePreOrder');
+    return { success: true };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/client/preOrder/removePreOrderFromGroup.js
+
+```js
+import { OrderModel, OrderGroupModel } from '../../../../models';
+import { actionLog } from '../../../../utils';
+
+export default async ({ userId, orderIdList, orderGroupId }) => {
+    const orderList = await OrderModel.find({ _id: { $in: orderIdList } });
+    let totalNumbers = 0, totalWeight = 0, totalSize = 0;
+    for (const order of orderList) {
+        totalNumbers += order.totalNumbers;
+        totalWeight += order.weight;
+        totalSize += order.size;
+    }
+
+    await OrderModel.update({ _id: { $in: orderIdList } }, { $unset: { groupId: 1 } }, { multi: true });
+    const group = await OrderGroupModel.findByIdAndUpdate(orderGroupId, { $inc: {
+        totalNumbers: -totalNumbers,
+        totalWeight: -totalWeight,
+        totalSize: -totalSize,
+        orderCount: -1,
+    }, $pull: { orderIdList: { $in: orderIdList } } }, { new: true });
+    if (!group) {
+        return { msg: '没有该货单批次' };
+    }
+
+    if (!group.orderIdList.length) {
+        await group.remove();
+    }
+
+    actionLog(userId, 'Client', orderGroupId, 'OrderGroup', 'removePreOrderFromGroup');
+
+    return { success: true };
 };
 
 ```
@@ -8853,172 +8700,92 @@ export default async ({
 
 ```
 
-* PDShopServer/project/App/routers/posts/common/client/getClientNameByPhone.js
+* PDShopServer/project/App/routers/posts/driver/truck/confirmReach.js
 
 ```js
-import { ClientModel } from '../../../../models';
+import { TruckModel } from '../../../../models';
+import { actionLog } from '../../../../utils';
+import CONSTANTS from '../../../../constants';
 
-export default async ({ userId, phone }) => {
-    const doc = await ClientModel.findOne({ phone });
-    return { success: true, context: { name: (doc || {}).name } };
+export default async ({ userId, address, longitude, latitude }) => {
+    const truck = await TruckModel.findOneAndUpdate(
+        { driverId: userId, state: CONSTANTS.TS_ON_THE_WAY },
+        { state: CONSTANTS.TS_RECEIVE_SUCCESS, $push: { locationList: { $each: [ { address, longitude, latitude, time: Date.now() } ], $position: 0 } } }
+    );
+    if (!truck) {
+        return { msg: '你当前没有在运输中的车辆' };
+    }
+    actionLog(userId, 'Driver', truck.id, 'Truck', 'confirmReach');
+    return { success: true };
 };
 
 ```
 
-* PDShopServer/project/App/routers/posts/common/notify/getNotifies.js
+* PDShopServer/project/App/routers/posts/driver/truck/getLocationList.js
 
 ```js
-import { NotifyModel } from '../../../../models';
-import _ from 'lodash';
+import { TruckModel } from '../../../../models';
+import CONSTANTS from '../../../../constants';
+import { getFormatTime } from '../../../../utils';
 
-async function getPageData (type, keyword, fromPC, pageNo, pageSize) {
-    let criteria = { type };
-    if (keyword) {
-        const regex = new RegExp('.*' + (keyword || '') + '.*', 'gim');
-        criteria = { ...criteria, $or: [{ title: regex }, { content: regex }] };
-    }
-    const count = (fromPC && pageNo === 0) ? await NotifyModel.count(criteria) : undefined;
-    const query = NotifyModel.find(criteria).sort({ time: 'desc' }).skip(pageNo * pageSize).limit(pageSize);
-    const list = await query
-    .select({
-        id: 1,
-        source: 1,
-        title: 1,
-        content: 1,
-        time: 1,
+export default async ({ userId }) => {
+    const truck = await TruckModel.findOne({ driverId: userId, state: CONSTANTS.TS_ON_THE_WAY }).populate({
+        path: 'shopId',
+        select: { name: 1, address: 1 },
     });
-    return {
-        count,
-        list,
-    };
-}
-
-const TYPES = ['news', 'publicity', 'policy', 'notice'];
-export default async ({ userId, type, keyword, fromPC, pageNo, pageSize }) => {
-    if (_.includes(TYPES, type)) {
-        return {
-            success: true,
-            context: {
-                [type]: await getPageData(type, keyword, fromPC, pageNo, pageSize),
-            },
-        };
+    let locationList = [];
+    if (!truck) {
+        return { success: true, locationList: [] };
     } else {
-        return {
-            success: true,
-            context: {
-                news: await getPageData('news', keyword, fromPC, pageNo, pageSize),
-                publicity: await getPageData('publicity', keyword, fromPC, pageNo, pageSize),
-                policy: await getPageData('policy', keyword, fromPC, pageNo, pageSize),
-                notice: await getPageData('notice', keyword, fromPC, pageNo, pageSize),
-            },
-        };
-    }
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/common/notify/sendNotify.js
-
-```js
-import { NotifyModel, ShopMemberModel } from '../../../../models';
-import _ from 'lodash';
-
-export default async ({
-    adminId,
-    shopId,
-    memberId,
-    shipperId,
-    type,
-    source,
-    title,
-    content,
-}) => {
-    if (memberId) {
-        const member = await ShopMemberModel.findById(memberId);
-        shopId = (member || {}).shopId;
-    }
-
-    const notify = new NotifyModel({ adminId, shopId, memberId, shipperId, type, source, title, content });
-    await notify.save();
-    return { success: true, context: _.pick(notify.toObject(), ['source', 'title', 'content', 'time', 'id']) };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/common/upload/uploadFile.js
-
-```js
-import mongoose from 'mongoose';
-import { MediaModel } from '../../../../models';
-import { getMediaPath } from '../../../../utils/';
-
-export default ({
-    clientId,
-    shopMemberId,
-    adminId,
-}, req) => {
-    return new Promise(async resolve => {
-        const gridId = req.file.grid._id;
-        const media = new MediaModel({
-            gridId,
+        locationList.push({
+            address: (truck.shop || {}).address,
+            time: getFormatTime(truck.createTime),
         });
-        const doc = await media.save();
-        if (doc) {
-            return resolve({ success: true, context: { url: getMediaPath(doc._id) } });
-        } else {
-            mongoose.gfs.remove({ _id: gridId });
-            return resolve({ msg: '上传失败' });
-        }
+        locationList = [...(truck || {}).locationList || [], ...locationList];
+    }
+    return { success: true, locationList };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/driver/truck/getOnWayTruck.js
+
+```js
+import { TruckModel } from '../../../../models';
+import CONSTANTS from '../../../../constants';
+import { getFormatTime } from '../../../../utils';
+
+export default async ({ userId }) => {
+    const truck = await TruckModel.findOne({ driverId: userId, state: CONSTANTS.TS_ON_THE_WAY }).populate({
+        path: 'shopId',
+        select: { name: 1, address: 1 },
     });
+    let locationList = [];
+    if (!truck) {
+        return { msg: '你当前没有在运输中的车辆' };
+    } else {
+        locationList.push({
+            address: (truck.shop || {}).address,
+            time: getFormatTime(truck.createTime),
+        });
+        truck.locationList = [...(truck || {}).locationList || [], ...locationList];
+    }
+    return { success: true, context: truck };
 };
 
 ```
 
-* PDShopServer/project/App/routers/posts/common/verifyCode/requestSendVerifyCode.js
+* PDShopServer/project/App/routers/posts/driver/truck/uploadLocation.js
 
 ```js
-import { VerifyCodeModel } from '../../../../models';
-import { sendSms } from '../../../../utils';
-import config from '../../../../../config';
-import _ from 'lodash';
+import { TruckModel } from '../../../../models';
+import CONSTANTS from '../../../../constants';
 
-function getCodeItem () {
-    let code = '';
-    for (let i = 0; i < 6; i++) {
-        code += _.random(0, 9);
+export default async ({ userId, address, longitude, latitude }) => {
+    const truck = await TruckModel.findOneAndUpdate({ driverId: userId, state: CONSTANTS.TS_ON_THE_WAY }, { $push: { locationList: { $each: [ { address, longitude, latitude, time: Date.now() } ], $position: 0 } } });
+    if (!truck) {
+        return { success: false };
     }
-    return { code, deadTime: Date.now() + 7200000 };
-}
-
-export default async ({
-    phone,
-}) => {
-    if (config.hasNoVerifyCode) {
-        return { success: true };
-    }
-
-    let codeItem;
-    let doc = await VerifyCodeModel.findOne({ phone });
-    if (!doc) {
-        codeItem = getCodeItem();
-        doc = new VerifyCodeModel({
-            phone,
-            codeList: [ codeItem ],
-        });
-    } else {
-        const codeList = _.filter(doc.codeList, o => o.deadTime.getTime() > Date.now());
-        if (codeList.length > 2) {
-            return { msg: '操作过于频繁，请稍后再试' };
-        }
-        codeItem = getCodeItem();
-        codeList.unshift(codeItem);
-        doc.codeList = codeList;
-    }
-    const success = await sendSms(phone, codeItem.code);
-    if (!success) {
-        return { msg: '发送短信失败，请稍后再试' };
-    }
-    await doc.save();
     return { success: true };
 };
 
@@ -9221,6 +8988,330 @@ export default async ({ userId, content, email }) => {
     const feedback = new FeedbackModel({ driverId: userId, content, email });
     await feedback.save();
     return { success: true };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/common/address/getRegionAddress.js
+
+```js
+import { RegionModel } from '../../../../mysql';
+import { RoadmapAddressModel, ClientModel, ShopMemberModel } from '../../../../models';
+import config from '../../../../../config';
+import _ from 'lodash';
+
+export default async ({
+    userId,
+    parentCode = 0,
+    type = 0, // 0: 长途地址，1：短途地址，2：所有地址, 3: 分店路线中存在的地址, 4: 收货点路线中存在的地址
+}) => {
+    (!config.useOnlyExitRoadmap && (type === 3 || type === 4)) && (type = 0);
+    let addressList = [];
+    if (type < 3) {
+        const list = await RegionModel.findAll({ where: { parentCode } });
+        addressList = type === 0 ? _.reject(list, o => o.level === 8 || o.level === 9) : list;
+    } else if (type === 3) {
+        const member = await ShopMemberModel.findById(userId);
+        addressList = await RoadmapAddressModel.find({ shopId: member.shopId, parentCode });
+    } else if (type === 4) {
+        const member = await ClientModel.findById(userId).populate({ path: 'agentId', select: { referShopId: 1 } });
+        addressList = await RoadmapAddressModel.find({ shopId: ((member || {}).agent || {}).referShopId, parentCode });
+    }
+
+    return { success: true, context: { addressList } };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/common/address/getRegionAddressFromLastCode.js
+
+```js
+import { ClientModel, ShopMemberModel } from '../../../../models';
+import { getAddressFromLastCode, getSendDoorAddressFromLastCode, getEndPointFromLastCode } from '../../libs/address';
+import config from '../../../../../config';
+
+export default async ({
+    userId,
+    addressLastCode = 0,
+    type = 0, // 0: 长途地址，1：短途地址，2：所有地址, 3: 分店路线中存在的地址, 4: 收货点路线中存在的地址
+}) => {
+    (!config.useOnlyExitRoadmap && (type === 3 || type === 4)) && (type = 0);
+    let addressList = [];
+    if (type === 0) {
+        addressList = await getAddressFromLastCode(addressLastCode);
+    } else if (type === 1) {
+        addressList = await getSendDoorAddressFromLastCode(addressLastCode);
+    } else if (type === 2) {
+        addressList = await getAddressFromLastCode(addressLastCode, true);
+    } else if (type === 3) {
+        const member = await ShopMemberModel.findById(userId);
+        addressList = await getEndPointFromLastCode(member.shopId, addressLastCode);
+    } else if (type === 4) {
+        const member = await ClientModel.findById(userId).populate({ path: 'agentId', select: { referShopId: 1 } });
+        addressList = await getEndPointFromLastCode(((member || {}).agent || {}).referShopId, addressLastCode);
+    }
+    return { success: true, context: {
+        addressList,
+    } };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/common/address/getRegionSendDoorAddressFromLastCode.js
+
+```js
+import { getSendDoorAddressFromLastCode } from '../../libs/address';
+
+export default async ({
+    userId,
+    addressLastCode,
+    parentCode,
+}) => {
+    const addressList = await getSendDoorAddressFromLastCode(addressLastCode, parentCode);
+
+    return { success: true, context: {
+        addressList,
+    } };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/common/address/getStartPointAddress.js
+
+```js
+import { ShopModel, AgentModel, StartPointAddressModel } from '../../../../models';
+import _ from 'lodash';
+
+export default async ({
+    userId,
+    parentCode = 0,
+}) => {
+    let list = [];
+    const item = await StartPointAddressModel.findOne({ code: parentCode });
+    if (!item || !_.includes([ 0, 4, 5, 6, 7 ], item.level)) {
+        list = await StartPointAddressModel.find({ parentCode });
+    } else {
+        const shopList = await ShopModel.find({ isMasterShop: false, addressRegionLastCode: parentCode }).select({ name: 1, addressRegionLastCode: 1 });
+        const agentList = await AgentModel.find({ addressRegionLastCode: parentCode }).select({ name: 1, addressRegionLastCode: 1 });
+        list = shopList.map(o => { o = o.toObject(); o.isShop = true; o.isLeaf = true; return o; });
+        list = list.concat(agentList.map(o => { o = o.toObject(); o.isAgent = true; o.isLeaf = true; return o; }));
+    }
+    return { success: true, context: { addressList: list } };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/common/address/getStartPointAddressFromLastCode.js
+
+```js
+import { ShopModel, AgentModel, StartPointAddressModel } from '../../../../models';
+
+export default async ({
+    userId,
+    addressLastCode = 0,
+    isLeaf, //是否是分店或者收货点（该参数根据接收到的值确定）
+}) => {
+    if (addressLastCode === 0) {
+        const list = await StartPointAddressModel.find({ parentCode: 0 });
+        return { success: true, context: { addressList: [ list ] } };
+    }
+
+    const addressList = [];
+    if (isLeaf) {
+        let list = [];
+        const shopList = await ShopModel.find({ isMasterShop: false, addressRegionLastCode: addressLastCode }).select({ name: 1, addressRegionLastCode: 1 });
+        const agentList = await AgentModel.find({ addressRegionLastCode: addressLastCode }).select({ name: 1, addressRegionLastCode: 1 });
+        list = shopList.map(o => { o = o.toObject(); o.isShop = true; o.isLeaf = true; return o; });
+        list = list.concat(agentList.map(o => { o = o.toObject(); o.isAgent = true; o.isLeaf = true; return o; }));
+        addressList.push(list);
+    }
+    while (true) {
+        const item = await StartPointAddressModel.findOne({ code: addressLastCode });
+        if (!item) {
+            break;
+        }
+        if (item.parentCode === 0) {
+            const list = await StartPointAddressModel.find({ parentCode: 0 });
+            addressList.push(list);
+            break;
+        } else {
+            const list = await StartPointAddressModel.find({ parentCode: item.parentCode });
+            addressList.push(list);
+            addressLastCode = item.parentCode;
+        }
+    }
+    return { success: true, context: { addressList } };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/common/client/getClientNameByPhone.js
+
+```js
+import { ClientModel } from '../../../../models';
+
+export default async ({ userId, phone }) => {
+    const doc = await ClientModel.findOne({ phone });
+    return { success: true, context: { name: (doc || {}).name } };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/common/notify/getNotifies.js
+
+```js
+import { NotifyModel } from '../../../../models';
+import _ from 'lodash';
+
+async function getPageData (type, keyword, fromPC, pageNo, pageSize) {
+    let criteria = { type };
+    if (keyword) {
+        const regex = new RegExp('.*' + (keyword || '') + '.*', 'gim');
+        criteria = { ...criteria, $or: [{ title: regex }, { content: regex }] };
+    }
+    const count = (fromPC && pageNo === 0) ? await NotifyModel.count(criteria) : undefined;
+    const query = NotifyModel.find(criteria).sort({ time: 'desc' }).skip(pageNo * pageSize).limit(pageSize);
+    const list = await query
+    .select({
+        id: 1,
+        source: 1,
+        title: 1,
+        content: 1,
+        time: 1,
+    });
+    return {
+        count,
+        list,
+    };
+}
+
+const TYPES = ['news', 'publicity', 'policy', 'notice'];
+export default async ({ userId, type, keyword, fromPC, pageNo, pageSize }) => {
+    if (_.includes(TYPES, type)) {
+        return {
+            success: true,
+            context: {
+                [type]: await getPageData(type, keyword, fromPC, pageNo, pageSize),
+            },
+        };
+    } else {
+        return {
+            success: true,
+            context: {
+                news: await getPageData('news', keyword, fromPC, pageNo, pageSize),
+                publicity: await getPageData('publicity', keyword, fromPC, pageNo, pageSize),
+                policy: await getPageData('policy', keyword, fromPC, pageNo, pageSize),
+                notice: await getPageData('notice', keyword, fromPC, pageNo, pageSize),
+            },
+        };
+    }
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/common/notify/sendNotify.js
+
+```js
+import { NotifyModel, ShopMemberModel } from '../../../../models';
+import _ from 'lodash';
+
+export default async ({
+    adminId,
+    shopId,
+    memberId,
+    shipperId,
+    type,
+    source,
+    title,
+    content,
+}) => {
+    if (memberId) {
+        const member = await ShopMemberModel.findById(memberId);
+        shopId = (member || {}).shopId;
+    }
+
+    const notify = new NotifyModel({ adminId, shopId, memberId, shipperId, type, source, title, content });
+    await notify.save();
+    return { success: true, context: _.pick(notify.toObject(), ['source', 'title', 'content', 'time', 'id']) };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/common/verifyCode/requestSendVerifyCode.js
+
+```js
+import { VerifyCodeModel } from '../../../../models';
+import { sendSms } from '../../../../utils';
+import config from '../../../../../config';
+import _ from 'lodash';
+
+function getCodeItem () {
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+        code += _.random(0, 9);
+    }
+    return { code, deadTime: Date.now() + 7200000 };
+}
+
+export default async ({
+    phone,
+}) => {
+    if (config.hasNoVerifyCode) {
+        return { success: true };
+    }
+
+    let codeItem;
+    let doc = await VerifyCodeModel.findOne({ phone });
+    if (!doc) {
+        codeItem = getCodeItem();
+        doc = new VerifyCodeModel({
+            phone,
+            codeList: [ codeItem ],
+        });
+    } else {
+        const codeList = _.filter(doc.codeList, o => o.deadTime.getTime() > Date.now());
+        if (codeList.length > 2) {
+            return { msg: '操作过于频繁，请稍后再试' };
+        }
+        codeItem = getCodeItem();
+        codeList.unshift(codeItem);
+        doc.codeList = codeList;
+    }
+    const success = await sendSms(phone, codeItem.code);
+    if (!success) {
+        return { msg: '发送短信失败，请稍后再试' };
+    }
+    await doc.save();
+    return { success: true };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/common/upload/uploadFile.js
+
+```js
+import mongoose from 'mongoose';
+import { MediaModel } from '../../../../models';
+import { getMediaPath } from '../../../../utils/';
+
+export default ({
+    clientId,
+    shopMemberId,
+    adminId,
+}, req) => {
+    return new Promise(async resolve => {
+        const gridId = req.file.grid._id;
+        const media = new MediaModel({
+            gridId,
+        });
+        const doc = await media.save();
+        if (doc) {
+            return resolve({ success: true, context: { url: getMediaPath(doc._id) } });
+        } else {
+            mongoose.gfs.remove({ _id: gridId });
+            return resolve({ msg: '上传失败' });
+        }
+    });
 };
 
 ```
@@ -9447,349 +9538,6 @@ export default ({
             });
         }
     });
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/driver/truck/confirmReach.js
-
-```js
-import { TruckModel } from '../../../../models';
-import { actionLog } from '../../../../utils';
-import CONSTANTS from '../../../../constants';
-
-export default async ({ userId, address, longitude, latitude }) => {
-    const truck = await TruckModel.findOneAndUpdate(
-        { driverId: userId, state: CONSTANTS.TS_ON_THE_WAY },
-        { state: CONSTANTS.TS_RECEIVE_SUCCESS, $push: { locationList: { $each: [ { address, longitude, latitude, time: Date.now() } ], $position: 0 } } }
-    );
-    if (!truck) {
-        return { msg: '你当前没有在运输中的车辆' };
-    }
-    actionLog(userId, 'Driver', truck.id, 'Truck', 'confirmReach');
-    return { success: true };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/driver/truck/getLocationList.js
-
-```js
-import { TruckModel } from '../../../../models';
-import CONSTANTS from '../../../../constants';
-import { getFormatTime } from '../../../../utils';
-
-export default async ({ userId }) => {
-    const truck = await TruckModel.findOne({ driverId: userId, state: CONSTANTS.TS_ON_THE_WAY }).populate({
-        path: 'shopId',
-        select: { name: 1, address: 1 },
-    });
-    let locationList = [];
-    if (!truck) {
-        return { success: true, locationList: [] };
-    } else {
-        locationList.push({
-            address: (truck.shop || {}).address,
-            time: getFormatTime(truck.createTime),
-        });
-        locationList = [...(truck || {}).locationList || [], ...locationList];
-    }
-    return { success: true, locationList };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/driver/truck/getOnWayTruck.js
-
-```js
-import { TruckModel } from '../../../../models';
-import CONSTANTS from '../../../../constants';
-import { getFormatTime } from '../../../../utils';
-
-export default async ({ userId }) => {
-    const truck = await TruckModel.findOne({ driverId: userId, state: CONSTANTS.TS_ON_THE_WAY }).populate({
-        path: 'shopId',
-        select: { name: 1, address: 1 },
-    });
-    let locationList = [];
-    if (!truck) {
-        return { msg: '你当前没有在运输中的车辆' };
-    } else {
-        locationList.push({
-            address: (truck.shop || {}).address,
-            time: getFormatTime(truck.createTime),
-        });
-        truck.locationList = [...(truck || {}).locationList || [], ...locationList];
-    }
-    return { success: true, context: truck };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/driver/truck/uploadLocation.js
-
-```js
-import { TruckModel } from '../../../../models';
-import CONSTANTS from '../../../../constants';
-
-export default async ({ userId, address, longitude, latitude }) => {
-    const truck = await TruckModel.findOneAndUpdate({ driverId: userId, state: CONSTANTS.TS_ON_THE_WAY }, { $push: { locationList: { $each: [ { address, longitude, latitude, time: Date.now() } ], $position: 0 } } });
-    if (!truck) {
-        return { success: false };
-    }
-    return { success: true };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/libs/address/getAddressFromLastCode.js
-
-```js
-import { RegionModel } from '../../../../mysql';
-import _ from 'lodash';
-
-export default async (addressLastCode = 0, withTown) => {
-    if (addressLastCode === 0) {
-        const list = await RegionModel.findAll({ where: { parentCode: 0 } });
-        return [ list ];
-    }
-
-    const addressList = [];
-    while (true) {
-        const item = await RegionModel.findOne({ where: { code: addressLastCode } });
-        if (!item) {
-            break;
-        }
-        if (item.parentCode === 0) {
-            const list = await RegionModel.findAll({ where: { parentCode: 0 } });
-            addressList.push(list);
-            break;
-        } else {
-            const list = await RegionModel.findAll({ where: { parentCode: item.parentCode } });
-            if (!withTown) {
-                addressList.push(_.reject(list, o => o.level === 8 || o.level === 9));
-            } else {
-                addressList.push(list);
-            }
-
-            addressLastCode = item.parentCode;
-        }
-    }
-    return addressList;
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/libs/address/getEndPointFromLastCode.js
-
-```js
-import { RoadmapAddressModel } from '../../../../models';
-import getAddressFromLastCode from './getAddressFromLastCode';
-import config from '../../../../../config';
-import _ from 'lodash';
-
-export default async (shopId, addressLastCode = 0, withTown) => {
-    if (!config.useOnlyExitRoadmap) {
-        return await getAddressFromLastCode(addressLastCode, withTown);
-    }
-    if (addressLastCode === 0) {
-        const list = await RoadmapAddressModel.find({ shopId, parentCode: 0 });
-        return [ list ];
-    }
-
-    const addressList = [];
-    while (true) {
-        const item = await RoadmapAddressModel.findOne({ shopId, code: addressLastCode });
-        if (!item) {
-            break;
-        }
-        if (item.parentCode === 0) {
-            const list = await RoadmapAddressModel.find({ shopId, parentCode: 0 });
-            addressList.push(list);
-            break;
-        } else {
-            const list = await RoadmapAddressModel.find({ shopId, parentCode: item.parentCode });
-            if (!withTown) {
-                addressList.push(_.reject(list, o => o.level === 8 || o.level === 9));
-            } else {
-                addressList.push(list);
-            }
-            addressLastCode = item.parentCode;
-        }
-    }
-    if (!addressList.length) {
-        const list = await RoadmapAddressModel.find({ shopId, parentCode: 0 });
-        return [ list ];
-    }
-    return addressList;
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/libs/address/getSendDoorAddressFromLastCode.js
-
-```js
-import { RegionModel } from '../../../../mysql';
-import _ from 'lodash';
-
-export default async (addressLastCode, parentCode) => {
-    if (!addressLastCode) {
-        return parentCode ? [ await RegionModel.findAll({ where: { parentCode } }) ] : [];
-    }
-
-    const addressList = [];
-    while (true) {
-        const item = await RegionModel.findOne({ where: { code: addressLastCode } });
-        if (!item || item.level === 7 || item.level === 6) {
-            break;
-        }
-        const list = await RegionModel.findAll({ where: { parentCode: item.parentCode } });
-        addressList.push(_.reject(list, o => o.level === 4 || o.level === 5 || o.level === 6 || o.level === 7));
-        if (item.level === 8 || item.level === 9) {
-            break;
-        } else {
-            addressLastCode = item.parentCode;
-        }
-    }
-    return addressList;
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/libs/address/getSendDoorLastCodeList.js
-
-```js
-import { RegionModel } from '../../../../mysql';
-
-const getChildList = async (code, name, list) => {
-    const docs = await RegionModel.findAll({ where: { parentCode: code } });
-    for (const doc of docs) {
-        if (doc.level === 10) {
-            list.push({ code: doc.code, address: name + doc.name, sendDoorPrice: 110, sendDoorMinFee: 60 }); // todo： 需要计算该方向的平均成交价
-        } else {
-            await getChildList(doc.code, name + doc.name, list);
-        }
-    }
-};
-
-// 获取长途路线的送货上门的地址列表
-export default async (code) => {
-    const list = [];
-    await getChildList(code, '', list);
-    return list;
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/libs/address/index.js
-
-```js
-export getSendDoorLastCodeList from './getSendDoorLastCodeList'; // 获取所有的送货上门地址列表
-export getAddressFromLastCode from './getAddressFromLastCode'; // 通过最后一个code获取地址列表
-export getSendDoorAddressFromLastCode from './getSendDoorAddressFromLastCode'; // 通过最后一个code获取送货上门地址列表
-export registeredStartPointAddress from './registeredStartPointAddress'; // 注册发货地址（包括分店和收货点）
-export registeredRoadmapAddress from './registeredRoadmapAddress'; // 注册路线地址
-export getEndPointFromLastCode from './getEndPointFromLastCode'; // 通过最后一个code获取地址列表(只获取分店里面已经拥有的路线)
-
-```
-
-* PDShopServer/project/App/routers/posts/libs/address/registeredRoadmapAddress.js
-
-```js
-import { RoadmapAddressModel, RoadmapModel } from '../../../../models';
-import { RegionModel } from '../../../../mysql';
-
-// 该接口只注册长途的地址，同城配送的不注册
-export default async (shopId, endPointLastCode, oldEndPointLastCode) => {
-    if (endPointLastCode === oldEndPointLastCode) {
-        return;
-    }
-    if (oldEndPointLastCode) {
-        const item = await RoadmapAddressModel.findOne({ shopId, code: oldEndPointLastCode });
-        if (item) {
-            const roadmap = await RoadmapModel.findOne({ shopId, endPointLastCode: oldEndPointLastCode, enable: true });
-            if (!roadmap) {
-                await item.remove();
-                let parentCode = item.parentCode;
-                while (true) {
-                    if (await RoadmapAddressModel.findOne({ shopId, parentCode })) {
-                        break;
-                    }
-                    const parent = await RoadmapAddressModel.findOne({ shopId, code: parentCode });
-                    if (!parent) {
-                        break;
-                    }
-                    parentCode = parent.parentCode;
-                    await parent.remove();
-                }
-            }
-        }
-    }
-    if (endPointLastCode) {
-        while (true) {
-            const item = await RoadmapAddressModel.findOne({ shopId, code: endPointLastCode });
-            if (item) { // 如果已经存在，则无需再添加
-                break;
-            }
-            const node = await RegionModel.findOne({ where: { code: endPointLastCode } });
-            const doc = new RoadmapAddressModel({ shopId, parentCode: node.parentCode, code: node.code, name: node.name, level: node.level });
-            await doc.save();
-            if (node.parentCode === 0) {
-                break;
-            }
-            endPointLastCode = node.parentCode;
-        }
-    }
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/libs/address/registeredStartPointAddress.js
-
-```js
-import { StartPointAddressModel, ShopModel, AgentModel } from '../../../../models';
-import { RegionModel } from '../../../../mysql';
-
-export default async (addressLastCode, oldAddressLastCode) => {
-    if (!addressLastCode || addressLastCode === oldAddressLastCode) {
-        return;
-    }
-    if (oldAddressLastCode) {
-        const item = await StartPointAddressModel.findOne({ code: oldAddressLastCode });
-        if (item) {
-            const shopAgent = await ShopModel.findOne({ isMasterShop: false, addressRegionLastCode: oldAddressLastCode }) ||
-            await AgentModel.findOne({ addressRegionLastCode: oldAddressLastCode });
-            if (!shopAgent) {
-                await item.remove();
-                let parentCode = item.parentCode;
-                while (true) {
-                    if (await StartPointAddressModel.findOne({ parentCode })) {
-                        break;
-                    }
-                    const parent = await StartPointAddressModel.findOne({ code: parentCode });
-                    if (!parent) {
-                        break;
-                    }
-                    parentCode = parent.parentCode;
-                    await parent.remove();
-                }
-            }
-        }
-    }
-
-    while (true) {
-        const item = await StartPointAddressModel.findOne({ code: addressLastCode });
-        if (item) { // 如果已经存在，则无需再添加
-            break;
-        }
-        const node = await RegionModel.findOne({ where: { code: addressLastCode } });
-        const doc = new StartPointAddressModel({ parentCode: node.parentCode, code: node.code, name: node.name, level: node.level });
-        await doc.save();
-        if (node.parentCode === 0) {
-            break;
-        }
-        addressLastCode = node.parentCode;
-    }
 };
 
 ```
@@ -10163,6 +9911,258 @@ export default async (order, profitRate) => {
         }
     } else {
         order.deductError = true;
+    }
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/libs/address/getAddressFromLastCode.js
+
+```js
+import { RegionModel } from '../../../../mysql';
+import _ from 'lodash';
+
+export default async (addressLastCode = 0, withTown) => {
+    if (addressLastCode === 0) {
+        const list = await RegionModel.findAll({ where: { parentCode: 0 } });
+        return [ list ];
+    }
+
+    const addressList = [];
+    while (true) {
+        const item = await RegionModel.findOne({ where: { code: addressLastCode } });
+        if (!item) {
+            break;
+        }
+        if (item.parentCode === 0) {
+            const list = await RegionModel.findAll({ where: { parentCode: 0 } });
+            addressList.push(list);
+            break;
+        } else {
+            const list = await RegionModel.findAll({ where: { parentCode: item.parentCode } });
+            if (!withTown) {
+                addressList.push(_.reject(list, o => o.level === 8 || o.level === 9));
+            } else {
+                addressList.push(list);
+            }
+
+            addressLastCode = item.parentCode;
+        }
+    }
+    return addressList;
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/libs/address/getEndPointFromLastCode.js
+
+```js
+import { RoadmapAddressModel } from '../../../../models';
+import getAddressFromLastCode from './getAddressFromLastCode';
+import config from '../../../../../config';
+import _ from 'lodash';
+
+export default async (shopId, addressLastCode = 0, withTown) => {
+    if (!config.useOnlyExitRoadmap) {
+        return await getAddressFromLastCode(addressLastCode, withTown);
+    }
+    if (addressLastCode === 0) {
+        const list = await RoadmapAddressModel.find({ shopId, parentCode: 0 });
+        return [ list ];
+    }
+
+    const addressList = [];
+    while (true) {
+        const item = await RoadmapAddressModel.findOne({ shopId, code: addressLastCode });
+        if (!item) {
+            break;
+        }
+        if (item.parentCode === 0) {
+            const list = await RoadmapAddressModel.find({ shopId, parentCode: 0 });
+            addressList.push(list);
+            break;
+        } else {
+            const list = await RoadmapAddressModel.find({ shopId, parentCode: item.parentCode });
+            if (!withTown) {
+                addressList.push(_.reject(list, o => o.level === 8 || o.level === 9));
+            } else {
+                addressList.push(list);
+            }
+            addressLastCode = item.parentCode;
+        }
+    }
+    if (!addressList.length) {
+        const list = await RoadmapAddressModel.find({ shopId, parentCode: 0 });
+        return [ list ];
+    }
+    return addressList;
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/libs/address/getSendDoorAddressFromLastCode.js
+
+```js
+import { RegionModel } from '../../../../mysql';
+import _ from 'lodash';
+
+export default async (addressLastCode, parentCode) => {
+    if (!addressLastCode) {
+        return parentCode ? [ await RegionModel.findAll({ where: { parentCode } }) ] : [];
+    }
+
+    const addressList = [];
+    while (true) {
+        const item = await RegionModel.findOne({ where: { code: addressLastCode } });
+        if (!item || item.level === 7 || item.level === 6) {
+            break;
+        }
+        const list = await RegionModel.findAll({ where: { parentCode: item.parentCode } });
+        addressList.push(_.reject(list, o => o.level === 4 || o.level === 5 || o.level === 6 || o.level === 7));
+        if (item.level === 8 || item.level === 9) {
+            break;
+        } else {
+            addressLastCode = item.parentCode;
+        }
+    }
+    return addressList;
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/libs/address/getSendDoorLastCodeList.js
+
+```js
+import { RegionModel } from '../../../../mysql';
+
+const getChildList = async (code, name, list) => {
+    const docs = await RegionModel.findAll({ where: { parentCode: code } });
+    for (const doc of docs) {
+        if (doc.level === 10) {
+            list.push({ code: doc.code, address: name + doc.name, sendDoorPrice: 110, sendDoorMinFee: 60 }); // todo： 需要计算该方向的平均成交价
+        } else {
+            await getChildList(doc.code, name + doc.name, list);
+        }
+    }
+};
+
+// 获取长途路线的送货上门的地址列表
+export default async (code) => {
+    const list = [];
+    await getChildList(code, '', list);
+    return list;
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/libs/address/index.js
+
+```js
+export getSendDoorLastCodeList from './getSendDoorLastCodeList'; // 获取所有的送货上门地址列表
+export getAddressFromLastCode from './getAddressFromLastCode'; // 通过最后一个code获取地址列表
+export getSendDoorAddressFromLastCode from './getSendDoorAddressFromLastCode'; // 通过最后一个code获取送货上门地址列表
+export registeredStartPointAddress from './registeredStartPointAddress'; // 注册发货地址（包括分店和收货点）
+export registeredRoadmapAddress from './registeredRoadmapAddress'; // 注册路线地址
+export getEndPointFromLastCode from './getEndPointFromLastCode'; // 通过最后一个code获取地址列表(只获取分店里面已经拥有的路线)
+
+```
+
+* PDShopServer/project/App/routers/posts/libs/address/registeredRoadmapAddress.js
+
+```js
+import { RoadmapAddressModel, RoadmapModel } from '../../../../models';
+import { RegionModel } from '../../../../mysql';
+
+// 该接口只注册长途的地址，同城配送的不注册
+export default async (shopId, endPointLastCode, oldEndPointLastCode) => {
+    if (endPointLastCode === oldEndPointLastCode) {
+        return;
+    }
+    if (oldEndPointLastCode) {
+        const item = await RoadmapAddressModel.findOne({ shopId, code: oldEndPointLastCode });
+        if (item) {
+            const roadmap = await RoadmapModel.findOne({ shopId, endPointLastCode: oldEndPointLastCode, enable: true });
+            if (!roadmap) {
+                await item.remove();
+                let parentCode = item.parentCode;
+                while (true) {
+                    if (await RoadmapAddressModel.findOne({ shopId, parentCode })) {
+                        break;
+                    }
+                    const parent = await RoadmapAddressModel.findOne({ shopId, code: parentCode });
+                    if (!parent) {
+                        break;
+                    }
+                    parentCode = parent.parentCode;
+                    await parent.remove();
+                }
+            }
+        }
+    }
+    if (endPointLastCode) {
+        while (true) {
+            const item = await RoadmapAddressModel.findOne({ shopId, code: endPointLastCode });
+            if (item) { // 如果已经存在，则无需再添加
+                break;
+            }
+            const node = await RegionModel.findOne({ where: { code: endPointLastCode } });
+            const doc = new RoadmapAddressModel({ shopId, parentCode: node.parentCode, code: node.code, name: node.name, level: node.level });
+            await doc.save();
+            if (node.parentCode === 0) {
+                break;
+            }
+            endPointLastCode = node.parentCode;
+        }
+    }
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/libs/address/registeredStartPointAddress.js
+
+```js
+import { StartPointAddressModel, ShopModel, AgentModel } from '../../../../models';
+import { RegionModel } from '../../../../mysql';
+
+export default async (addressLastCode, oldAddressLastCode) => {
+    if (!addressLastCode || addressLastCode === oldAddressLastCode) {
+        return;
+    }
+    if (oldAddressLastCode) {
+        const item = await StartPointAddressModel.findOne({ code: oldAddressLastCode });
+        if (item) {
+            const shopAgent = await ShopModel.findOne({ isMasterShop: false, addressRegionLastCode: oldAddressLastCode }) ||
+            await AgentModel.findOne({ addressRegionLastCode: oldAddressLastCode });
+            if (!shopAgent) {
+                await item.remove();
+                let parentCode = item.parentCode;
+                while (true) {
+                    if (await StartPointAddressModel.findOne({ parentCode })) {
+                        break;
+                    }
+                    const parent = await StartPointAddressModel.findOne({ code: parentCode });
+                    if (!parent) {
+                        break;
+                    }
+                    parentCode = parent.parentCode;
+                    await parent.remove();
+                }
+            }
+        }
+    }
+
+    while (true) {
+        const item = await StartPointAddressModel.findOne({ code: addressLastCode });
+        if (item) { // 如果已经存在，则无需再添加
+            break;
+        }
+        const node = await RegionModel.findOne({ where: { code: addressLastCode } });
+        const doc = new StartPointAddressModel({ parentCode: node.parentCode, code: node.code, name: node.name, level: node.level });
+        await doc.save();
+        if (node.parentCode === 0) {
+            break;
+        }
+        addressLastCode = node.parentCode;
     }
 };
 
@@ -11650,6 +11650,147 @@ export default async ({
 
 ```
 
+* PDShopServer/project/App/routers/posts/shipper/member/getMemberByPhone.js
+
+```js
+import { ClientModel } from '../../../../models';
+import { AccountModel } from '../../../../mysql';
+import { _T } from '../../../../utils';
+import CONSTANTS from '../../../../constants';
+
+export default async ({
+    userId,
+    memberPhone,
+}) => {
+    const member = await ClientModel.findById(userId);
+    const client = await ClientModel.findOne({ phone: memberPhone });
+    if (!client || !client.registerTime) {
+        return { msg: '没有该用户' };
+    }
+    if (client.agentId) {
+        return { msg: '该用户已经是收货点的成员' };
+    }
+    if (client.shipperId) {
+        if (_T(member.shipperId) === _T(client.shipperId)) {
+            return { msg: '该用户已经是物流公司成员，无需再添加' };
+        } else if (_T(client.shipperId) !== _T(member.shipperId)) {
+            return { msg: '该用户已经是其他物流公司的成员' };
+        }
+    }
+
+    const clientAccount = await AccountModel.findOne({ where: { targetId: client.id, type: CONSTANTS.AT_CLIENT } });
+    if (clientAccount && clientAccount.amount > 0) {
+        return { msg: '请通知该用户先将其账户中的余额提现后再加入物流公司' };
+    }
+
+    return { success: true, context: client };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/shipper/member/getMemberDetail.js
+
+```js
+import { ClientModel } from '../../../../models';
+
+export default async ({
+    userId,
+    memberId,
+}) => {
+    const member = await ClientModel.findById(memberId);
+    return { success: true, context: member };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/shipper/member/getMemberList.js
+
+```js
+import { ClientModel } from '../../../../models';
+
+export default async ({
+    userId,
+}) => {
+    const member = await ClientModel.findById(userId);
+    if (!member || !member.shipperId) {
+        return { msg: '你不是物流公司成员' };
+    }
+    const docs = await ClientModel.find({ shipperId: member.shipperId }).sort({ registerTime: 'asc' });
+
+    return { success: true, context: { memberList: docs } };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/shipper/member/modifyMemberAuthority.js
+
+```js
+import { ClientModel, CityTruckModel } from '../../../../models';
+import { AccountModel } from '../../../../mysql';
+import { _T, omitNil, hasAuthority, actionLog } from '../../../../utils';
+import CONSTANTS from '../../../../constants';
+import _ from 'lodash';
+
+export default async ({
+    userId,
+    memberId,
+    authority,
+}) => {
+    if (authority) {
+        authority = _.sortBy(_.uniq(authority));
+    }
+    const member = await ClientModel.findById(userId);
+    if (!hasAuthority(member, CONSTANTS.AH_MODIFY_SHIPPER_MEMBER_AUTHORITY)) {
+        return { msg: '你没有修改成员的权限' };
+    }
+    const client = await ClientModel.findById(memberId);
+    if (!client || !client.registerTime) {
+        return { msg: '没有该用户' };
+    }
+    if (client.agentId) {
+        return { msg: '该用户是收货点的成员，你不能修改他的权限' };
+    }
+    if (client.shipperId && _T(client.shipperId) !== _T(member.shipperId)) {
+        return { msg: '该用户是其他物流公司的成员，你不能修改他的权限' };
+    }
+    const clientAccount = await AccountModel.findOne({ where: { targetId: memberId, type: CONSTANTS.AT_CLIENT } });
+    if (clientAccount && clientAccount.amount > 0) {
+        return { msg: '请通知该用户先将其账户中的余额提现后再加入物流公司' };
+    }
+
+    // 删除权限
+    if (!authority || !authority.length) {
+        // 如果该成员拥有同城配送的权限，则需要删除将该成员对应的货车设置为 disable
+        if (_.includes(client.authority, CONSTANTS.AH_CITY_DISTRIBUTE)) {
+            await CityTruckModel.findByIdAndUpdate(client.truckId, { enable: false });
+        }
+        await client.update({ $unset: { shipperId: 1 }, authority: [] });
+    } else {
+        // 如果为该成员添加同城配送的权限，需要添加相应的车辆
+        let truckId;
+        if (_.includes(authority, CONSTANTS.AH_CITY_DISTRIBUTE) && !_.includes(client.authority, CONSTANTS.AH_CITY_DISTRIBUTE)) {
+            if (client.truckId) {
+                await CityTruckModel.findByIdAndUpdate(client.truckId, { enable: true });
+            } else {
+                const truck = new CityTruckModel({
+                    shipperId: member.shipperId,
+                    driverId: memberId,
+                });
+                await truck.save();
+                truckId = truck.id;
+            }
+        }
+        await client.update(omitNil({ authority, shipperId: member.shipperId, truckId }));
+    }
+
+    actionLog(userId, 'Client', memberId, 'Client', 'modifyMemberAuthority');
+    const context = client.toObject();
+    context.authority = authority || [];
+    return { success: true, context };
+};
+
+```
+
 * PDShopServer/project/App/routers/posts/shipper/loadCargo/continueScanOrder.js
 
 ```js
@@ -11991,147 +12132,6 @@ export default async ({ userId, truckId }) => {
     actionLog(userId, 'Client', truckId, 'Truck', 'startScanOrder');
 
     return { success: true };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/shipper/member/getMemberByPhone.js
-
-```js
-import { ClientModel } from '../../../../models';
-import { AccountModel } from '../../../../mysql';
-import { _T } from '../../../../utils';
-import CONSTANTS from '../../../../constants';
-
-export default async ({
-    userId,
-    memberPhone,
-}) => {
-    const member = await ClientModel.findById(userId);
-    const client = await ClientModel.findOne({ phone: memberPhone });
-    if (!client || !client.registerTime) {
-        return { msg: '没有该用户' };
-    }
-    if (client.agentId) {
-        return { msg: '该用户已经是收货点的成员' };
-    }
-    if (client.shipperId) {
-        if (_T(member.shipperId) === _T(client.shipperId)) {
-            return { msg: '该用户已经是物流公司成员，无需再添加' };
-        } else if (_T(client.shipperId) !== _T(member.shipperId)) {
-            return { msg: '该用户已经是其他物流公司的成员' };
-        }
-    }
-
-    const clientAccount = await AccountModel.findOne({ where: { targetId: client.id, type: CONSTANTS.AT_CLIENT } });
-    if (clientAccount && clientAccount.amount > 0) {
-        return { msg: '请通知该用户先将其账户中的余额提现后再加入物流公司' };
-    }
-
-    return { success: true, context: client };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/shipper/member/getMemberDetail.js
-
-```js
-import { ClientModel } from '../../../../models';
-
-export default async ({
-    userId,
-    memberId,
-}) => {
-    const member = await ClientModel.findById(memberId);
-    return { success: true, context: member };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/shipper/member/getMemberList.js
-
-```js
-import { ClientModel } from '../../../../models';
-
-export default async ({
-    userId,
-}) => {
-    const member = await ClientModel.findById(userId);
-    if (!member || !member.shipperId) {
-        return { msg: '你不是物流公司成员' };
-    }
-    const docs = await ClientModel.find({ shipperId: member.shipperId }).sort({ registerTime: 'asc' });
-
-    return { success: true, context: { memberList: docs } };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/shipper/member/modifyMemberAuthority.js
-
-```js
-import { ClientModel, CityTruckModel } from '../../../../models';
-import { AccountModel } from '../../../../mysql';
-import { _T, omitNil, hasAuthority, actionLog } from '../../../../utils';
-import CONSTANTS from '../../../../constants';
-import _ from 'lodash';
-
-export default async ({
-    userId,
-    memberId,
-    authority,
-}) => {
-    if (authority) {
-        authority = _.sortBy(_.uniq(authority));
-    }
-    const member = await ClientModel.findById(userId);
-    if (!hasAuthority(member, CONSTANTS.AH_MODIFY_SHIPPER_MEMBER_AUTHORITY)) {
-        return { msg: '你没有修改成员的权限' };
-    }
-    const client = await ClientModel.findById(memberId);
-    if (!client || !client.registerTime) {
-        return { msg: '没有该用户' };
-    }
-    if (client.agentId) {
-        return { msg: '该用户是收货点的成员，你不能修改他的权限' };
-    }
-    if (client.shipperId && _T(client.shipperId) !== _T(member.shipperId)) {
-        return { msg: '该用户是其他物流公司的成员，你不能修改他的权限' };
-    }
-    const clientAccount = await AccountModel.findOne({ where: { targetId: memberId, type: CONSTANTS.AT_CLIENT } });
-    if (clientAccount && clientAccount.amount > 0) {
-        return { msg: '请通知该用户先将其账户中的余额提现后再加入物流公司' };
-    }
-
-    // 删除权限
-    if (!authority || !authority.length) {
-        // 如果该成员拥有同城配送的权限，则需要删除将该成员对应的货车设置为 disable
-        if (_.includes(client.authority, CONSTANTS.AH_CITY_DISTRIBUTE)) {
-            await CityTruckModel.findByIdAndUpdate(client.truckId, { enable: false });
-        }
-        await client.update({ $unset: { shipperId: 1 }, authority: [] });
-    } else {
-        // 如果为该成员添加同城配送的权限，需要添加相应的车辆
-        let truckId;
-        if (_.includes(authority, CONSTANTS.AH_CITY_DISTRIBUTE) && !_.includes(client.authority, CONSTANTS.AH_CITY_DISTRIBUTE)) {
-            if (client.truckId) {
-                await CityTruckModel.findByIdAndUpdate(client.truckId, { enable: true });
-            } else {
-                const truck = new CityTruckModel({
-                    shipperId: member.shipperId,
-                    driverId: memberId,
-                });
-                await truck.save();
-                truckId = truck.id;
-            }
-        }
-        await client.update(omitNil({ authority, shipperId: member.shipperId, truckId }));
-    }
-
-    actionLog(userId, 'Client', memberId, 'Client', 'modifyMemberAuthority');
-    const context = client.toObject();
-    context.authority = authority || [];
-    return { success: true, context };
 };
 
 ```
@@ -13014,6 +13014,61 @@ export default async ({
 
 ```
 
+* PDShopServer/project/App/routers/posts/shipper/statistics/getStatistics.js
+
+```js
+import { OrderModel, ClientModel } from '../../../../models';
+import CONSTANTS from '../../../../constants';
+import { hasAuthority } from '../../../../utils';
+import mongoose from 'mongoose';
+import moment from 'moment';
+import _ from 'lodash';
+const MAX_DAYS = 30;
+
+export default async ({ userId, days = 7 }) => {
+    const client = await ClientModel.findById(userId);
+    if (!client) {
+        return { msg: '你没有查看统计的权限' };
+    }
+    if (!client.shipperId || !hasAuthority(client, CONSTANTS.AH_LOOK_STATISTICS)) {
+        return { msg: '你没有查看统计的权限' };
+    }
+
+    days = (days > MAX_DAYS ? MAX_DAYS : days < 1 ? 1 : days) + 1;
+    const now = moment().startOf('d').add(1, 'd');
+    const timeList = _.map(_.rangeRight(-days), o => now.clone().add(o, 'd'));
+    const getCond = (name, value) => _.dropRight(_.map(timeList, (o, k) => timeList[k + 1] && { [name + k]: { $sum: { $cond: { if: { $and: [{ $gte: ['$placeOrderTime', o.toDate()] }, { $lt: ['$placeOrderTime', timeList[k + 1].toDate()] }] }, then: value, else: 0 } } } }));
+
+    const cond = [
+        ...getCond('count', 1),
+        ...getCond('isReachPay', '$isReachPay'),
+        ...getCond('fee', '$fee'),
+        ...getCond('totalDesignatedFee', '$totalDesignatedFee'),
+        ...getCond('proxyCharge', '$proxyCharge'),
+        ...getCond('weight', '$weight'),
+        ...getCond('size', '$size'),
+    ];
+
+    const daysInfo = await OrderModel.aggregate()
+    .match({ shipperId: new mongoose.Types.ObjectId(client.shipperId), placeOrderTime: { $gt: timeList[0].toDate() }, 'stateList.0.state': { $gte: CONSTANTS.OS_READY_STOCK } })
+    .project({ placeOrderTime: 1, isReachPay: { $cond: { if: '$isReachPay', then: 1, else: 0 } }, fee: 1, totalDesignatedFee: 1, proxyCharge: 1, weight: 1, size: 1 })
+    .group({
+        _id: null,
+        ..._.reduce(cond, (r, o) => Object.assign(r, o)),
+    });
+
+    daysInfo[0] && (delete daysInfo[0]._id);
+    const context = _.transform(daysInfo[0], (r, v, k) => {
+        const key = k.replace(/\d+/, '');
+        r[key] || (r[key] = []);
+        r[key].push(v);
+    });
+
+    return { success: true, context };
+};
+
+```
+
 * PDShopServer/project/App/routers/posts/shipper/truck/createTruck.js
 
 ```js
@@ -13034,8 +13089,8 @@ export default async ({
     if (!hasAuthority(client, CONSTANTS.AH_CREATE_TRUCK)) {
         return { msg: '你没有创建货车的权限' };
     }
-    const truckList = await TruckModel.find({ driverId, state: CONSTANTS.TS_RECEIVE_SUCCESS });
-    if (!truckList) {
+    const truck = await TruckModel.findOne({ $or: [ { driverId }, { plateNo } ], state: { $ne: CONSTANTS.TS_RECEIVE_SUCCESS }});
+    if (truck) {
         return { msg: '司机当前不可用' };
     }
     const doc = new TruckModel({
@@ -13510,61 +13565,6 @@ export default async ({
     actionLog(userId, 'Client', truckId, 'Truck', 'removeTruck');
 
     return { success: true };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/shipper/statistics/getStatistics.js
-
-```js
-import { OrderModel, ClientModel } from '../../../../models';
-import CONSTANTS from '../../../../constants';
-import { hasAuthority } from '../../../../utils';
-import mongoose from 'mongoose';
-import moment from 'moment';
-import _ from 'lodash';
-const MAX_DAYS = 30;
-
-export default async ({ userId, days = 7 }) => {
-    const client = await ClientModel.findById(userId);
-    if (!client) {
-        return { msg: '你没有查看统计的权限' };
-    }
-    if (!client.shipperId || !hasAuthority(client, CONSTANTS.AH_LOOK_STATISTICS)) {
-        return { msg: '你没有查看统计的权限' };
-    }
-
-    days = (days > MAX_DAYS ? MAX_DAYS : days < 1 ? 1 : days) + 1;
-    const now = moment().startOf('d').add(1, 'd');
-    const timeList = _.map(_.rangeRight(-days), o => now.clone().add(o, 'd'));
-    const getCond = (name, value) => _.dropRight(_.map(timeList, (o, k) => timeList[k + 1] && { [name + k]: { $sum: { $cond: { if: { $and: [{ $gte: ['$placeOrderTime', o.toDate()] }, { $lt: ['$placeOrderTime', timeList[k + 1].toDate()] }] }, then: value, else: 0 } } } }));
-
-    const cond = [
-        ...getCond('count', 1),
-        ...getCond('isReachPay', '$isReachPay'),
-        ...getCond('fee', '$fee'),
-        ...getCond('totalDesignatedFee', '$totalDesignatedFee'),
-        ...getCond('proxyCharge', '$proxyCharge'),
-        ...getCond('weight', '$weight'),
-        ...getCond('size', '$size'),
-    ];
-
-    const daysInfo = await OrderModel.aggregate()
-    .match({ shipperId: new mongoose.Types.ObjectId(client.shipperId), placeOrderTime: { $gt: timeList[0].toDate() }, 'stateList.0.state': { $gte: CONSTANTS.OS_READY_STOCK } })
-    .project({ placeOrderTime: 1, isReachPay: { $cond: { if: '$isReachPay', then: 1, else: 0 } }, fee: 1, totalDesignatedFee: 1, proxyCharge: 1, weight: 1, size: 1 })
-    .group({
-        _id: null,
-        ..._.reduce(cond, (r, o) => Object.assign(r, o)),
-    });
-
-    daysInfo[0] && (delete daysInfo[0]._id);
-    const context = _.transform(daysInfo[0], (r, v, k) => {
-        const key = k.replace(/\d+/, '');
-        r[key] || (r[key] = []);
-        r[key].push(v);
-    });
-
-    return { success: true, context };
 };
 
 ```
@@ -14607,6 +14607,50 @@ export default async ({
 
 ```
 
+* PDShopServer/project/App/routers/posts/shop/client/getClientDetail.js
+
+```js
+import { ClientModel } from '../../../../models';
+
+export default async ({ userId, clientId }) => {
+    const context = await ClientModel.findById(clientId);
+    if (!context) {
+        return { msg: '没有该线路' };
+    }
+
+    return { success: true, context };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/shop/client/getClientList.js
+
+```js
+import { ClientModel } from '../../../../models';
+import { getKeywordCriteriaForUser } from '../../../../utils';
+
+export default async ({ userId, keyword, fromPC, pageNo, pageSize }) => {
+    const criteria = getKeywordCriteriaForUser(keyword);
+    const count = (fromPC && pageNo === 0) ? await ClientModel.count(criteria) : undefined;
+    const query = ClientModel.find(criteria).sort({ modifyTime: 'desc' }).skip(pageNo * pageSize).limit(pageSize);
+    const docs = await query
+    .select({
+        phone: 1,
+        name: 1,
+        email: 1,
+        head: 1,
+        address: 1,
+        phoneList: 1,
+    });
+
+    return { success: true, context: {
+        count,
+        clientList: docs,
+    } };
+};
+
+```
+
 * PDShopServer/project/App/routers/posts/shop/masterShop/createBranchShop.js
 
 ```js
@@ -14976,50 +15020,6 @@ export default async ({
 
     actionLog(userId, 'ShopMember', shopId, 'Shop', 'removeBranchShop');
     return { success: true };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/shop/client/getClientDetail.js
-
-```js
-import { ClientModel } from '../../../../models';
-
-export default async ({ userId, clientId }) => {
-    const context = await ClientModel.findById(clientId);
-    if (!context) {
-        return { msg: '没有该线路' };
-    }
-
-    return { success: true, context };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/shop/client/getClientList.js
-
-```js
-import { ClientModel } from '../../../../models';
-import { getKeywordCriteriaForUser } from '../../../../utils';
-
-export default async ({ userId, keyword, fromPC, pageNo, pageSize }) => {
-    const criteria = getKeywordCriteriaForUser(keyword);
-    const count = (fromPC && pageNo === 0) ? await ClientModel.count(criteria) : undefined;
-    const query = ClientModel.find(criteria).sort({ modifyTime: 'desc' }).skip(pageNo * pageSize).limit(pageSize);
-    const docs = await query
-    .select({
-        phone: 1,
-        name: 1,
-        email: 1,
-        head: 1,
-        address: 1,
-        phoneList: 1,
-    });
-
-    return { success: true, context: {
-        count,
-        clientList: docs,
-    } };
 };
 
 ```
@@ -17554,44 +17554,6 @@ export default async ({
 
 ```
 
-* PDShopServer/project/App/routers/posts/shop/securityCheckPartment/checkTruckPass.js
-
-```js
-import { ShopMemberModel, TruckModel, OrderModel, DriverModel } from '../../../../models';
-import { hasAuthority, actionLog } from '../../../../utils';
-import CONSTANTS from '../../../../constants';
-
-export default async ({
-    userId,
-    driverId,
-}) => {
-    const member = await ShopMemberModel.findById(userId);
-    if (!hasAuthority(member, CONSTANTS.AH_SECURITY_CHECK_PARTMENT)) {
-        return { msg: '权限不足' };
-    }
-    const truck = await TruckModel.findOne({ driverId, shopId: member.shopId, state: { $in: [ CONSTANTS.TS_READY_ENTER_WAREHOUSE, CONSTANTS.TS_READY_EXIT_WAREHOUSE ] } });
-    if (!truck) {
-        return { msg: '该货车未完成审核或者未付搬运款' };
-    }
-    if (truck.state === CONSTANTS.TS_READY_ENTER_WAREHOUSE) {
-        await truck.update({ state: CONSTANTS.TS_READY_SEARCH_CARRY_PARTMENT });
-    } else {
-        await OrderModel.update({ _id: { $in: truck.orderList } }, { 'stateList.0.state': CONSTANTS.OS_ON_THE_WAY }, { multi: true });
-        await truck.update({ state: CONSTANTS.TS_ON_THE_WAY });
-    }
-    const doc = await DriverModel.findById(driverId);
-
-    actionLog(userId, 'ShopMember', driverId, 'Driver', 'checkTruckPass');
-
-    return { success: true, context: {
-        isEnter: truck.state === CONSTANTS.TS_READY_ENTER_WAREHOUSE,
-        plateNo: truck.plateNo,
-        driver: doc,
-    } };
-};
-
-```
-
 * PDShopServer/project/App/routers/posts/shop/roadmap/addRoadmapRegionProfitRate.js
 
 ```js
@@ -17912,161 +17874,40 @@ export default async ({ userId, roadmapIdList, profitRate }) => {
 
 ```
 
-* PDShopServer/project/App/routers/posts/shop/shop/getOwnShopDetail.js
+* PDShopServer/project/App/routers/posts/shop/securityCheckPartment/checkTruckPass.js
 
 ```js
-import { ShopModel, ShopMemberModel } from '../../../../models';
-
-export default async ({ userId }) => {
-    const user = await ShopMemberModel.findById(userId);
-    if (!user) {
-        return { msg: '没有该用户' };
-    }
-    const shop = await ShopModel.findById(user.shopId)
-    .populate({
-        path: 'chairManId',
-        select: { name: 1, phone: 1 },
-    });
-    if (!shop) {
-        return { msg: '没有该物流超市' };
-    }
-    return { success: true, context: shop };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/shop/shop/modifyOwnShop.js
-
-```js
-import { ShopModel, ShopMemberModel, MediaModel } from '../../../../models';
-import { getMediaId, omitNil, hasAuthority, actionLog } from '../../../../utils/';
+import { ShopMemberModel, TruckModel, OrderModel, DriverModel } from '../../../../models';
+import { hasAuthority, actionLog } from '../../../../utils';
 import CONSTANTS from '../../../../constants';
 
 export default async ({
     userId,
-    name, // 物流超市名称
-    image, // 物流超市背景图片
-    sign, // 物流超市签名
-    phoneList, // 物流超市联系电话
-    address, // 商铺地址
-    location, // // 经纬度定位
+    driverId,
 }) => {
-    const member = await ShopMemberModel.findById(userId)
-    .populate({
-        path: 'shopId',
-        select: { isMasterShop: 1 },
-    });
-    if (!hasAuthority(member, CONSTANTS.AH_MODIFY_OWN_SHOP)) {
-        return { msg: `你没有权限修改${member.shop.isMasterShop ? '四面通总部' : '物流超市'}信息` };
+    const member = await ShopMemberModel.findById(userId);
+    if (!hasAuthority(member, CONSTANTS.AH_SECURITY_CHECK_PARTMENT)) {
+        return { msg: '权限不足' };
     }
-
-    let _image = getMediaId(image);
-    const doc = await ShopModel.findByIdAndUpdate(member.shop.id, omitNil({
-        name,
-        image: _image,
-        sign,
-        phoneList,
-        address,
-        location,
-    }));
-    if (!doc) {
-        return { msg: '修改失败' };
+    const truck = await TruckModel.findOne({ driverId, shopId: member.shopId, state: { $in: [ CONSTANTS.TS_READY_ENTER_WAREHOUSE, CONSTANTS.TS_READY_EXIT_WAREHOUSE ] } });
+    if (!truck) {
+        return { msg: '该货车未完成审核或者未付搬运款' };
     }
-    MediaModel._updateRef(
-        { [_image]: 1 },
-        { [image && doc.image]: -1 },
-    );
-
-    const context = await ShopModel.findById(member.shop.id)
-    .populate({
-        path: 'chairManId',
-        select: { name: 1, phone: 1 },
-    });
-
-    actionLog(userId, 'ShopMember', member.shop.id, 'Shop', 'modifyOwnShop');
-
-    return { success: true, context };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/shop/statistics/getStatistics.js
-
-```js
-import { OrderModel, ShopMemberModel } from '../../../../models';
-import CONSTANTS from '../../../../constants';
-import { hasAuthority } from '../../../../utils';
-import mongoose from 'mongoose';
-import moment from 'moment';
-import _ from 'lodash';
-const MAX_DAYS = 30;
-
-export default async ({ userId, shopId, days = 7 }) => {
-    const member = await ShopMemberModel.findById(userId)
-    .populate({
-        path: 'shopId',
-        select: { isMasterShop: 1 },
-    });
-    if (member.partmentId || !hasAuthority(member, CONSTANTS.AH_LOOK_STATISTICS)) {
-        return { msg: '你没有查看统计的权限' };
+    if (truck.state === CONSTANTS.TS_READY_ENTER_WAREHOUSE) {
+        await truck.update({ state: CONSTANTS.TS_READY_SEARCH_CARRY_PARTMENT });
+    } else {
+        await OrderModel.update({ _id: { $in: truck.orderList } }, { 'stateList.0.state': CONSTANTS.OS_ON_THE_WAY }, { multi: true });
+        await truck.update({ state: CONSTANTS.TS_ON_THE_WAY });
     }
-    if (!member.shop.isMasterShop) {
-        shopId = member.shop.id;
-    }
+    const doc = await DriverModel.findById(driverId);
 
-    days = (days > MAX_DAYS ? MAX_DAYS : days < 1 ? 1 : days) + 1;
-    const now = moment().startOf('d').add(1, 'd');
-    const timeList = _.map(_.rangeRight(-days), o => now.clone().add(o, 'd'));
-    const getCond = (name, value) => _.dropRight(_.map(timeList, (o, k) => timeList[k + 1] && { [name + k]: { $sum: { $cond: { if: { $and: [{ $gte: ['$placeOrderTime', o.toDate()] }, { $lt: ['$placeOrderTime', timeList[k + 1].toDate()] }] }, then: value, else: 0 } } } }));
+    actionLog(userId, 'ShopMember', driverId, 'Driver', 'checkTruckPass');
 
-    const cond = [
-        ...getCond('count', 1),
-        ...getCond('isReachPay', '$isReachPay'),
-        ...getCond('isInsuance', '$isInsuance'),
-        ...getCond('insuanceMount', '$insuanceMount'),
-        ...getCond('insuanceFee', '$insuanceFee'),
-        ...getCond('realFee', '$realFee'),
-        ...getCond('totalDesignatedFee', '$totalDesignatedFee'),
-        ...getCond('proxyCharge', '$proxyCharge'),
-        ...getCond('masterProfit', '$masterProfit'),
-        ...getCond('branchProfit', '$branchProfit'),
-        ...getCond('weight', '$weight'),
-        ...getCond('size', '$size'),
-    ];
-
-    const daysInfo = await OrderModel.aggregate()
-    .match({
-        ...(shopId ? { shopId: new mongoose.Types.ObjectId(shopId) } : {}),
-        placeOrderTime: { $gt: timeList[0].toDate() },
-        'stateList.0.state': { $gte: CONSTANTS.OS_READY_STOCK },
-    })
-    .project({
-        placeOrderTime: 1,
-        isReachPay: { $cond: { if: '$isReachPay', then: 1, else: 0 } },
-        isInsuance: { $cond: { if: '$isInsuance', then: 1, else: 0 } },
-        insuanceMount: 1,
-        insuanceFee: 1,
-        realFee: 1,
-        totalDesignatedFee: 1,
-        proxyCharge: 1,
-        masterProfit: 1,
-        branchProfit: 1,
-        weight: 1,
-        size: 1,
-    })
-    .group({
-        _id: null,
-        ..._.reduce(cond, (r, o) => Object.assign(r, o)),
-    });
-
-    daysInfo[0] && (delete daysInfo[0]._id);
-    const context = _.transform(daysInfo[0], (r, v, k) => {
-        const key = k.replace(/\d+/, '');
-        r[key] || (r[key] = []);
-        r[key].push(v);
-    });
-
-    return { success: true, context };
+    return { success: true, context: {
+        isEnter: truck.state === CONSTANTS.TS_READY_ENTER_WAREHOUSE,
+        plateNo: truck.plateNo,
+        driver: doc,
+    } };
 };
 
 ```
@@ -18421,59 +18262,80 @@ export default async ({
 
 ```
 
-* PDShopServer/project/App/routers/posts/shop/warehouse/createWarehouse.js
+* PDShopServer/project/App/routers/posts/shop/statistics/getStatistics.js
 
 ```js
-import { WarehouseModel, ShopMemberModel } from '../../../../models';
-import { hasAuthority, actionLog } from '../../../../utils';
+import { OrderModel, ShopMemberModel } from '../../../../models';
 import CONSTANTS from '../../../../constants';
+import { hasAuthority } from '../../../../utils';
+import mongoose from 'mongoose';
+import moment from 'moment';
+import _ from 'lodash';
+const MAX_DAYS = 30;
 
-export default async ({
-    userId,
-    shipperList,
-    houseManId,
-    houseNo,
-    maxStoreWeight,
-    maxStoreSize,
-}) => {
-    const member = await ShopMemberModel.findById(userId);
-    if (!hasAuthority(member, CONSTANTS.AH_CREATE_WAREHOUSE)) {
-        return { msg: '你没有创建仓库的权限' };
-    }
-
-    let warehouse = await WarehouseModel.findOne({ shopId: member.shopId, houseNo });
-    if (warehouse) {
-        return { msg: '该仓库号已经存在' };
-    }
-    warehouse = new WarehouseModel({
-        shopId: member.shopId,
-        shipperList,
-        houseManId,
-        houseNo,
-        maxStoreWeight,
-        maxStoreSize,
+export default async ({ userId, shopId, days = 7 }) => {
+    const member = await ShopMemberModel.findById(userId)
+    .populate({
+        path: 'shopId',
+        select: { isMasterShop: 1 },
     });
-    await warehouse.save();
+    if (member.partmentId || !hasAuthority(member, CONSTANTS.AH_LOOK_STATISTICS)) {
+        return { msg: '你没有查看统计的权限' };
+    }
+    if (!member.shop.isMasterShop) {
+        shopId = member.shop.id;
+    }
 
-    actionLog(userId, 'ShopMember', warehouse.id, 'Warehouse', 'createWarehouse');
+    days = (days > MAX_DAYS ? MAX_DAYS : days < 1 ? 1 : days) + 1;
+    const now = moment().startOf('d').add(1, 'd');
+    const timeList = _.map(_.rangeRight(-days), o => now.clone().add(o, 'd'));
+    const getCond = (name, value) => _.dropRight(_.map(timeList, (o, k) => timeList[k + 1] && { [name + k]: { $sum: { $cond: { if: { $and: [{ $gte: ['$placeOrderTime', o.toDate()] }, { $lt: ['$placeOrderTime', timeList[k + 1].toDate()] }] }, then: value, else: 0 } } } }));
 
-    const context = await WarehouseModel.findById(warehouse.id)
-    .select({
-        houseManId: 1,
-        houseNo: 1,
-        maxStoreWeight: 1,
-        maxStoreSize: 1,
-        orderCount: 1,
-        totalNumbers: 1,
-        totalWeight: 1,
-        totalSize: 1,
-        shipperList: 1,
-    }).populate({
-        path: 'houseManId',
-        select: { name: 1, phone: 1 },
-    }).populate({
-        path: 'shipperList',
-        select: { name: 1 },
+    const cond = [
+        ...getCond('count', 1),
+        ...getCond('isReachPay', '$isReachPay'),
+        ...getCond('isInsuance', '$isInsuance'),
+        ...getCond('insuanceMount', '$insuanceMount'),
+        ...getCond('insuanceFee', '$insuanceFee'),
+        ...getCond('realFee', '$realFee'),
+        ...getCond('totalDesignatedFee', '$totalDesignatedFee'),
+        ...getCond('proxyCharge', '$proxyCharge'),
+        ...getCond('masterProfit', '$masterProfit'),
+        ...getCond('branchProfit', '$branchProfit'),
+        ...getCond('weight', '$weight'),
+        ...getCond('size', '$size'),
+    ];
+
+    const daysInfo = await OrderModel.aggregate()
+    .match({
+        ...(shopId ? { shopId: new mongoose.Types.ObjectId(shopId) } : {}),
+        placeOrderTime: { $gt: timeList[0].toDate() },
+        'stateList.0.state': { $gte: CONSTANTS.OS_READY_STOCK },
+    })
+    .project({
+        placeOrderTime: 1,
+        isReachPay: { $cond: { if: '$isReachPay', then: 1, else: 0 } },
+        isInsuance: { $cond: { if: '$isInsuance', then: 1, else: 0 } },
+        insuanceMount: 1,
+        insuanceFee: 1,
+        realFee: 1,
+        totalDesignatedFee: 1,
+        proxyCharge: 1,
+        masterProfit: 1,
+        branchProfit: 1,
+        weight: 1,
+        size: 1,
+    })
+    .group({
+        _id: null,
+        ..._.reduce(cond, (r, o) => Object.assign(r, o)),
+    });
+
+    daysInfo[0] && (delete daysInfo[0]._id);
+    const context = _.transform(daysInfo[0], (r, v, k) => {
+        const key = k.replace(/\d+/, '');
+        r[key] || (r[key] = []);
+        r[key].push(v);
     });
 
     return { success: true, context };
@@ -18481,153 +18343,80 @@ export default async ({
 
 ```
 
-* PDShopServer/project/App/routers/posts/shop/warehouse/getWarehouseDetail.js
+* PDShopServer/project/App/routers/posts/shop/shop/getOwnShopDetail.js
 
 ```js
-import { WarehouseModel } from '../../../../models';
+import { ShopModel, ShopMemberModel } from '../../../../models';
 
-export default async ({
-    userId,
-    warehouseId,
-}) => {
-    const doc = await WarehouseModel.findById(warehouseId)
-    .populate({
-        path: 'houseManId',
-        select: { name: 1, phone: 1 },
-    })
-    .populate({
-        path: 'shipperList',
-        select: { name: 1 },
-    });
-    if (!doc) {
-        return { msg: '没有该仓库' };
+export default async ({ userId }) => {
+    const user = await ShopMemberModel.findById(userId);
+    if (!user) {
+        return { msg: '没有该用户' };
     }
-
-    return { success: true, context: doc };
-};
-
-```
-
-* PDShopServer/project/App/routers/posts/shop/warehouse/getWarehouseList.js
-
-```js
-import { WarehouseModel } from '../../../../models';
-import { getKeywordCriteriaForWarehouse, getOwnShop } from '../../../../utils';
-
-export default async ({ userId, keyword, fromPC, pageNo, pageSize }) => {
-    const shopId = await getOwnShop(userId);
-    const criteria = getKeywordCriteriaForWarehouse(keyword, { shopId });
-    const count = (fromPC && pageNo === 0) ? await WarehouseModel.count(criteria) : undefined;
-    const query = WarehouseModel.find(criteria).sort({ createTime: 'desc' }).skip(pageNo * pageSize).limit(pageSize);
-    const docs = await query
-    .select({
-        houseManId: 1,
-        houseNo: 1,
-        maxStoreWeight: 1,
-        maxStoreSize: 1,
-        orderCount: 1,
-        totalNumbers: 1,
-        totalWeight: 1,
-        totalSize: 1,
-        shipperList: 1,
-    })
+    const shop = await ShopModel.findById(user.shopId)
     .populate({
-        path: 'houseManId',
+        path: 'chairManId',
         select: { name: 1, phone: 1 },
-    })
-    .populate({
-        path: 'shipperList',
-        select: { name: 1 },
     });
-
-    return { success: true, context: {
-        count,
-        warehouseList: docs,
-    } };
+    if (!shop) {
+        return { msg: '没有该物流超市' };
+    }
+    return { success: true, context: shop };
 };
 
 ```
 
-* PDShopServer/project/App/routers/posts/shop/warehouse/modifyWarehouse.js
+* PDShopServer/project/App/routers/posts/shop/shop/modifyOwnShop.js
 
 ```js
-import { WarehouseModel } from '../../../../models';
-import { omitNil, hasAuthority, actionLog } from '../../../../utils';
+import { ShopModel, ShopMemberModel, MediaModel } from '../../../../models';
+import { getMediaId, omitNil, hasAuthority, actionLog } from '../../../../utils/';
 import CONSTANTS from '../../../../constants';
 
 export default async ({
     userId,
-    warehouseId,
-    shipperList,
-    houseManId,
-    houseNo,
-    maxStoreWeight,
-    maxStoreSize,
+    name, // 物流超市名称
+    image, // 物流超市背景图片
+    sign, // 物流超市签名
+    phoneList, // 物流超市联系电话
+    address, // 商铺地址
+    location, // // 经纬度定位
 }) => {
-    if (!await hasAuthority(userId, CONSTANTS.AH_MODIFY_WAREHOUSE)) {
-        return { msg: '你没有修改仓库的权限' };
+    const member = await ShopMemberModel.findById(userId)
+    .populate({
+        path: 'shopId',
+        select: { isMasterShop: 1 },
+    });
+    if (!hasAuthority(member, CONSTANTS.AH_MODIFY_OWN_SHOP)) {
+        return { msg: `你没有权限修改${member.shop.isMasterShop ? '四面通总部' : '物流超市'}信息` };
     }
 
-    const doc = await WarehouseModel.findByIdAndUpdate(warehouseId, omitNil({
-        shipperList,
-        houseManId,
-        houseNo,
-        maxStoreWeight,
-        maxStoreSize,
-        modifyTime: Date.now(),
-    }), { new: true }).select({
-        houseManId: 1,
-        houseNo: 1,
-        maxStoreWeight: 1,
-        maxStoreSize: 1,
-        orderCount: 1,
-        totalNumbers: 1,
-        totalWeight: 1,
-        totalSize: 1,
-        shipperList: 1,
-    }).populate({
-        path: 'houseManId',
-        select: { name: 1, phone: 1 },
-    })
-    .populate({
-        path: 'shipperList',
-        select: { name: 1 },
-    });
+    let _image = getMediaId(image);
+    const doc = await ShopModel.findByIdAndUpdate(member.shop.id, omitNil({
+        name,
+        image: _image,
+        sign,
+        phoneList,
+        address,
+        location,
+    }));
     if (!doc) {
         return { msg: '修改失败' };
     }
+    MediaModel._updateRef(
+        { [_image]: 1 },
+        { [image && doc.image]: -1 },
+    );
 
-    actionLog(userId, 'ShopMember', warehouseId, 'Warehouse', 'modifyWarehouse');
+    const context = await ShopModel.findById(member.shop.id)
+    .populate({
+        path: 'chairManId',
+        select: { name: 1, phone: 1 },
+    });
 
-    return { success: true, context: doc };
-};
+    actionLog(userId, 'ShopMember', member.shop.id, 'Shop', 'modifyOwnShop');
 
-```
-
-* PDShopServer/project/App/routers/posts/shop/warehouse/removeWarehouse.js
-
-```js
-import { WarehouseModel, ShopMemberModel } from '../../../../models';
-import { authenticatePassword, hasAuthority, actionLog } from '../../../../utils';
-import CONSTANTS from '../../../../constants';
-
-export default async ({
-    userId,
-    warehouseId,
-    password,
-}) => {
-    const member = await ShopMemberModel.findById(userId);
-    if (!hasAuthority(member, CONSTANTS.AH_REMOVE_WAREHOUSE)) {
-        return { msg: '你没有删除仓库的权限' };
-    }
-    const error = await authenticatePassword(member, password);
-    if (error) {
-        return { msg: '密码错误' };
-    }
-    await WarehouseModel.findByIdAndRemove(warehouseId);
-
-    actionLog(userId, 'ShopMember', warehouseId, 'Warehouse', 'removeWarehouse');
-    return { success: true };
+    return { success: true, context };
 };
 
 ```
@@ -18836,6 +18625,217 @@ export default async ({
     actionLog(userId, 'ShopMember', orderId, 'Order', 'placeStorage');
 
     return { success: true, context: order };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/shop/warehouse/createWarehouse.js
+
+```js
+import { WarehouseModel, ShopMemberModel } from '../../../../models';
+import { hasAuthority, actionLog } from '../../../../utils';
+import CONSTANTS from '../../../../constants';
+
+export default async ({
+    userId,
+    shipperList,
+    houseManId,
+    houseNo,
+    maxStoreWeight,
+    maxStoreSize,
+}) => {
+    const member = await ShopMemberModel.findById(userId);
+    if (!hasAuthority(member, CONSTANTS.AH_CREATE_WAREHOUSE)) {
+        return { msg: '你没有创建仓库的权限' };
+    }
+
+    let warehouse = await WarehouseModel.findOne({ shopId: member.shopId, houseNo });
+    if (warehouse) {
+        return { msg: '该仓库号已经存在' };
+    }
+    warehouse = new WarehouseModel({
+        shopId: member.shopId,
+        shipperList,
+        houseManId,
+        houseNo,
+        maxStoreWeight,
+        maxStoreSize,
+    });
+    await warehouse.save();
+
+    actionLog(userId, 'ShopMember', warehouse.id, 'Warehouse', 'createWarehouse');
+
+    const context = await WarehouseModel.findById(warehouse.id)
+    .select({
+        houseManId: 1,
+        houseNo: 1,
+        maxStoreWeight: 1,
+        maxStoreSize: 1,
+        orderCount: 1,
+        totalNumbers: 1,
+        totalWeight: 1,
+        totalSize: 1,
+        shipperList: 1,
+    }).populate({
+        path: 'houseManId',
+        select: { name: 1, phone: 1 },
+    }).populate({
+        path: 'shipperList',
+        select: { name: 1 },
+    });
+
+    return { success: true, context };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/shop/warehouse/getWarehouseDetail.js
+
+```js
+import { WarehouseModel } from '../../../../models';
+
+export default async ({
+    userId,
+    warehouseId,
+}) => {
+    const doc = await WarehouseModel.findById(warehouseId)
+    .populate({
+        path: 'houseManId',
+        select: { name: 1, phone: 1 },
+    })
+    .populate({
+        path: 'shipperList',
+        select: { name: 1 },
+    });
+    if (!doc) {
+        return { msg: '没有该仓库' };
+    }
+
+    return { success: true, context: doc };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/shop/warehouse/getWarehouseList.js
+
+```js
+import { WarehouseModel } from '../../../../models';
+import { getKeywordCriteriaForWarehouse, getOwnShop } from '../../../../utils';
+
+export default async ({ userId, keyword, fromPC, pageNo, pageSize }) => {
+    const shopId = await getOwnShop(userId);
+    const criteria = getKeywordCriteriaForWarehouse(keyword, { shopId });
+    const count = (fromPC && pageNo === 0) ? await WarehouseModel.count(criteria) : undefined;
+    const query = WarehouseModel.find(criteria).sort({ createTime: 'desc' }).skip(pageNo * pageSize).limit(pageSize);
+    const docs = await query
+    .select({
+        houseManId: 1,
+        houseNo: 1,
+        maxStoreWeight: 1,
+        maxStoreSize: 1,
+        orderCount: 1,
+        totalNumbers: 1,
+        totalWeight: 1,
+        totalSize: 1,
+        shipperList: 1,
+    })
+    .populate({
+        path: 'houseManId',
+        select: { name: 1, phone: 1 },
+    })
+    .populate({
+        path: 'shipperList',
+        select: { name: 1 },
+    });
+
+    return { success: true, context: {
+        count,
+        warehouseList: docs,
+    } };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/shop/warehouse/modifyWarehouse.js
+
+```js
+import { WarehouseModel } from '../../../../models';
+import { omitNil, hasAuthority, actionLog } from '../../../../utils';
+import CONSTANTS from '../../../../constants';
+
+export default async ({
+    userId,
+    warehouseId,
+    shipperList,
+    houseManId,
+    houseNo,
+    maxStoreWeight,
+    maxStoreSize,
+}) => {
+    if (!await hasAuthority(userId, CONSTANTS.AH_MODIFY_WAREHOUSE)) {
+        return { msg: '你没有修改仓库的权限' };
+    }
+
+    const doc = await WarehouseModel.findByIdAndUpdate(warehouseId, omitNil({
+        shipperList,
+        houseManId,
+        houseNo,
+        maxStoreWeight,
+        maxStoreSize,
+        modifyTime: Date.now(),
+    }), { new: true }).select({
+        houseManId: 1,
+        houseNo: 1,
+        maxStoreWeight: 1,
+        maxStoreSize: 1,
+        orderCount: 1,
+        totalNumbers: 1,
+        totalWeight: 1,
+        totalSize: 1,
+        shipperList: 1,
+    }).populate({
+        path: 'houseManId',
+        select: { name: 1, phone: 1 },
+    })
+    .populate({
+        path: 'shipperList',
+        select: { name: 1 },
+    });
+    if (!doc) {
+        return { msg: '修改失败' };
+    }
+
+    actionLog(userId, 'ShopMember', warehouseId, 'Warehouse', 'modifyWarehouse');
+
+    return { success: true, context: doc };
+};
+
+```
+
+* PDShopServer/project/App/routers/posts/shop/warehouse/removeWarehouse.js
+
+```js
+import { WarehouseModel, ShopMemberModel } from '../../../../models';
+import { authenticatePassword, hasAuthority, actionLog } from '../../../../utils';
+import CONSTANTS from '../../../../constants';
+
+export default async ({
+    userId,
+    warehouseId,
+    password,
+}) => {
+    const member = await ShopMemberModel.findById(userId);
+    if (!hasAuthority(member, CONSTANTS.AH_REMOVE_WAREHOUSE)) {
+        return { msg: '你没有删除仓库的权限' };
+    }
+    const error = await authenticatePassword(member, password);
+    if (error) {
+        return { msg: '密码错误' };
+    }
+    await WarehouseModel.findByIdAndRemove(warehouseId);
+
+    actionLog(userId, 'ShopMember', warehouseId, 'Warehouse', 'removeWarehouse');
+    return { success: true };
 };
 
 ```
