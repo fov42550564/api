@@ -4297,6 +4297,25 @@ module.exports = {
 
 ```
 
+* PDClient/project/App/utils/index.js
+
+```js
+const common = require('./common');
+const net = require('./net');
+const check = require('./check');
+const date = require('./date');
+const qrcode = require('./qrcode');
+
+module.exports = {
+    ...common,
+    ...net,
+    ...check,
+    ...date,
+    ...qrcode,
+};
+
+```
+
 * PDClient/project/App/resource/audio.js
 
 ```js
@@ -4404,25 +4423,6 @@ module.exports = {
     splash_splash2:require('./image/splash/splash2.png'),
     splash_splash3:require('./image/splash/splash3.png'),
     splash_start:require('./image/splash/start.png'),
-};
-
-```
-
-* PDClient/project/App/utils/index.js
-
-```js
-const common = require('./common');
-const net = require('./net');
-const check = require('./check');
-const date = require('./date');
-const qrcode = require('./qrcode');
-
-module.exports = {
-    ...common,
-    ...net,
-    ...check,
-    ...date,
-    ...qrcode,
 };
 
 ```
