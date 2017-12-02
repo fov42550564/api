@@ -1,4 +1,4 @@
-* PDClient/project/App/index.js
+* PDDriver/project/App/index.js
 
 ```js
 'use strict';
@@ -26,27 +26,20 @@ global._bc = COLOR._bc;
 global._tc = COLOR._tc;
 global.Toast = require('@remobile/react-native-toast').show;
 global.CONSTANTS = require('./config/Constants');
-global.AH = require('./config/Authority');
-global.PS = require('./config/Position');
-global.PT = require('./config/Partment');
-global.OS = require('./config/OrderState');
-global.TS = require('./config/TruckState');
 const Utils = require('./utils');
 global.POST = Utils.POST;
 global.GET = Utils.GET;
 global.UPLOAD = Utils.UPLOAD;
 global.COMPONENTS = require('./components/index');
 const TimerMixin = require('react-timer-mixin');
+
 const Route = require('./config/Route');
 const img = require('./resource/image');
 const aud = require('./resource/audio');
-const AuthorityMgr = require('./manager/AuthorityMgr');
 const PersonalInfoMgr = require('./manager/PersonalInfoMgr');
 const UpdateMgr = require('./manager/UpdateMgr');
 const SettingMgr = require('./manager/SettingMgr');
 const LoginMgr = require('./manager/LoginMgr');
-const WXpayMgr = require('./manager/WXpayMgr');
-const UPpayMgr = require('./manager/UPpayMgr');
 const JpushMgr = require('./manager/JpushMgr');
 const { ProgressHud, DelayTouchableOpacity, Modal } = COMPONENTS;
 
@@ -56,13 +49,10 @@ global.app = {
     img: img,
     aud: aud,
     data: {},
-    authority: AuthorityMgr,
     personal: PersonalInfoMgr,
     setting: SettingMgr,
     updateMgr:UpdateMgr,
     login: LoginMgr,
-    wxpay: WXpayMgr,
-    uppay: UPpayMgr,
     jpush: JpushMgr,
     isandroid: Platform.OS === 'android',
 };
@@ -111,7 +101,6 @@ const NavigationBarRouteMapper = {
         }
         const image = leftButton && leftButton.image || app.img.common_back;
         const title = leftButton && leftButton.title || '';
-        const isLimitLength = leftButton && leftButton.isLimitLength || false;
         const handler = leftButton && leftButton.handler || navigator.pop;
         if (image && !title) {
             return (
@@ -129,11 +118,9 @@ const NavigationBarRouteMapper = {
                 <DelayTouchableOpacity
                     onPress={handler}
                     style={styles.navBarButton}>
-                    {
-                        isLimitLength ? <Text numberOfLines={1} style={styles.navBarButtonLimitLengthText}>{leftButton.title}</Text>
-                        : <Text style={styles.navBarButtonText}>{leftButton.title}</Text>
-                    }
-
+                    <Text style={styles.navBarButtonText}>
+                        {leftButton.title}
+                    </Text>
                 </DelayTouchableOpacity>
             );
         }
@@ -430,14 +417,9 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingTop: sr.translucent ? sr.statusBarHeight : 0,
     },
-    navBarButtonLimitLengthText: {
-        color: '#FFFFFF',
-        fontSize: 14,
-        width:80,
-    },
     navBarButtonText: {
         color: '#FFFFFF',
-        fontSize: 16,
+        fontSize: 18,
     },
     navBarTitleText: {
         fontSize: 18,
@@ -458,221 +440,14 @@ const styles = StyleSheet.create({
         height: sr.navbarHeight,
     },
     navBarIcon: {
-        width: sr.navbarHeight * (sr.translucent ? 0.2 : 0.4),
-        height: sr.navbarHeight * (sr.translucent ? 0.2 : 0.4),
+        width: sr.navbarHeight * (sr.translucent ? 0.2 : 0.3),
+        height: sr.navbarHeight * (sr.translucent ? 0.2 : 0.3),
     },
 });
 
 ```
 
-* PDClient/project/App/config/Authority.js
-
-```js
-'use strict';
-// 注意：常量部分必须和服务器保持一致
-// 总部权限
-const AH_CREATE_BRANCH_SHOP = 0; // 创建分店的权限
-const AH_MODIFY_BRANCH_SHOP = 1; // 修改分店信息的权限
-const AH_REMOVE_BRANCH_SHOP = 2; // 删除分店的权限
-const AH_LOOK_BRANCH_SHOP = 3; // 查看分店列表的权限
-const AH_MODIFY_SETTING = 4; // 修改设置的权限
-const AH_CREATE_AGENT = 5; // 创建收货点的权限
-const AH_MODIFY_AGENT = 6; // 修改收货点的权限
-const AH_REMOVE_AGENT = 7; // 删除收货点的权限
-const AH_LOOK_AGENT = 8; // 查看收货点的权限
-
-// 公共权限
-const AH_MODIFY_OWN_SHOP = 10000; // 修改所在物流超市信息的权限
-const AH_CREATE_MEMBER = 10001; // 创建成员的权限
-const AH_MODIFY_MEMBER = 10002; // 修改成员信息的权限
-const AH_REMOVE_MEMBER = 10003; // 删除成员的权限
-const AH_LOOK_MEMBER = 10004; // 查看成员的权限
-const AH_RECHARGE = 10005; // 充值的权限
-const AH_WITHDRAW = 10006; // 提现的权限
-const AH_LOOK_AMOUNT = 10007; // 查看余额的权限
-const AH_MODIFY_ROADMAP_PROFIT_RATE = 10008; // 修改路线的提成
-const AH_LOOK_STATISTICS = 10009; // 查看统计信息的权限
-const AH_LOOK_ORDERS = 10010; // 查看综合货单的权限
-
-// 分店权限
-const AH_CREATE_SHIPPER = 20000; // 创建物流公司的权限
-const AH_MODIFY_SHIPPER = 20001; // 修改物流公司的权限
-const AH_REMOVE_SHIPPER = 20002; // 删除物流公司的权限
-const AH_LOOK_SHIPPER = 20003; // 查看物流公司的权限
-const AH_CREATE_PARTMENT = 20004; // 创建部门的权限
-const AH_MODIFY_PARTMENT = 20005; // 修改部门信息的权限
-const AH_REMOVE_PARTMENT = 20006; // 删除部门的权限
-const AH_LOOK_PARTMENT = 20007; // 查看部门的权限
-const AH_MODIFY_OWN_PARTMENT = 20008; // 修改所在部门信息的权限
-const AH_RECEIVE_PARTMENT = 20009; // 收货的权限（收货部人员）
-const AH_WARE_HOUSE_PARTMENT = 20010; // 库管的权限（库管部人员）
-const AH_CARRY_PARTMENT = 20011; // 搬货的权限（搬运部人员）
-const AH_SECURITY_CHECK_PARTMENT = 20012; // 安检的权限（保安部人员）
-const AH_DISTRIBUTION_PARTMENT = 20013; // 配送的权限（配送部人员）
-const AH_TO_EXAMINE_TRUCK = 20014; // 审核货车的权限
-
-// 物流公司
-const AH_MODIFY_SHIPPER_INFO = 30000; // 修改物流公司信息的权限
-const AH_MODIFY_SHIPPER_MEMBER_AUTHORITY = 30001; // 修改物流公司成员权限的权限
-const AH_CREATE_ROADMAP = 30002; // 创建路线的权限
-const AH_MODIFY_ROADMAP = 30003; // 修改路线的权限
-const AH_REMOVE_ROADMAP = 30004; // 删除路线的权限
-const AH_LOOK_ROADMAP = 30005; // 查看路线的权限 (分店共享该权限)
-const AH_CREATE_SEND_DOOR_ROADMAP = 30006; // 创建同城配送路线的权限
-const AH_MODIFY_SEND_DOOR_ROADMAP = 30007; // 修改同城配送路线的权限
-const AH_REMOVE_SEND_DOOR_ROADMAP = 30008; // 删除同城配送路线的权限
-const AH_LOOK_SEND_DOOR_ROADMAP = 30009; // 查看同城配送路线的权限 (分店共享该权限)
-const AH_CREATE_TRUCK = 30010; // 创建货车的权限
-const AH_MODIFY_TRUCK = 30011; // 修改货车的权限
-const AH_REMOVE_TRUCK = 30012; // 删除货车的权限
-const AH_LOOK_TRUCK = 30013; // 查看货车的权限
-const SELECT_CARRY_PARTMENT = 30014; // 选择搬运队的权限
-const AH_SCAN_LOAD_TRUCK = 30015; // 扫描装车的权限
-const AH_CITY_DISTRIBUTE = 30016; // 同城配送的权限
-
-// 收货点
-const AH_MODIFY_AGENT_INFO = 40000; // 修改收货点信息的权限
-const AH_MODIFY_AGENT_MEMBER_AUTHORITY = 40001; // 修改收货点成员权限的权限
-const AH_PLACE_ORDER = 40002; // 收货点下单的权限
-
-module.exports = {
-    // 总部权限
-    AH_CREATE_BRANCH_SHOP,
-    AH_MODIFY_BRANCH_SHOP,
-    AH_REMOVE_BRANCH_SHOP,
-    AH_LOOK_BRANCH_SHOP,
-    AH_MODIFY_SETTING,
-    AH_CREATE_AGENT,
-    AH_MODIFY_AGENT,
-    AH_REMOVE_AGENT,
-    AH_LOOK_AGENT,
-
-    // 公共权限
-    AH_MODIFY_OWN_SHOP,
-    AH_CREATE_MEMBER,
-    AH_MODIFY_MEMBER,
-    AH_REMOVE_MEMBER,
-    AH_LOOK_MEMBER,
-    AH_RECHARGE,
-    AH_WITHDRAW,
-    AH_LOOK_AMOUNT,
-    AH_MODIFY_ROADMAP_PROFIT_RATE,
-    AH_LOOK_STATISTICS,
-    AH_LOOK_ORDERS,
-
-    // 分店权限
-    AH_CREATE_SHIPPER,
-    AH_MODIFY_SHIPPER,
-    AH_REMOVE_SHIPPER,
-    AH_LOOK_SHIPPER,
-    AH_CREATE_PARTMENT,
-    AH_MODIFY_PARTMENT,
-    AH_REMOVE_PARTMENT,
-    AH_LOOK_PARTMENT,
-    AH_MODIFY_OWN_PARTMENT,
-    AH_RECEIVE_PARTMENT,
-    AH_WARE_HOUSE_PARTMENT,
-    AH_CARRY_PARTMENT,
-    AH_SECURITY_CHECK_PARTMENT,
-    AH_DISTRIBUTION_PARTMENT,
-    AH_TO_EXAMINE_TRUCK,
-
-    // 物流公司
-    AH_MODIFY_SHIPPER_INFO,
-    AH_MODIFY_SHIPPER_MEMBER_AUTHORITY,
-    AH_CREATE_ROADMAP,
-    AH_MODIFY_ROADMAP,
-    AH_REMOVE_ROADMAP,
-    AH_LOOK_ROADMAP,
-    AH_CREATE_SEND_DOOR_ROADMAP,
-    AH_MODIFY_SEND_DOOR_ROADMAP,
-    AH_REMOVE_SEND_DOOR_ROADMAP,
-    AH_LOOK_SEND_DOOR_ROADMAP,
-    AH_CREATE_TRUCK,
-    AH_MODIFY_TRUCK,
-    AH_REMOVE_TRUCK,
-    AH_LOOK_TRUCK,
-    SELECT_CARRY_PARTMENT,
-    AH_SCAN_LOAD_TRUCK,
-    AH_CITY_DISTRIBUTE,
-
-    // 收货点
-    AH_MODIFY_AGENT_INFO,
-    AH_MODIFY_AGENT_MEMBER_AUTHORITY,
-    AH_PLACE_ORDER,
-
-    // mapper
-    MAP: {
-        // 总部权限
-        [AH_CREATE_BRANCH_SHOP]: '创建分店的权限',
-        [AH_MODIFY_BRANCH_SHOP]: '修改分店信息的权限',
-        [AH_REMOVE_BRANCH_SHOP]: '删除分店的权限',
-        [AH_LOOK_BRANCH_SHOP]: '查看分店的权限',
-        [AH_MODIFY_SETTING]: '修改设置的权限',
-        [AH_CREATE_AGENT]: '创建收货点的权限',
-        [AH_MODIFY_AGENT]: '修改收货点的权限',
-        [AH_REMOVE_AGENT]: '删除收货点的权限',
-        [AH_LOOK_AGENT]: '查看收货点的权限',
-
-        // 公共权限
-        [AH_MODIFY_OWN_SHOP]: '修改自身店铺信息的权限',
-        [AH_CREATE_MEMBER]: '创建成员的权限',
-        [AH_MODIFY_MEMBER]: '修改成员信息的权限',
-        [AH_REMOVE_MEMBER]: '删除成员的权限',
-        [AH_LOOK_MEMBER]: '查看成员的权限',
-        [AH_RECHARGE]: '充值的权限',
-        [AH_WITHDRAW]: '提现的权限',
-        [AH_LOOK_AMOUNT]: '查看余额的权限',
-        [AH_MODIFY_ROADMAP_PROFIT_RATE]: '修改路线的提成的权限',
-        [AH_LOOK_STATISTICS]: '查看统计信息的权限',
-        [AH_LOOK_ORDERS]: '查看综合货单的权限',
-
-        // 分店权限
-        [AH_CREATE_SHIPPER]: '创建物流公司',
-        [AH_MODIFY_SHIPPER]: '修改物流公司',
-        [AH_REMOVE_SHIPPER]: '删除物流公司',
-        [AH_LOOK_SHIPPER]: '查看物流公司',
-        [AH_CREATE_PARTMENT]: '创建部门的权限',
-        [AH_MODIFY_PARTMENT]: '修改部门信息的权限',
-        [AH_REMOVE_PARTMENT]: '删除部门的权限',
-        [AH_LOOK_PARTMENT]: '查看部门的权限',
-        [AH_MODIFY_OWN_PARTMENT]: '修改所在部门信息的权限',
-        [AH_RECEIVE_PARTMENT]: '收货的权限',
-        [AH_WARE_HOUSE_PARTMENT]: '库管的权限',
-        [AH_CARRY_PARTMENT]: '搬货的权限',
-        [AH_SECURITY_CHECK_PARTMENT]: '安检的权限',
-        [AH_DISTRIBUTION_PARTMENT]: '配送的权限',
-        [AH_TO_EXAMINE_TRUCK]: '审核货车的权限',
-
-        // 物流公司
-        [AH_MODIFY_SHIPPER_INFO]: '修改物流公司信息的权限',
-        [AH_MODIFY_SHIPPER_MEMBER_AUTHORITY]: '修改物流公司成员权限的权限',
-        [AH_CREATE_ROADMAP]: '创建路线的权限',
-        [AH_MODIFY_ROADMAP]: '修改路线的权限',
-        [AH_REMOVE_ROADMAP]: '删除路线的权限',
-        [AH_LOOK_ROADMAP]: '查看路线的权限',
-        [AH_CREATE_SEND_DOOR_ROADMAP]: '创建同城配送路线的权限',
-        [AH_MODIFY_SEND_DOOR_ROADMAP]: '修改同城配送路线的权限',
-        [AH_REMOVE_SEND_DOOR_ROADMAP]: '删除同城配送路线的权限',
-        [AH_LOOK_SEND_DOOR_ROADMAP]: '查看同城配送路线的权限',
-        [AH_CREATE_TRUCK]: '创建货车的权限',
-        [AH_MODIFY_TRUCK]: '修改货车的权限',
-        [AH_REMOVE_TRUCK]: '删除货车的权限',
-        [AH_LOOK_TRUCK]: '查看货车的权限',
-        [SELECT_CARRY_PARTMENT]: '选择搬运队的权限',
-        [AH_SCAN_LOAD_TRUCK]: '扫描装车的权限',
-        [AH_CITY_DISTRIBUTE]: '同城配送的权限',
-
-        // 收货点
-        [AH_MODIFY_AGENT_INFO]: '修改收货点信息的权限',
-        [AH_MODIFY_AGENT_MEMBER_AUTHORITY]: '修改收货点成员权限的权限',
-        [AH_PLACE_ORDER]: '收货点下单的权限',
-    },
-};
-
-```
-
-* PDClient/project/App/config/Color.js
+* PDDriver/project/App/config/Color.js
 
 ```js
 'use strict';
@@ -691,7 +466,7 @@ module.exports = {
 
 ```
 
-* PDClient/project/App/config/Constants.js
+* PDDriver/project/App/config/Constants.js
 
 ```js
 'use strict';
@@ -719,14 +494,15 @@ const BASE_SERVERS = ['192.168.1.222:3000', '192.168.1.189', '120.78.65.221'];
 const BASE_SERVER = CONFIG.ISSUE ? BASE_SERVERS[2] : TEST_CONFIG.ISSUE ? BASE_SERVERS[1] : BASE_SERVERS[TEST_CONFIG.BASE_SERVER_INDEX];
 
 module.exports = {
-    APP_NAME: '四面通客户端',
+    APP_NAME: '四面通司机端',
     THEME_COLORS: ['#c81622', '#A62045', '#239FDB'],
     ISSUE_IOS: CONFIG.ISSUE_IOS,
     NOT_NEED_UPDATE_JS_START: !(CONFIG.ISSUE || TEST_CONFIG.ISSUE), // 启动时不需要更新小版本
     MINIFY: CONFIG.ISSUE, // 是否压缩js文件，我们采取测试服务器为了查找问题不用压缩js文件，正式服务器需要压缩js文件，并且不能看到调试信息
     CHANNEL: CONFIG.CHANNEL,
-    // IOS的appid,1290180200
+    // IOS的appid,1096525384
     IOS_APPID: '',
+    BAIDU_TRACE_SERVERID:154484,
     BASE_SERVER: BASE_SERVER, // web服务器地址
     // 获取验证码的超时时间
     DEFAULT_CODE_TIMEOUT: 90,
@@ -735,157 +511,12 @@ module.exports = {
     NAME_MAX_LENGTH: 10,
     ADDRESS_MAX_LENGTH: 30,
     VERIFICATION_MAX_LENGTH: 6,
-    AMOUNT_MAX_LENGTH: 7,
     FEEDBACK_MAX_LENGTH: 500,
-    QRCODE_TYPE_ORDER:1,
 };
 
 ```
 
-* PDClient/project/App/config/OrderState.js
-
-```js
-// 注意：常量部分必须和服务器保持一致
-// 订单的状态
-/*
-===========
-长途运输状态图:
-(0->)1->2->5    |
-                |->6->7->8(->11)->14->15
-(0->)1->3->4->5 |
-===========
-收货点状态图:
-0->2->9    |
-           |(->10)->11->14->15
-0->3->4->9 |
-===========
-同城配送状态图: (当同城配送的在运输中，那么它之前的货单就在待交货状态)
-(0->)1->2    |
-             |->6->8->15
-(0->)1->3->4 |
-===========
-上门自提状态图:(当上门自提的在运输中或者等待上门自提，那么它之前的货单就在待交货状态)
-      |->13->15
-1->12 |
-      |->6->8->15
-*/
-const OS_PREORDER = -1; // 预下单状态，需要将货拉到分店后不显示（件数，重量，方量），由收货员填写确认后进入待选线路状态
-const OS_READY_PRINT_BAR_CODE = 0; // 待打印二维码
-const OS_READY_SELECT_ROADMAP = 1; // 待选物流公司
-const OS_READY_DEDUCT_AND_PRINT_ORDER = 2; // 待扣款并打印打印货单（用来区别需要付款的情况）
-const OS_READY_PAYMENT = 3; // 待付款
-const OS_READY_PRINT_ORDER = 4; // 待打印货单
-const OS_READY_STOCK = 5; // 待库存
-const OS_READY_LOAD = 6; // 待装车
-const OS_READY_START_OFF = 7; // 待出发
-const OS_ON_THE_WAY = 8; // 运输中
-const OS_READY_SEND = 9; // 待发货 (收货点专用)
-const OS_ON_SENDING = 10; // 发货中 (收货点专用)
-const OS_ON_TRANSFER = 11; // 中转中
-const OS_READY_PHONE_CONFIRM = 12; // 待打电话确认
-const OS_WAIT_CLIENT_PICK = 13; // 等待上门自提
-const OS_READY_RECEIVE = 14; // 待交货
-const OS_RECEIVE_SUCCESS = 15; // 交货成功
-
-module.exports =  {
-    OS_PREORDER,
-    OS_READY_PRINT_BAR_CODE,
-    OS_READY_SELECT_ROADMAP,
-    OS_READY_DEDUCT_AND_PRINT_ORDER,
-    OS_READY_PAYMENT,
-    OS_READY_PRINT_ORDER,
-    OS_READY_STOCK,
-    OS_READY_LOAD,
-    OS_READY_START_OFF,
-    OS_ON_THE_WAY,
-    OS_READY_SEND,
-    OS_ON_SENDING,
-    OS_ON_TRANSFER,
-    OS_READY_PHONE_CONFIRM,
-    OS_WAIT_CLIENT_PICK,
-    OS_READY_RECEIVE,
-    OS_RECEIVE_SUCCESS,
-
-    // mapper
-    MAP: {
-        [OS_PREORDER]: '预下单状态',
-        [OS_READY_PRINT_BAR_CODE]: '待打印二维码',
-        [OS_READY_SELECT_ROADMAP]: '待选线路',
-        [OS_READY_DEDUCT_AND_PRINT_ORDER]: '待打印收据',
-        [OS_READY_PAYMENT]: '待付款',
-        [OS_READY_PRINT_ORDER]: '待打印收据',
-        [OS_READY_STOCK]: '待库存',
-        [OS_READY_LOAD]: '待装车',
-        [OS_READY_START_OFF]: '待出发',
-        [OS_ON_THE_WAY]: '运输中',
-        [OS_READY_SEND]: '待发货',
-        [OS_ON_SENDING]: '发货中',
-        [OS_ON_TRANSFER]: '运输中',
-        [OS_READY_PHONE_CONFIRM]: '待打电话确认',
-        [OS_WAIT_CLIENT_PICK]: '等待上门自提',
-        [OS_READY_RECEIVE]: '待交货',
-        [OS_RECEIVE_SUCCESS]: '交货成功',
-    },
-};
-
-```
-
-* PDClient/project/App/config/Partment.js
-
-```js
-'use strict';
-// 注意：常量部分必须和服务器保持一致
-const SP_RECEIVE_PARTMENT = 0; // 收货部
-const SP_WARE_HOUSE_PARTMENT = 1; // 库管部
-const SP_CARRY_PARTMENT = 2; // 搬运部
-const SP_SECURITY_CHECK_PARTMENT = 3; // 保安部
-const SP_DISTRIBUTION_PARTMENT = 4; // 同城配送部
-
-module.exports = {
-    SP_RECEIVE_PARTMENT,
-    SP_WARE_HOUSE_PARTMENT,
-    SP_CARRY_PARTMENT,
-    SP_SECURITY_CHECK_PARTMENT,
-    SP_DISTRIBUTION_PARTMENT,
-
-    // mapper
-    MAP: {
-        [SP_RECEIVE_PARTMENT]: '收货部',
-        [SP_WARE_HOUSE_PARTMENT]: '库管部',
-        [SP_CARRY_PARTMENT]: '搬运部',
-        [SP_SECURITY_CHECK_PARTMENT]: '保安部',
-        [SP_DISTRIBUTION_PARTMENT]: '同城配送部',
-    },
-};
-
-```
-
-* PDClient/project/App/config/Position.js
-
-```js
-'use strict';
-const PO_CHAIR_MAN = '董事长';
-const PO_PARTMENT_CHARGE_MAN = '部门经理';
-const PO_CEO = '总经理';
-const PO_PARTMENT_LEADER = '部门主管';
-const PO_STAFF = '员工';
-
-module.exports = {
-    PO_CHAIR_MAN,
-    PO_PARTMENT_CHARGE_MAN,
-    PO_CEO,
-    PO_PARTMENT_LEADER,
-    PO_STAFF,
-
-    // 公司职位
-    SHOP_MAP: [PO_STAFF, PO_CEO, PO_PARTMENT_LEADER],
-    // 部门职位
-    PARTMENT_MAP: [PO_STAFF],
-};
-
-```
-
-* PDClient/project/App/config/Route.js
+* PDDriver/project/App/config/Route.js
 
 ```js
 'use strict';
@@ -893,9 +524,7 @@ module.exports = {
 const { BASE_SERVER } = CONSTANTS;
 const ROOT_SERVER = 'http://' + BASE_SERVER + '/';
 const API_SERVER = ROOT_SERVER + 'api/';
-const SERVER = API_SERVER + 'client/';
-const SHIPPER_SERVER = API_SERVER + 'shipper/';
-const AGENT_SERVER = API_SERVER + 'agent/';
+const SERVER = API_SERVER + 'driver/';
 
 module.exports = {
     // 登录
@@ -905,146 +534,38 @@ module.exports = {
     ROUTE_MODIFY_PASSWORD: SERVER + 'modifyPassword', // 修改密码
     ROUTE_REQUEST_SEND_VERIFY_CODE: API_SERVER + 'requestSendVerifyCode', // 获取验证码
 
+    // 路上卡车信息
+    ROUTE_GET_ON_WAY_TRUCK: SERVER + 'getOnWayTruck', // 获取路上卡车信息
+    ROUTE_UPLOAD_LOCATION: SERVER + 'uploadLocation', // 上传卡车位置信息
+    ROUTE_CONFIRM_REACH: SERVER + 'confirmReach', // 确认目的地
+
     // 个人中心
     ROUTE_GET_PERSONAL_INFO: SERVER + 'getPersonalInfo', // 获取个人信息
     ROUTE_MODIFY_PERSONAL_INFO: SERVER + 'modifyPersonalInfo', // 修改个人信息
     ROUTE_SUBMIT_FEEDBACK: SERVER + 'submitFeedback', // 提交信息反馈
-    ROUTE_GET_REGION_ADDRESS_LIST: API_SERVER + 'getRegionAddress', // 获取地址列表
-    ROUTE_GET_ADDRESS_FROM_LAST_CODE: API_SERVER + 'getRegionAddressFromLastCode', // 通过lastCode获取具体的地址列表
-    ROUTE_GET_START_POINT_ADDRESS_LIST: API_SERVER + 'getStartPointAddress', // 获取收货点地址列表
-    ROUTE_GET_START_POINT_ADDRESS_FROME_LAST_CODE: API_SERVER + 'getStartPointAddressFromLastCode', // 通过lastCode获取收货点地址列表
-    ROUTE_GET_SEND_DOOR_ADDRESS_FROM_LAST_CODE: API_SERVER + 'getRegionSendDoorAddressFromLastCode', // 通过lastCode获取短途地址列表
-    ROUTE_GET_SHIPPERLIST_LIST: SERVER + 'shipperList', // 获取分店列表
-    ROUTE_GET_BILL_LIST: SERVER + 'getBillList', // 获取交易明细列表
-    ROUTE_RECHARGE:SERVER + 'recharge', // 充值
-    ROUTE_WITHDRAW:SERVER + 'withdraw', // 提现
-    ROUTE_GET_REMAIN_AMOUNT: SERVER + 'getRemainAmount', // 获取账户余额
-    ROUTE_GET_UNIFIED_ORDER: SERVER + 'weixinPayGetUnifiedOrder', // 微信统一下单
-    ROUTE_GET_UNION_UNIFIED_ORDER: SERVER + 'unionPayGetUnifiedOrder', // 银联统一下单
-    ROUTE_SET_PAYMENT_PASSWORD: SERVER + 'setPaymentPassword', // 修改支付密码
-
-    // 收货点
-    ROUTE_PLACE_ORDER_AGENT: AGENT_SERVER + 'placeOrder', // 下单
-    ROUTE_MODIFY_ORDER_AGENT: AGENT_SERVER + 'modifyOrder', // 修改货单
-    ROUTE_GET_PRE_ORDER_LIST_AGENT: AGENT_SERVER + 'getPreOrderList', // 获取预下单列表
-    ROUTE_PRINT_BAR_CODE: AGENT_SERVER + 'printBarCode', // 打印二维码
-    ROUTE_PRINT_ORDER_BILL: AGENT_SERVER + 'printOrderBill', // 打印收据
-    ROUTE_PRINT_ORDER_LIST_BILL: AGENT_SERVER + 'printOrderListBill', // 打印收据
-    ROUTE_CONFIRM_CACH_PAYED: AGENT_SERVER + 'confirmCachPayed', // 为订单支付
-    ROUTE_CONFIRM_CACH_PAYED_FOR_ORDER_LIST: AGENT_SERVER + 'confirmCachPayedForOrderList', // 为订单支付
-    ROUTE_GET_LASTEST_ORDER: AGENT_SERVER + 'getLastestOrder', // 收货点获取未完成的货单
-    ROUTE_GET_MEMBER_LIST_AGENT: AGENT_SERVER + 'getMemberList', // 收货点获取成员列表
-    ROUTE_GET_MEMBER_BY_PHONE_AGENT: AGENT_SERVER + 'getMemberByPhone', // 收货点通过手机号获取成员信息
-    ROUTE_MODIFY_MEMBER_AUTHORITY_AGENT: AGENT_SERVER + 'modifyMemberAuthority', // 收货点修改成员权限
-    ROUTE_GET_ORDERS : AGENT_SERVER + 'getOrders', // 获取收货点货单列表
-    ROUTE_GET_ORDER_DETAIL_AGENT : AGENT_SERVER + 'getOrderDetail', // 获取收货点货单详情
-    ROUTE_GET_REGION_PROFIT_LIST : AGENT_SERVER + 'getRegionProfitList', // 收货点获取已设置路线列表
-    ROUTE_REMOVE_REGION_PROFIT : AGENT_SERVER + 'removeRegionProfit', // 收货点删除路线提成
-    ROUTE_ADD_REGION_PROFIT : AGENT_SERVER + 'addRegionProfit', // 收货点创建路线提成
-    ROUTE_MODIFY_REGION_PROFIT : AGENT_SERVER + 'modifyRegionProfit', // 收货点修改路线提成
-    ROUTE_SET_REGION_PROFIT_WITH_LIST : AGENT_SERVER + 'setRegionProfitWithList', // 收货点批量修改路线提成
-    ROUTE_GET_REFER_SHOP_LIST: AGENT_SERVER + 'getReferShopList', // 收货点获取参考分店列表
-    ROUTE_SET_REFER_SHOP: AGENT_SERVER + 'setReferShop', // 收货点设置参考分店
-    ROUTE_PAY_AGENT_FOR_ORDER : SERVER + 'payForAgentOrder', // 客户为收货点货单付款
-
-    // 物流公司
-    ROUTE_GET_SHIPPER_LIST: SERVER + 'getShipperList', // 获取物流公司列表
-    ROUTE_GET_SHIPPER_DETAIL: SERVER + 'getShipperDetail', // 获取物流公司详情
-    ROUTE_CARE_SHIPPER: SERVER + 'careShipper', // 关注物流公司
-    ROUTE_GET_CARED_SHIPPER_LIST: SERVER + 'getCaredShipperList', // 获取关注物流公司列表
-
-    ROUTE_GET_NEED_SEND_ORDER_SUMMARY_LIST:SHIPPER_SERVER + 'getNeedSendOrderSummaryList', // 物流公司竟得货物
-    ROUTE_GET_NEED_SEND_ORDER_LIST_BY_END_POINT:SHIPPER_SERVER + 'getNeedSendOrderListByEndPoint', // 物流公司竟得货物订单列表
-    ROUTE_CREATE_TRUCK:SHIPPER_SERVER + 'createTruck', // 创建卡车
-    ROUTE_GET_WORK_TRUCKLIST:SHIPPER_SERVER + 'getWorkTruckList', // 获取卡车列表
-    ROUTE_GET_TRUCKS: SHIPPER_SERVER + 'getTrucks', // 获取已装货单卡车列表，用在物流公司货车页面
-    ROUTE_GET_UNFINISH_RUCK: SHIPPER_SERVER + 'getUnfinishTruck', // 获取未装完货单卡车信息
-    ROUTE_GET_ORDER_LIST_IN_RUCKS: SHIPPER_SERVER + 'getOrderListInTruck', // 获取货车中的装货单列表，用在物流公司货车页面
-    ROUTE_GET_CARRY_PARTMENT_LIST: SHIPPER_SERVER + 'getCarryPartmentList', // 获取搬运队列表
-    ROUTE_SCAN_LOAD_ORDER: SHIPPER_SERVER + 'scanLoadOrder', // 扫描货单
-    ROUTE_SELECT_CARRY_PARTMENT: SHIPPER_SERVER + 'selectCarryPartment', // 选择搬运队
-    ROUTE_START_SCAN_ORDER: SHIPPER_SERVER + 'startScanOrder', // 货车开始扫描
-    ROUTE_CONTINUE_SCAN_ORDER: SHIPPER_SERVER + 'continueScanOrder', // 货车继续扫描
-    ROUTE_FINISH_SCAN_ORDER: SHIPPER_SERVER + 'finishScanOrder', // 货车结束扫描
-    ROUTE_GET_HISTORY_TRUCK_LIST: SHIPPER_SERVER + 'getHistoryTruckList', // 物流公司历史审核卡车信息
-    ROUTE_PAY_FOR_CARRY_PARTMENT: SHIPPER_SERVER + 'payForCarryPartment', // 物流公司付搬运费
-    ROUTE_GET_BRANCH_SHOP_INFO: SERVER + 'getBranchShopInfo', // 物流公司获取入驻分店详情包括担保公司
-    ROUTE_GET_MEMBER_LIST: SHIPPER_SERVER + 'getMemberList', // 物流公司获取成员列表
-    ROUTE_GET_MEMBER_BY_PHONE: SHIPPER_SERVER + 'getMemberByPhone', // 物流公司通过手机号获取成员信息
-    ROUTE_MODIFY_MEMBER_AUTHORITY: SHIPPER_SERVER + 'modifyMemberAuthority', // 物流公司修改成员权限
-    ROUTE_MODIFY_SHIPPER_INFO : SERVER + 'modifyShipperInfo',//修改物流公司信息
-
-    // 路线
-    ROUTE_GET_ROADMAP_LIST: SERVER + 'getRoadmapList', // 获取路线列表
-    ROUTE_GET_ROADMAP_DETAIL: SERVER + 'getRoadmapDetail', // 获取路线详情
-    ROUTE_GET_ROADMAP_LIST_WITH_END_POINT: SERVER + 'getRoadmapListWithEndPoint', // 获取路线行情列表
-    ROUTE_GET_ROADMAP_LIST_WITH_PRE_ORDER: SERVER + 'getRoadmapListWithPreOrder', // 通过货单获取区域收货点和分店路线列表
-    ROUTE_GET_ROADMAP_LIST_WITH_PRE_ORDER_GROUP: SERVER + 'getRoadmapListWithPreOrderGroup', // 通过货单组获取区域收货点和分店路线列表
-    ROUTE_GET_LOGISTICS_LIST: SERVER + 'getLogisticsList', // 获取订单物流信息
-    ROUTE_GET_ROADMAP_LIST_SHIPPER:SHIPPER_SERVER + 'getRoadmapList', // 获取路线列表
-    ROUTE_PUBLISH_ROADMAP:SHIPPER_SERVER + 'publishRoadmap', // 发布路线
-    ROUTE_REMOVE_ROADMAP:SHIPPER_SERVER + 'removeRoadmap', // 删除路线
-    ROUTE_GET_SHIPPER_ROADMAP_DETAIL: SHIPPER_SERVER + 'getRoadmapDetail', // 物流公司获取路线详情
-    ROUTE_MODIFY_ROADMAP: SHIPPER_SERVER + 'modifyRoadmap', // 物流公司修改路线
-    ROUTE_SET_ROADMAP_PRICE: SHIPPER_SERVER + 'setRoadmapPrice', // 物流公司修改路线价格
-    ROUTE_SET_ROADMAP_SEND_DOOR_ENABLE: SHIPPER_SERVER + 'setRoadmapSendDoorEnable', // 物流公司修改长途路线对应的送货上门路线状态
-    ROUTE_SET_ROADMAP_ENABLE: SHIPPER_SERVER + 'setRoadmapEnable', // 物流公司修改路线状态(开通/停运)
-    ROUTE_SET_ROADMAP_SEND_DOOR_PRICE: SHIPPER_SERVER + 'setRoadmapSendDoorPrice', // 物流公司修改路线对应送货上门路线价格
-    ROUTE_SET_ROADMAP_SEND_DOOR_BASE_PRICE: SHIPPER_SERVER + 'setRoadmapSendDoorBasePrice', // 物流公司修改路线对应送货上门路线价格底价
-    ROUTE_GET_ROADMAP_LIST_WITH_TRUCK: SERVER + 'getRoadmapListWithTruck', // 根据货车id和所选分店查询该货车货物中转价格
-
-    // 用户
-    ROUTE_GET_CLIENT_LIST: SERVER + 'getClientList', // 获取用户列表
-    ROUTE_GET_DRIVER_INFO_BY_PHONE:SHIPPER_SERVER + 'getDriverInfoByPhone', // 通过手机号获取司机信息
-
-    // 订单
-    ROUTE_PLACE_PRE_ORDER: SERVER + 'placePreOrder', // 预下单
-    ROUTE_GET_PRE_ORDER_LIST: SERVER + 'getPreOrderList', // 获取预下单列表
-    ROUTE_CREATE_PRE_ORDER_GROUP:SERVER + 'createPreOrderGroup', // 合并预下单
-    ROUTE_GET_PRE_ORDER_GROUP_LIST:SERVER + 'getPreOrderGroupList', // 获取预下单群组列表
-    ROUTE_GET_PRE_ORDER_LIST_IN_GROUP:SERVER + 'getPreOrderListInGroup', // 获取某个群组中的预下单列表
-    ROUTE_REMOVE_PRE_ORDER_LIST_FROM_GROUP:SERVER + 'removePreOrderFromGroup', // 删除某个群组中的预下单列表
-
-    ROUTE_PLACE_ORDER: SERVER + 'placeOrder', // 下单
-    ROUTE_GET_SEND_ORDER_LIST: SERVER + 'getSendOrders', // 获取发出订单列表
-    ROUTE_GET_RECEIVE_ORDERS: SERVER + 'getReceiveOrders', // 获取收到订单列表
-    ROUTE_GET_ORDER_LIST: SERVER + 'getOrderList', // 获取订单列表
-    ROUTE_GET_ORDER_DETAIL: SERVER + 'getOrderDetail', // 获取订单详情
-    ROUTE_MODIFY_ORDER: SERVER + 'modifyOrder', // 修改订单
-    ROUTE_MODIFY_PRE_ORDER: SERVER + 'modifyPreOrder', // 修改预下单
-    ROUTE_REMOVE_PRE_ORDER: SERVER + 'removePreOrder', // 删除订单
-    ROUTE_PAY_FOR_ORDER_WHEN_SEND: SERVER + 'payForOrderWhenSend', // 线上立即支付(发货)
-    ROUTE_PAY_FOR_ORDER_WHEN_RECEIVE: SERVER + 'payForOrderWhenReceive', // 线上立即支付（收货）
-    ROUTE_FINISH_ORDER: SERVER + 'finishOrder', // 现付成功
-    ROUTE_MODIFY_PRE_ORDER_GROUP: SERVER + 'modifyPreOrderGroup', // 修改预下单组群
-    ROUTE_CONFIRM_HAND_OVER_ORDER: SHIPPER_SERVER + 'confirmHandOverOrder', // 确认货物到达，确认后收货人才能收货
 
     // 文件上传
     ROUTE_UPDATE_FILE: API_SERVER + 'uploadFile', // 上传文件
 
+    // 获取地址
+    ROUTE_GET_REGION_ADDRESS_LIST: API_SERVER + 'getRegionAddress', // 获取地址列表
+    ROUTE_GET_START_POINT_ADDRESS_LIST: API_SERVER + 'getStartPointAddress', // 获取地址列表
+
     // 网页地址
-    ROUTE_USER_LICENSE: ROOT_SERVER + 'protocals/pdclient/user.html', // 用户协议
-    ROUTE_SOFTWARE_LICENSE: ROOT_SERVER + 'protocals/pdclient/software.html', // 获取软件许可协议
-    ROUTE_ABOUT_PAGE: ROOT_SERVER + 'protocals/pdclient/about.html', // 关于
+    ROUTE_USER_LICENSE: ROOT_SERVER + 'protocals/pddriver/user.html', // 用户协议
+    ROUTE_SOFTWARE_LICENSE: ROOT_SERVER + 'protocals/pddriver/software.html', // 获取软件许可协议
+    ROUTE_ABOUT_PAGE: ROOT_SERVER + 'protocals/pddriver/about.html', // 关于
 
     // 下载更新
-    ROUTE_VERSION_INFO_URL: ROOT_SERVER + 'apps/pdclient/version.json', // 版本信息地址
-    ROUTE_JS_ANDROID_URL: ROOT_SERVER + 'apps/pdclient/jsandroid.zip', // android jsbundle 包地址
-    ROUTE_JS_IOS_URL: ROOT_SERVER + 'apps/pdclient/jsios.zip', // ios jsbundle 包地址
-    ROUTE_APK_URL: ROOT_SERVER + 'apps/pdclient/pdclient.apk', // apk地址
-
-    // 同城配送
-    ROUTE_PLACE_STORAGE : SHIPPER_SERVER + 'placeStorage', // 短途物流公司扫描入库
-    ROUTE_SET_CITY_TRUCK : SHIPPER_SERVER + 'setCityTruck', // 短途物流公司设置货车
-    ROUTE_SCAN_LOAD_ORDER_FOR_CITY_DISTRIBUTE : SHIPPER_SERVER + 'scanLoadOrderForCityDistribute', //短途物流公司扫描装车
-    ROUTE_GET_CITY_DISTRIBUTE_ORDERS : SHIPPER_SERVER + 'getCityDistributeOrders',// 短途物流公司获取同城配送货单
-    ROUTE_SET_CLIENT_PICK_ORDER_TRANSPORT_FEE : SHIPPER_SERVER + 'setClientPickOrderTransportFee',//短途物流公司设置送货上门
-    ROUTE_GET_CLIENT_PICK_SHIPPER_LIST : SHIPPER_SERVER + 'getClientPickShipperList',//获取分店设置了上门自提竞价的物流公司列表
+    ROUTE_VERSION_INFO_URL: ROOT_SERVER + 'apps/pddriver/version.json', // 版本信息地址
+    ROUTE_JS_ANDROID_URL: ROOT_SERVER + 'apps/pddriver/jsandroid.zip', // android jsbundle 包地址
+    ROUTE_JS_IOS_URL: ROOT_SERVER + 'apps/pddriver/jsios.zip', // ios jsbundle 包地址
+    ROUTE_APK_URL: ROOT_SERVER + 'apps/pddriver/pddriver.apk', // apk地址
 };
 
 ```
 
-* PDClient/project/App/config/Screen.js
+* PDDriver/project/App/config/Screen.js
 
 ```js
 'use strict';
@@ -1088,104 +609,7 @@ module.exports = {
 
 ```
 
-* PDClient/project/App/config/TruckState.js
-
-```js
-'use strict';
-// 注意：常量部分必须和服务器保持一致
-
-const TS_READY_EXAMINE = 0; // 待审核
-const TS_READY_ENTER_WAREHOUSE = 1; // 待入库
-const TS_READY_SEARCH_CARRY_PARTMENT = 2; // 待找搬运队
-const TS_READY_SCAN_LOAD = 3; // 待扫描装车
-const TS_SCAN_LOADING = 4; // 装车中
-const TS_READY_PAY_FOR_CARRY_PARTMENT = 5; // 待付搬运部的款
-const TS_READY_EXIT_WAREHOUSE = 6; // 待出库
-const TS_ON_THE_WAY = 7; // 运输中
-const TS_RECEIVE_SUCCESS = 8; // 交货成功
-
-module.exports = {
-    TS_READY_EXAMINE,
-    TS_READY_ENTER_WAREHOUSE,
-    TS_READY_SEARCH_CARRY_PARTMENT,
-    TS_READY_SCAN_LOAD,
-    TS_SCAN_LOADING,
-    TS_READY_PAY_FOR_CARRY_PARTMENT,
-    TS_READY_EXIT_WAREHOUSE,
-    TS_ON_THE_WAY,
-    TS_RECEIVE_SUCCESS,
-
-    // mapper
-    MAP: {
-        [TS_READY_EXAMINE]: '待审核',
-        [TS_READY_ENTER_WAREHOUSE]: '待入库',
-        [TS_READY_SEARCH_CARRY_PARTMENT]: '待找搬运队',
-        [TS_READY_SCAN_LOAD]: '待扫描装车',
-        [TS_SCAN_LOADING]: '装车中',
-        [TS_READY_PAY_FOR_CARRY_PARTMENT]: '待付搬运部的款',
-        [TS_READY_EXIT_WAREHOUSE]: '待出库',
-        [TS_ON_THE_WAY]: '运输中',
-        [TS_RECEIVE_SUCCESS]: '交货成功',
-    },
-};
-
-```
-
-* PDClient/project/App/manager/AuthorityMgr.js
-
-```js
-'use strict';
-const ReactNative = require('react-native');
-const {
-    AsyncStorage,
-} = ReactNative;
-const EventEmitter = require('EventEmitter');
-const ITEM_NAME = 'authorityInfo';
-
-class Manager extends EventEmitter {
-    constructor () {
-        super();
-        this.get();
-    }
-    get () {
-        return new Promise(async(resolve, reject) => {
-            let info;
-            try {
-                const infoStr = await AsyncStorage.getItem(ITEM_NAME);
-                info = JSON.parse(infoStr);
-            } catch (e) {
-            }
-            this.info = info || {};
-        });
-    }
-    set (info) {
-        this.info = info;
-        return new Promise(async(resolve, reject) => {
-            await AsyncStorage.setItem(ITEM_NAME, JSON.stringify(info));
-            resolve();
-        });
-    }
-    getCanSelectRoles () {
-        return _.reject(this.info.roleList, (o) => { return o == this.info.currentRole; });
-    }
-    changeRole (role) {
-        this.info.currentRole = role;
-        return new Promise(async(resolve, reject) => {
-            await AsyncStorage.setItem(ITEM_NAME, JSON.stringify(this.info));
-            resolve();
-        });
-    }
-    clear () {
-        this.info = {};
-        AsyncStorage.removeItem(ITEM_NAME);
-    }
-}
-
-module.exports = new Manager();
-
-```
-
-* PDClient/project/App/manager/JpushMgr.js
+* PDDriver/project/App/manager/JpushMgr.js
 
 ```js
 'use strict';
@@ -1234,7 +658,7 @@ module.exports = new Manager();
 
 ```
 
-* PDClient/project/App/manager/LoginMgr.js
+* PDDriver/project/App/manager/LoginMgr.js
 
 ```js
 'use strict';
@@ -1288,7 +712,7 @@ module.exports = new Manager();
 
 ```
 
-* PDClient/project/App/manager/NetMgr.js
+* PDDriver/project/App/manager/NetMgr.js
 
 ```js
 'use strict';
@@ -1356,7 +780,7 @@ module.exports = new Manager();
 
 ```
 
-* PDClient/project/App/manager/PersonalInfoMgr.js
+* PDDriver/project/App/manager/PersonalInfoMgr.js
 
 ```js
 'use strict';
@@ -1368,8 +792,6 @@ const EventEmitter = require('EventEmitter');
 const ITEM_NAME = 'personalInfo';
 const NEED_LOGIN_ITEM_NAME = 'personalInfoNeedLogin';
 const REMAIN_AMOUNR = 'remainAmount';
-const CURRENT_SHOP_INDEX = 'currentShopIndex';
-const IS_FINISH_SCAN = 'isFinishScan';
 
 class Manager extends EventEmitter {
     constructor () {
@@ -1381,11 +803,7 @@ class Manager extends EventEmitter {
             let info;
             try {
                 const needLogin = await AsyncStorage.getItem(NEED_LOGIN_ITEM_NAME);
-                const index = await AsyncStorage.getItem(CURRENT_SHOP_INDEX);
-                const isFinishScan = await AsyncStorage.getItem(IS_FINISH_SCAN);
                 this.needLogin = needLogin !== 'false';
-                this.currentShopIndex = index || '0';
-                this.isFinishScan = isFinishScan || 'false';
                 this.remainAmount = await AsyncStorage.getItem(REMAIN_AMOUNR);
                 const infoStr = await AsyncStorage.getItem(ITEM_NAME);
                 info = JSON.parse(infoStr);
@@ -1393,47 +811,20 @@ class Manager extends EventEmitter {
                 this.needLogin = true;
             }
             this.info = info || {};
-
             this.needLogin = this.needLogin || !info;
-            this.currentShopIndex = this.currentShopIndex || '0';
-            this.isFinishScan = this.isFinishScan || false;
-            this.currentShopId = this.info.shipper && this.info.shipper.registerShopList[this.currentShopIndex].id || null;
-            this.currentShopName = this.info.shipper && this.info.shipper.registerShopList[this.currentShopIndex].name || '';
-            this.currentShopAddress = this.info.shipper && this.info.shipper.registerShopList[this.currentShopIndex].address || '';
             this.remainAmount = this.remainAmount || !info;
             this.initialized = true;
         });
     }
     set (info) {
         this.info = info;
-        let roleList = info.agent ? ['发货人', '收货点'] : info.shipper ? ['发货人', '物流公司'] : ['发货人'];
-        let authorityInfo = {
-            currentRole: info.agent ? '收货点' : info.shipper ? '物流公司' : '发货人',
-            roleList,
-            isShipperChairman:!!(info.shipper && info.userId == info.shipper.chairMan.id),
-            isAgentChairman:!!(info.agent && this.info.userId == info.agent.chairMan.id),
-            authorityList:info.authority,
-        };
-        this.currentShopId = info.shipper && info.shipper.registerShopList[this.currentShopIndex].id || null;
-        this.currentShopName = info.shipper && info.shipper.registerShopList[this.currentShopIndex].name || '';
-        this.currentShopAddress = info.shipper && info.shipper.registerShopList[this.currentShopIndex].address || '';
-        app.authority.clear();
-        app.authority.set(authorityInfo);
         return new Promise(async(resolve, reject) => {
-            await AsyncStorage.setItem(ITEM_NAME, JSON.stringify(info));
+            await AsyncStorage.setItem(ITEM_NAME, JSON.stringify(this.info));
             resolve();
         });
     }
     setUserHead (head) {
         this.emit('USER_HEAD_CHANGE_EVENT', { head:head });
-    }
-    setCurrentShopIndex (index) {
-        this.currentShopIndex = index;
-        AsyncStorage.setItem(CURRENT_SHOP_INDEX, index + '');
-    }
-    setIsFinishScan (flag) {
-        this.isFinishScan = flag;
-        AsyncStorage.setItem(IS_FINISH_SCAN, flag + '');
     }
     setNeedLogin (flag) {
         this.needLogin = flag;
@@ -1460,7 +851,7 @@ module.exports = new Manager();
 
 ```
 
-* PDClient/project/App/manager/SettingMgr.js
+* PDDriver/project/App/manager/SettingMgr.js
 
 ```js
 'use strict';
@@ -1520,53 +911,7 @@ module.exports = new Manager();
 
 ```
 
-* PDClient/project/App/manager/UPpayMgr.js
-
-```js
-'use strict';
-const { NativeAppEventEmitter, DeviceEventEmitter, Platform } = require('react-native');
-const EventEmitter = require('EventEmitter');
-const Uppay = require('../native/index.js').UPPay;
-const gEventEmitter = Platform.OS === 'android' ? DeviceEventEmitter : NativeAppEventEmitter;
-
-class Manager extends EventEmitter {
-
-    /*
-    * 注：amount为充值金额，单位为【元】。
-    * body: 描述
-    */
-    doPay (amount, body, callbackSuccess, callbackError) {
-        this.subscription = gEventEmitter.addListener('UNION_PAY', (obj) => { this.onPayResult(obj, callbackSuccess, callbackError); });
-        var param = {
-            userId:'59fc08416a14bc0456979059',//app.personal.info.userId,
-            amount, // :1, //总金额 (元)
-            body, // :'充值',
-        };
-        POST(app.route.ROUTE_GET_UNION_UNIFIED_ORDER, param, (data) => {
-            if (data.success) {
-                !data.context ? callbackSuccess(data) : Uppay.pay(data.context, callbackSuccess, callbackError);
-            } else {
-                Toast(data.msg);
-            }
-        });
-    }
-    onPayResult (data, callbackSuccess, callbackError) {
-        if (this.subscription) {
-            this.subscription.remove();
-            this.subscription = null;
-        }
-        if (data.success == 'true') {
-            callbackSuccess(data);
-        } else {
-            callbackError(data);
-        }
-    }
-}
-module.exports = new Manager();
-
-```
-
-* PDClient/project/App/manager/UpdateMgr.js
+* PDDriver/project/App/manager/UpdateMgr.js
 
 ```js
 'use strict';
@@ -1626,60 +971,85 @@ module.exports = new Manager();
 
 ```
 
-* PDClient/project/App/manager/WXpayMgr.js
+* PDDriver/project/App/utils/index.js
 
 ```js
-'use strict';
-const { NativeAppEventEmitter, DeviceEventEmitter, Platform } = require('react-native');
-const EventEmitter = require('EventEmitter');
-const Wxpay = require('../native/index.js').WeixinPay;
-const gEventEmitter = Platform.OS === 'android' ? DeviceEventEmitter : NativeAppEventEmitter;
+const common = require('./common');
+const net = require('./net');
+const check = require('./check');
+const date = require('./date');
+const qrcode = require('./qrcode');
 
-class Manager extends EventEmitter {
-
-    /*
-    * 注：amount为充值金额，单位为【元】。
-    * body: 描述
-    * appid: 公众账号ID
-    * noncestr: 随机字符串
-    * package: 扩展字段
-    * partnerid: 商户号
-    * prepayid: 预支付交易会话ID
-    * timestamp: 时间戳
-    * sign: 签名
-    */
-    doPay (amount, body, callbackSuccess, callbackError) {
-        this.subscription = gEventEmitter.addListener('WEIXIN_PAY', (obj) => { this.onPayResult(obj, callbackSuccess, callbackError); });
-        var param = {
-            userId:app.personal.info.userId,
-            amount, // :1, //总金额 (元)
-            body, // :'充值',
-        };
-        POST(app.route.ROUTE_GET_UNIFIED_ORDER, param, (data) => {
-            if (data.success) {
-                !data.context ? callbackSuccess(data) : Wxpay.pay(data.context, callbackSuccess, callbackError);
-            } else {
-                Toast(data.msg);
-            }
-        });
-    }
-    onPayResult (data, callbackSuccess, callbackError) {
-        if (this.subscription) {
-            this.subscription.remove();
-            this.subscription = null;
-        }
-        if (data.success == 'true') {
-            callbackSuccess(data);
-        } else {
-            callbackError(data);
-        }
-    }
-}
-module.exports = new Manager();
+module.exports = {
+    ...common,
+    ...net,
+    ...check,
+    ...date,
+    ...qrcode,
+};
 
 ```
 
-* PDClient/project/App/components/AutogrowInput.js
+* PDDriver/project/App/resource/audio.js
+
+```js
+module.exports = {};
+
+```
+
+* PDDriver/project/App/resource/image.js
+
+```js
+module.exports = {
+    common_back:require('./image/common/back.png'),
+    common_close:require('./image/common/close.png'),
+    common_default:require('./image/common/default.png'),
+    common_go:require('./image/common/go.png'),
+    common_home:require('./image/common/home.png'),
+    common_left_menu:require('./image/common/left_menu.png'),
+    common_logo:require('./image/common/logo.png'),
+    common_radio:require('./image/common/radio.png'),
+    common_search:require('./image/common/search.png'),
+    common_search_button:require('./image/common/search_button.png'),
+    home_mine:require('./image/home/mine.png'),
+    home_mine_press:require('./image/home/mine_press.png'),
+    home_position:require('./image/home/position.png'),
+    home_position_press:require('./image/home/position_press.png'),
+    home_qrcode:require('./image/home/qrcode.png'),
+    home_qrcode_press:require('./image/home/qrcode_press.png'),
+    login_alipay_button:require('./image/login/alipay_button.png'),
+    login_choose:require('./image/login/choose.png'),
+    login_logo:require('./image/login/logo.png'),
+    login_password:require('./image/login/password.png'),
+    login_password_check:require('./image/login/password_check.png'),
+    login_password_look:require('./image/login/password_look.png'),
+    login_phone:require('./image/login/phone.png'),
+    login_qq_button:require('./image/login/qq_button.png'),
+    login_unchoose:require('./image/login/unchoose.png'),
+    login_weixin_button:require('./image/login/weixin_button.png'),
+    personal_add:require('./image/personal/add.png'),
+    personal_default_head:require('./image/personal/default_head.png'),
+    personal_female:require('./image/personal/female.png'),
+    personal_info:require('./image/personal/info.png'),
+    personal_male:require('./image/personal/male.png'),
+    personal_money:require('./image/personal/money.png'),
+    personal_personal_center:require('./image/personal/personal_center.png'),
+    personal_scan:require('./image/personal/scan.png'),
+    personal_settings:require('./image/personal/settings.png'),
+    personal_wallet:require('./image/personal/wallet.png'),
+    position_endpoint:require('./image/position/endpoint.png'),
+    position_point:require('./image/position/point.png'),
+    position_point_green:require('./image/position/point_green.png'),
+    splash_logo:require('./image/splash/logo.png'),
+    splash_splash1:require('./image/splash/splash1.png'),
+    splash_splash2:require('./image/splash/splash2.png'),
+    splash_splash3:require('./image/splash/splash3.png'),
+    splash_start:require('./image/splash/start.png'),
+};
+
+```
+
+* PDDriver/project/App/components/AutogrowInput.js
 
 ```js
 import React, { Component } from 'react';
@@ -1745,12 +1115,12 @@ module.exports = Input;
 
 ```
 
-* PDClient/project/App/components/Button.js
+* PDDriver/project/App/components/Button.js
 
 ```js
 'use strict';
 
-const React = require('react');const { PropTypes } = React;const ReactNative = require('react-native');
+const React = require('react');const {    PropTypes,} = React;const ReactNative = require('react-native');
 const {
     StyleSheet,
     Text,
@@ -1806,7 +1176,7 @@ const styles = StyleSheet.create({
 
 ```
 
-* PDClient/project/App/components/ClipRect.js
+* PDDriver/project/App/components/ClipRect.js
 
 ```js
 'use strict';
@@ -1907,130 +1277,7 @@ module.exports = ReactNative.Platform.OS === 'android' ? ClipRectAndroid : ClipR
 
 ```
 
-* PDClient/project/App/components/CustomMessageBox.js
-
-```js
-'use strict';
-
-const React = require('react');
-const ReactNative = require('react-native');
-const {
-    StyleSheet,
-    Text,
-    View,
-    TouchableHighlight,
-} = ReactNative;
-
-module.exports = React.createClass({
-    getDefaultProps: function () {
-        return {
-            title: '温馨提示',
-            cancelText: '取消',
-            confirmText: '确定',
-            width: 312,
-        };
-    },
-    doConfirm () {
-        const { onConfirm } = this.props;
-        if (!onConfirm || !onConfirm()) {
-            app.closeModal();
-        }
-    },
-    doCancel () {
-        const { onCancel } = this.props;
-        if (onCancel === true || !onCancel || !onCancel()) {
-            app.closeModal();
-        }
-    },
-    render () {
-        const { title, width, onCancel, cancelText, confirmText } = this.props;
-        return (
-            <View style={[styles.container, { width }]}>
-                { !!title && <Text style={styles.title}>{title}</Text> }
-                { !!title && <Text style={[styles.redLine, { width: width * 0.8 }]} /> }
-                <View style={styles.content}>
-                    {this.props.children}
-                </View>
-                <Text style={[styles.H_Line, { width }]} />
-                <View style={[styles.buttonViewStyle, { width: width - 20 }]}>
-                    {!!onCancel &&
-                    <TouchableHighlight
-                        underlayColor='rgba(0, 0, 0, 0)'
-                        onPress={this.doCancel}
-                        style={styles.buttonStyleContain}>
-                        <Text style={[styles.buttonStyle, { color: 'red' }]}>{cancelText}</Text>
-                    </TouchableHighlight>
-                        }
-                    {!!onCancel &&
-                    <Text style={styles.line} />
-                        }
-                    <TouchableHighlight
-                        underlayColor='rgba(0, 0, 0, 0)'
-                        onPress={this.doConfirm}
-                        style={styles.buttonStyleContain}>
-                        <Text style={[styles.buttonStyle, { color: '#0076FF' }]} >{confirmText}</Text>
-                    </TouchableHighlight>
-                </View>
-            </View>
-        );
-    },
-});
-
-const styles = StyleSheet.create({
-    container: {
-        alignItems:'center',
-        justifyContent:'center',
-        backgroundColor:'#FFFFFF',
-        borderRadius:10,
-    },
-    buttonViewStyle: {
-        flexDirection: 'row',
-        height: 50,
-    },
-    H_Line: {
-        marginTop: 10,
-        height: 1,
-        backgroundColor: '#b4b4b4',
-    },
-    redLine: {
-        marginTop: 10,
-        height: 1,
-        backgroundColor: '#ff3c30',
-    },
-    line: {
-        width: 1,
-        height: 50,
-        backgroundColor: '#b4b4b4',
-    },
-    buttonStyleContain: {
-        height: 50,
-        flex: 1,
-        justifyContent:'center',
-        alignItems:'center',
-    },
-    buttonStyle: {
-        fontSize: 15,
-        color: '#000000',
-    },
-    title: {
-        color: '#ff3c30',
-        fontSize: 16,
-        fontWeight: '100',
-        textAlign: 'center',
-        overflow: 'hidden',
-        marginTop:20,
-    },
-    content: {
-        alignSelf:'center',
-        color:'#000000',
-        marginTop: 20,
-        width:sr.w/2,
-    },
-});
-
-```
-
-* PDClient/project/App/components/CustomSheet.js
+* PDDriver/project/App/components/CustomSheet.js
 
 ```js
 'use strict';
@@ -2073,7 +1320,7 @@ const styles = StyleSheet.create({
 
 ```
 
-* PDClient/project/App/components/DImage.js
+* PDDriver/project/App/components/DImage.js
 
 ```js
 'use strict';
@@ -2118,7 +1365,7 @@ module.exports = DImage;
 
 ```
 
-* PDClient/project/App/components/DelayTouchableOpacity.js
+* PDDriver/project/App/components/DelayTouchableOpacity.js
 
 ```js
 'use strict';
@@ -2157,7 +1404,7 @@ module.exports = React.createClass({
 
 ```
 
-* PDClient/project/App/components/Label.js
+* PDDriver/project/App/components/Label.js
 
 ```js
 'use strict';
@@ -2203,7 +1450,7 @@ const styles = StyleSheet.create({
 
 ```
 
-* PDClient/project/App/components/MessageBox.js
+* PDDriver/project/App/components/MessageBox.js
 
 ```js
 'use strict';
@@ -2326,7 +1573,7 @@ const styles = StyleSheet.create({
 
 ```
 
-* PDClient/project/App/components/Modal.js
+* PDDriver/project/App/components/Modal.js
 
 ```js
 'use strict';
@@ -2397,7 +1644,7 @@ const styles = StyleSheet.create({
 
 ```
 
-* PDClient/project/App/components/PageList.js
+* PDDriver/project/App/components/PageList.js
 
 ```js
 'use strict';
@@ -2441,6 +1688,7 @@ module.exports = React.createClass({
         return {
             autoLoad: true,
             pageNo: 0,
+            infiniteLoadStatus: STATUS_START_LOAD,
             style: { flex: 1 },
             pageSize: CONSTANTS.PER_PAGE_COUNT,
         };
@@ -2457,12 +1705,11 @@ module.exports = React.createClass({
         });
     },
     getInitialState () {
-        const { list, pageNo, autoLoad } = this.props;
-        this.list = list || [];
-        this.pageNo = pageNo;
+        this.list = this.props.list || [];
+        this.pageNo = this.props.pageNo;
         return {
             dataSource: this.list,
-            infiniteLoadStatus: list ? (list.length === 0 ? STATUS_NO_DATA : list.length < CONSTANTS.PER_PAGE_COUNT ? STATUS_ALL_LOADED : STATUS_TEXT_HIDE) : !autoLoad ? STATUS_TEXT_HIDE : STATUS_START_LOAD,
+            infiniteLoadStatus: this.props.infiniteLoadStatus,
         };
     },
     componentDidUpdate (prevProps, prevState) {
@@ -2506,9 +1753,7 @@ module.exports = React.createClass({
             return;
         }
         this.pageNo++;
-        if (this.pageNo > 0) {
-            this.getList();
-        }
+        this.getList();
     },
     refresh () {
         if (this.isRefreshing()) {
@@ -2543,8 +1788,7 @@ module.exports = React.createClass({
     },
     render () {
         return (
-            <FlatList
-                onEndReached={this.onEndReached}
+            <FlatList                onEndReached={this.onEndReached}
                 onEndReachedThreshold={10}
                 initialListSize={this.props.pageSize}
                 enableEmptySections
@@ -2580,7 +1824,7 @@ const styles = StyleSheet.create({
 
 ```
 
-* PDClient/project/App/components/PageListView.js
+* PDDriver/project/App/components/PageListView.js
 
 ```js
 'use strict';
@@ -2768,7 +2012,7 @@ const styles = StyleSheet.create({
 
 ```
 
-* PDClient/project/App/components/Picker.js
+* PDDriver/project/App/components/Picker.js
 
 ```js
 'use strict';
@@ -2812,7 +2056,7 @@ module.exports.hide = () => {
 
 ```
 
-* PDClient/project/App/components/ProgressBar.js
+* PDDriver/project/App/components/ProgressBar.js
 
 ```js
 const React = require('react');const ReactNative = require('react-native');
@@ -2852,7 +2096,7 @@ const styles = StyleSheet.create({
 
 ```
 
-* PDClient/project/App/components/ProgressHud.js
+* PDDriver/project/App/components/ProgressHud.js
 
 ```js
 'use strict';
@@ -2998,7 +2242,7 @@ module.exports = ProgressHud;
 
 ```
 
-* PDClient/project/App/components/RText.js
+* PDDriver/project/App/components/RText.js
 
 ```js
 'use strict';
@@ -3012,7 +2256,7 @@ const {
 
 const RText = React.createClass({
     render () {
-        const { style, ...props } = this.props;
+        const { children, style, ...props } = this.props;
         const s = StyleSheet.flatten(style);
         const { lineHeight, fontSize } = s;
         const paddingVertical = (lineHeight - fontSize) / 2;
@@ -3022,7 +2266,7 @@ const RText = React.createClass({
                 testID={this.props.testID}
                 {...props}
                 >
-                {this.props.children}
+                {children}
             </Text>
         );
     },
@@ -3032,7 +2276,7 @@ module.exports = Platform.OS === 'android' ? RText : Text;
 
 ```
 
-* PDClient/project/App/components/ScoreSelect.js
+* PDDriver/project/App/components/ScoreSelect.js
 
 ```js
 'use strict';
@@ -3098,7 +2342,7 @@ module.exports = ViewPager;
 
 ```
 
-* PDClient/project/App/components/SelectRegionAddress.js
+* PDDriver/project/App/components/SelectRegionAddress.js
 
 ```js
 'use strict';
@@ -3113,7 +2357,6 @@ const {
     ListView,
 } = ReactNative;
 
-// type可传 0，2，3；0: 长途地址只能选到市或县，2：所有地址可以选到镇, 3: 分店路线中存在的地址，4：收货点路线中存在的地址
 module.exports = React.createClass({
     statics: {
         title: '所在地',
@@ -3147,8 +2390,7 @@ module.exports = React.createClass({
         !endPointLastCode || endPointLastCode == '' ? this.getRegionAddress(0) : this.getAddressFromLastCode(endPointLastCode);
     },
     getRegionAddress (parentCode) {
-        const type = this.props.type || 0;
-        const param = { userId: app.personal.info.userId, parentCode, type };
+        const param = { userId: app.personal.info.userId, parentCode, type:0 };
         POST(app.route.ROUTE_GET_REGION_ADDRESS_LIST, param, this.getRegionAddressSuccess.bind(null, parentCode), false);
     },
     getRegionAddressSuccess (parentCode, data) {
@@ -3161,8 +2403,7 @@ module.exports = React.createClass({
         }
     },
     getAddressFromLastCode (addressLastCode) {
-        const type = this.props.type || 0;
-        const param = { userId: app.personal.info.userId, addressLastCode, type };
+        const param = { userId: app.personal.info.userId, addressLastCode };
         POST(app.route.ROUTE_GET_ADDRESS_FROM_LAST_CODE, param, this.getAddressFromLastCodeSuccess.bind(null, addressLastCode), false);
     },
     getAddressFromLastCodeSuccess (addressLastCode, data) {
@@ -3173,7 +2414,7 @@ module.exports = React.createClass({
     getSubAddressList (obj) {
         let { allAddress } = this.state;
         const lastObj = allAddress[allAddress.length - 1];
-        if ((!!lastObj && lastObj.isLeaf) || (!!lastObj && obj.parentCode==0 && lastObj.parentCode==0)) {
+        if (!!lastObj && lastObj.isLeaf) {
             allAddress.pop();
         }
         allAddress.push(obj);
@@ -3280,7 +2521,7 @@ const styles = StyleSheet.create({
 
 ```
 
-* PDClient/project/App/components/SelectShortAddress.js
+* PDDriver/project/App/components/SelectShortAddress.js
 
 ```js
 'use strict';
@@ -3334,7 +2575,6 @@ module.exports = React.createClass({
     },
     getSubAddressList (obj) {
         let { allAddress } = this.state;
-        const { style } = this.props;
         const lastObj = allAddress[allAddress.length - 1];
         if (!!lastObj && lastObj.isLeaf) {
             allAddress.pop();
@@ -3343,7 +2583,7 @@ module.exports = React.createClass({
         this.setState({ allAddress: _.uniqBy(allAddress, 'code') });
         if (obj.isLeaf) {
             this.props.confirmAddress(_.join(_.map(this.state.allAddress, 'name'), ''), obj.code);
-            !style && app.pop();
+            app.pop();
         } else {
             this.getRegionAddress(obj.code);
         }
@@ -3370,9 +2610,9 @@ module.exports = React.createClass({
     },
     render () {
         const { allAddress } = this.state;
-        const { parentCode,style } = this.props;
+        const { parentCode } = this.props;
         return (
-            <View style={style || styles.container}>
+            <View style={styles.container}>
                 <View style={styles.infoStyle}>
                     <TouchableOpacity
                         activeOpacity={1}
@@ -3446,7 +2686,7 @@ const styles = StyleSheet.create({
 
 ```
 
-* PDClient/project/App/components/SelectStartPointAddress.js
+* PDDriver/project/App/components/SelectStartPointAddress.js
 
 ```js
 'use strict';
@@ -3468,7 +2708,6 @@ module.exports = React.createClass({
     },
     getInitialState () {
         this.ds = new ListView.DataSource({ rowHasChanged: (r1, r2) => r1 !== r2 });
-        this.lastLevel = null;
         return {
             dataSource:[],
             allAddress:[],
@@ -3476,6 +2715,8 @@ module.exports = React.createClass({
     },
     componentWillMount () {
         const { endPointLastCode, id } = this.props;
+        // const endPointLastCode = 520101;
+        // const id = "59e426b1b6ee191fe5d4fbf8";
         !endPointLastCode || endPointLastCode == '' ? this.getStartPointAddress(0) : this.getAddressFromLastCode(endPointLastCode, id);
     },
     getStartPointAddress (parentCode) {
@@ -3486,8 +2727,7 @@ module.exports = React.createClass({
         const { allAddress } = this.state;
         if (data.success) {
             parentCode == 0 && this.setState({ allAddress: [] });
-            let dataSource = this.props.shopOnly&&_.includes([ 0, 4, 5, 6, 7 ], this.lastLevel)?_.filter(data.context.addressList, 'isShop', true):data.context.addressList;
-            this.setState({ dataSource });
+            this.setState({ dataSource: data.context.addressList });
         } else {
             Toast(data.msg);
         }
@@ -3498,7 +2738,7 @@ module.exports = React.createClass({
     },
     getAddressFromLastCodeSuccess (addressLastCode, id, data) {
         if (data.success) {
-            this.setState({ allAddress: app.utils.getStartPointTitleArray(data.context.addressList, addressLastCode, id), dataSource:data.context.addressList[0]||[]});
+            this.setState({ allAddress: app.utils.getStartPointTitleArray(data.context.addressList, addressLastCode, id), dataSource:data.context.addressList[0] || [] });
         }
     },
     confirm () {
@@ -3506,43 +2746,39 @@ module.exports = React.createClass({
         const lastObj = allAddress[allAddress.length - 1];
         const { confirmAddress, isNeedSelectAll } = this.props;
         if (isNeedSelectAll) {
-            if (!!lastObj && lastObj.isLeaf || _.includes([ 0, 4, 5, 6, 7 ], lastObj.level)) {
+            if (!!lastObj && lastObj.isLeaf) {
                 if (lastObj.isShop) {
-                    confirmAddress({ startPoint:_.join(_.map(allAddress, 'name'), ''), shopId:lastObj.id, startPointLastCode:lastObj.addressRegionLastCode });
+                    confirmAddress({ startPoint:_.join(_.map(allAddress, 'name'), ''), shopId:lastObj.id, lastCode:lastObj.addressRegionLastCode });
                 } else if (lastObj.isAgent) {
-                    confirmAddress({ startPoint:_.join(_.map(allAddress, 'name'), ''), agentId:lastObj.id, startPointLastCode:lastObj.addressRegionLastCode });
-                } else {
-                    confirmAddress({ startPoint:_.join(_.map(allAddress, 'name'), ''), startPointLastCode: lastObj.code });
+                    confirmAddress({ startPoint:_.join(_.map(allAddress, 'name'), ''), agentId:lastObj.id, lastCode:lastObj.addressRegionLastCode });
                 }
                 app.pop();
             } else {
                 Toast('请选择完整到货地');
             }
         } else {
-            console.log('lastObj.code',lastObj);
-            confirmAddress({ startPoint:_.join(_.map(allAddress, 'name'), ''), startPointLastCode:lastObj && lastObj.code || null });
+            confirmAddress({ startPoint:_.join(_.map(allAddress, 'name'), ''), lastCode:lastObj.code });
             app.pop();
         }
     },
     getSubAddressList (obj) {
         let { allAddress } = this.state;
         const lastObj = allAddress[allAddress.length - 1];
-        if ((!!lastObj && lastObj.isLeaf) || (!!lastObj && obj.parentCode==0 && lastObj.parentCode==0)) {
+        if (!!lastObj && lastObj.isLeaf) {
             allAddress.pop();
         }
         allAddress.push(obj);
         this.setState({ allAddress: _.uniqBy(allAddress, 'code') });
         if (obj.isLeaf) { // 省+市+名字
             if (obj.isShop) {
-                this.props.confirmAddress({ startPoint:obj.name, shopId:obj.id, startPointLastCode:obj.addressRegionLastCode });
+                this.props.confirmAddress({ startPoint:_.join(_.map(this.state.allAddress, 'name'), ''), shopId:obj.id, lastCode:obj.addressRegionLastCode });
             } else if (obj.isAgent) {
-                this.props.confirmAddress({ startPoint:obj.name, agentId:obj.id, startPointLastCode:obj.addressRegionLastCode });
+                this.props.confirmAddress({ startPoint:_.join(_.map(this.state.allAddress, 'name'), ''), agentId:obj.id, lastCode:obj.addressRegionLastCode });
             } else {
-                this.props.confirmAddress({ startPoint:_.join(_.map(this.state.allAddress, 'name'), ''), startPointLastCode:obj.code });
+                this.props.confirmAddress({ startPoint:_.join(_.map(this.state.allAddress, 'name'), ''), lastCode:obj.code });
             }
             app.pop();
         } else {
-            this.lastLevel = obj.level;
             this.getStartPointAddress(obj.code);
         }
     },
@@ -3658,7 +2894,7 @@ const styles = StyleSheet.create({
 
 ```
 
-* PDClient/project/App/components/Slider.js
+* PDDriver/project/App/components/Slider.js
 
 ```js
 'use strict';
@@ -4049,7 +3285,7 @@ module.exports = Slider;
 
 ```
 
-* PDClient/project/App/components/StarBar.js
+* PDDriver/project/App/components/StarBar.js
 
 ```js
 'use strict';
@@ -4114,7 +3350,7 @@ const styles = StyleSheet.create({
 
 ```
 
-* PDClient/project/App/components/TouchAbleLink.js
+* PDDriver/project/App/components/TouchAbleCall.js
 
 ```js
 import React, { Component } from 'react';
@@ -4123,33 +3359,32 @@ import {
     Linking,
     TouchableOpacity,
 } from 'react-native';
-
-// 打电话：url->("tel:10086")
-// 发邮件：url->("mailto:10086@qq.com")
-// 打开网站:url->("http://www.baidu.com")
-module.exports = React.createClass ({
+class TouchableCall extends Component {
+    protoTypes:{
+        url:React.ProtoTypes.string
+    }
     render () {
-        const {url, style, children} = this.props;
         return (
-            <TouchableOpacity style={style} onPress={() => {
-                Linking.canOpenURL(url).then(supported => {
+            <TouchableOpacity onPress={() => {
+                Linking.canOpenURL(this.props.url).then(supported => {
                     if (!supported) {
-                        console.log('Can\'t handle url: ' + url);
+                        console.log('Can\'t handle url: ' + this.props.url);
                     } else {
-                        return Linking.openURL(url);
+                        return Linking.openURL(this.props.url);
                     }
                 }).catch(err => console.error('An error occurred', err));
             }}>
-                {children}
+                <Text>{this.props.url}</Text>
             </TouchableOpacity>
 
         );
     }
-});
+}
+module.exports = TouchableCall;
 
 ```
 
-* PDClient/project/App/components/WebviewMessageBox.js
+* PDDriver/project/App/components/WebviewMessageBox.js
 
 ```js
 'use strict';
@@ -4188,7 +3423,7 @@ module.exports = React.createClass({
                         onPress={app.closeModal}
                         style={styles.contentButton}
                         textStyle={styles.contentButtonText}>
-                        返回</Button>
+                        确定</Button>
                 </View>
             </View>
         );
@@ -4237,30 +3472,27 @@ const styles = StyleSheet.create({
         borderRadius:0,
     },
     contentButtonText: {
-        color: '#000000',
+        color: '#FFFFFF',
         fontWeight: '800',
     },
 });
 
 ```
 
-* PDClient/project/App/components/index.js
+* PDDriver/project/App/components/index.js
 
 ```js
 module.exports = {
     Button: require('./Button'),
     PageList: require('./PageList'),
     ActionSheet: require('./ActionSheet/index'),
-    ActionView: require('./ActionSheet/view'),
-    CustomSheet: require('./CustomSheet'),
-    ClipRect: require('./ClipRect'),
+    CustomSheet: require('./CustomSheet'),    ClipRect: require('./ClipRect'),
     Modal: require('./Modal'),
     DImage: require('./DImage'),
     Label: require('./Label'),
     ProgressBar: require('./ProgressBar'),
     Slider: require('./Slider'),
     MessageBox: require('./MessageBox'),
-    CustomMessageBox: require('./CustomMessageBox'),
     WebviewMessageBox: require('./WebviewMessageBox'),
     DelayTouchableOpacity: require('./DelayTouchableOpacity'),
     StarBar: require('./StarBar'),
@@ -4268,7 +3500,7 @@ module.exports = {
     RText: require('./RText'),
     ScoreSelect: require('./ScoreSelect'),
     AutogrowInput: require('./AutogrowInput'),
-    TouchAbleLink: require('./TouchAbleLink'),
+    TouchableCall: require('./TouchAbleCall'),
     Picker: require('./Picker'),
     SelectRegionAddress: require('./SelectRegionAddress'),
     SelectStartPointAddress: require('./SelectStartPointAddress'),
@@ -4277,368 +3509,7 @@ module.exports = {
 
 ```
 
-* PDClient/project/App/data/city.js
-
-```js
-module.exports = [{ name:'北京', city:[{ name:'北京', area:['东城区', '西城区', '崇文区', '宣武区', '朝阳区', '丰台区', '石景山区', '海淀区', '门头沟区', '房山区', '通州区', '顺义区', '昌平区', '大兴区', '平谷区', '怀柔区', '密云县', '延庆县'] }] }, { name:'天津', city:[{ name:'天津', area:['和平区', '河东区', '河西区', '南开区', '河北区', '红桥区', '塘沽区', '汉沽区', '大港区', '东丽区', '西青区', '津南区', '北辰区', '武清区', '宝坻区', '宁河县', '静海县', '蓟  县'] }] }, { name:'河北', city:[{ name:'石家庄', area:['长安区', '桥东区', '桥西区', '新华区', '郊  区', '井陉矿区', '井陉县', '正定县', '栾城县', '行唐县', '灵寿县', '高邑县', '深泽县', '赞皇县', '无极县', '平山县', '元氏县', '赵  县', '辛集市', '藁', '晋州市', '新乐市', '鹿泉市'] }, { name:'唐山', area:['路南区', '路北区', '古冶区', '开平区', '新  区', '丰润县', '滦  县', '滦南县', '乐亭县', '迁西县', '玉田县', '唐海县', '遵化市', '丰南市', '迁安市'] }, { name:'秦皇岛', area:['海港区', '山海关区', '北戴河区', '青龙满族自治县', '昌黎县', '抚宁县', '卢龙县'] }, { name:'邯郸', area:['邯山区', '丛台区', '复兴区', '峰峰矿区', '邯郸县', '临漳县', '成安县', '大名县', '涉  县', '磁  县', '肥乡县', '永年县', '邱  县', '鸡泽县', '广平县', '馆陶县', '魏  县', '曲周县', '武安市'] }, { name:'邢台', area:['桥东区', '桥西区', '邢台县', '临城县', '内丘县', '柏乡县', '隆尧县', '任  县', '南和县', '宁晋县', '巨鹿县', '新河县', '广宗县', '平乡县', '威  县', '清河县', '临西县', '南宫市', '沙河市'] }, { name:'保定', area:['新市区', '北市区', '南市区', '满城县', '清苑县', '涞水县', '阜平县', '徐水县', '定兴县', '唐  县', '高阳县', '容城县', '涞源县', '望都县', '安新县', '易  县', '曲阳县', '蠡  县', '顺平县', '博野', '雄县', '涿州市', '定州市', '安国市', '高碑店市'] }, { name:'张家口', area:['桥东区', '桥西区', '宣化区', '下花园区', '宣化县', '张北县', '康保县', '沽源县', '尚义县', '蔚  县', '阳原县', '怀安县', '万全县', '怀来县', '涿鹿县', '赤城县', '崇礼县'] }, { name:'承德', area:['双桥区', '双滦区', '鹰手营子矿区', '承德县', '兴隆县', '平泉县', '滦平县', '隆化县', '丰宁满族自治县', '宽城满族自治县', '围场满族蒙古族自治县'] }, { name:'沧州', area:['新华区', '运河区', '沧  县', '青  县', '东光县', '海兴县', '盐山县', '肃宁县', '南皮县', '吴桥县', '献  县', '孟村回族自治县', '泊头市', '任丘市', '黄骅市', '河间市'] }, { name:'廊坊', area:['安次区', '固安县', '永清县', '香河县', '大城县', '文安县', '大厂回族自治县', '霸州市', '三河市'] }, { name:'衡水', area:['桃城区', '枣强县', '武邑县', '武强县', '饶阳县', '安平县', '故城县', '景  县', '阜城县', '冀州市', '深州市'] }] }, { name:'山西', city:[{ name:'太原', area:['小店区', '迎泽区', '杏花岭区', '尖草坪区', '万柏林区', '晋源区', '清徐县', '阳曲县', '娄烦县', '古交市'] }, { name:'大同', area:['城  区', '矿  区', '南郊区', '新荣区', '阳高县', '天镇县', '广灵县', '灵丘县', '浑源县', '左云县', '大同县'] }, { name:'阳泉', area:['城  区', '矿  区', '郊  区', '平定县', '盂  县'] }, { name:'长治', area:['城  区', '郊  区', '长治县', '襄垣县', '屯留县', '平顺县', '黎城县', '壶关县', '长子县', '武乡县', '沁  县', '沁源县', '潞城市'] }, { name:'晋城', area:['城  区', '沁水县', '阳城县', '陵川县', '泽州县', '高平市'] }, { name:'朔州', area:['朔城区', '平鲁区', '山阴县', '应  县', '右玉县', '怀仁县'] }, { name:'忻州', area:['忻府区', '原平市', '定襄县', '五台县', '代  县', '繁峙县', '宁武县', '静乐县', '神池县', '五寨县', '岢岚县', '河曲县', '保德县', '偏关县'] }, { name:'吕梁', area:['离石区', '孝义市', '汾阳市', '文水县', '交城县', '兴  县', '临  县', '柳林县', '石楼县', '岚  县', '方山县', '中阳县', '交口县'] }, { name:'晋中', area:['榆次市', '介休市', '榆社县', '左权县', '和顺县', '昔阳县', '寿阳县', '太谷县', '祁  县', '平遥县', '灵石县'] }, { name:'临汾', area:['临汾市', '侯马市', '霍州市', '曲沃县', '翼城县', '襄汾县', '洪洞县', '古  县', '安泽县', '浮山县', '吉  县', '乡宁县', '蒲  县', '大宁县', '永和县', '隰  县', '汾西县'] }, { name:'运城', area:['运城市', '永济市', '河津市', '芮城县', '临猗县', '万荣县', '新绛县', '稷山县', '闻喜县', '夏  县', '绛  县', '平陆县', '垣曲县'] }] }, { name:'内蒙古', city:[{ name:'呼和浩特', area:['新城区', '回民区', '玉泉区', '郊  区', '土默特左旗', '托克托县', '和林格尔县', '清水河县', '武川县'] }, { name:'包头', area:['东河区', '昆都伦区', '青山区', '石拐矿区', '白云矿区', '郊  区', '土默特右旗', '固阳县', '达尔罕茂明安联合旗'] }, { name:'乌海', area:['海勃湾区', '海南区', '乌达区'] }, { name:'赤峰', area:['红山区', '元宝山区', '松山区', '阿鲁科尔沁旗', '巴林左旗', '巴林右旗', '林西县', '克什克腾旗', '翁牛特旗', '喀喇沁旗', '宁城县', '敖汉旗'] }, { name:'呼伦贝尔', area:['海拉尔市', '满洲里市', '扎兰屯市', '牙克石市', '根河市', '额尔古纳市', '阿荣旗', '莫力达瓦达斡尔族自治旗', '鄂伦春自治旗', '鄂温克族自治旗', '新巴尔虎右旗', '新巴尔虎左旗', '陈巴尔虎旗'] }, { name:'兴安盟', area:['乌兰浩特市', '阿尔山市', '科尔沁右翼前旗', '科尔沁右翼中旗', '扎赉特旗', '突泉县'] }, { name:'通辽', area:['科尔沁区', '霍林郭勒市', '科尔沁左翼中旗', '科尔沁左翼后旗', '开鲁县', '库伦旗', '奈曼旗', '扎鲁特旗'] }, { name:'锡林郭勒盟', area:['二连浩特市', '锡林浩特市', '阿巴嘎旗', '苏尼特左旗', '苏尼特右旗', '东乌珠穆沁旗', '西乌珠穆沁旗', '太仆寺旗', '镶黄旗', '正镶白旗', '正蓝旗', '多伦县'] }, { name:'乌兰察布盟', area:['集宁市', '丰镇市', '卓资县', '化德县', '商都县', '兴和县', '凉城县', '察哈尔右翼前旗', '察哈尔右翼中旗', '察哈尔右翼后旗', '四子王旗'] }, { name:'伊克昭盟', area:['东胜市', '达拉特旗', '准格尔旗', '鄂托克前旗', '鄂托克旗', '杭锦旗', '乌审旗', '伊金霍洛旗'] }, { name:'巴彦淖尔盟', area:['临河市', '五原县', '磴口县', '乌拉特前旗', '乌拉特中旗', '乌拉特后旗', '杭锦后旗'] }, { name:'阿拉善盟', area:['阿拉善左旗', '阿拉善右旗', '额济纳旗'] }] }, { name:'辽宁', city:[{ name:'沈阳', area:['沈河区', '皇姑区', '和平区', '大东区', '铁西区', '苏家屯区', '东陵区', '于洪区', '新民市', '法库县', '辽中县', '康平县', '新城子区', '其他'] }, { name:'大连', area:['西岗区', '中山区', '沙河口区', '甘井子区', '旅顺口区', '金州区', '瓦房店市', '普兰店市', '庄河市', '长海县', '其他'] }, { name:'鞍山', area:['铁东区', '铁西区', '立山区', '千山区', '海城市', '台安县', '岫岩满族自治县', '其他'] }, { name:'抚顺', area:['顺城区', '新抚区', '东洲区', '望花区', '抚顺县', '清原满族自治县', '新宾满族自治县', '其他'] }, { name:'本溪', area:['平山区', '明山区', '溪湖区', '南芬区', '本溪满族自治县', '桓仁满族自治县', '其他'] }, { name:'丹东', area:['振兴区', '元宝区', '振安区', '东港市', '凤城市', '宽甸满族自治县', '其他'] }, { name:'锦州', area:['太和区', '古塔区', '凌河区', '凌海市', '黑山县', '义县', '北宁市', '其他'] }, { name:'营口', area:['站前区', '西市区', '鲅鱼圈区', '老边区', '大石桥市', '盖州市', '其他'] }, { name:'阜新', area:['海州区', '新邱区', '太平区', '清河门区', '细河区', '彰武县', '阜新蒙古族自治县', '其他'] }, { name:'辽阳', area:['白塔区', '文圣区', '宏伟区', '太子河区', '弓长岭区', '灯塔市', '辽阳县', '其他'] }, { name:'盘锦', area:['双台子区', '兴隆台区', '盘山县', '大洼县', '其他'] }, { name:'铁岭', area:['银州区', '清河区', '调兵山市', '开原市', '铁岭县', '昌图县', '西丰县', '其他'] }, { name:'朝阳', area:['双塔区', '龙城区', '凌源市', '北票市', '朝阳县', '建平县', '喀喇沁左翼蒙古族自治县', '其他'] }, { name:'葫芦岛', area:['龙港区', '南票区', '连山区', '兴城市', '绥中县', '建昌县', '其他'] }, { name:'其他', area:['其他'] }] }, { name:'吉林', city:[{ name:'长春', area:['朝阳区', '宽城区', '二道区', '南关区', '绿园区', '双阳区', '九台市', '榆树市', '德惠市', '农安县', '其他'] }, { name:'吉林', area:['船营区', '昌邑区', '龙潭区', '丰满区', '舒兰市', '桦甸市', '蛟河市', '磐石市', '永吉县', '其他'] }, { name:'四平', area:['铁西区', '铁东区', '公主岭市', '双辽市', '梨树县', '伊通满族自治县', '其他'] }, { name:'辽源', area:['龙山区', '西安区', '东辽县', '东丰县', '其他'] }, { name:'通化', area:['东昌区', '二道江区', '梅河口市', '集安市', '通化县', '辉南县', '柳河县', '其他'] }, { name:'白山', area:['八道江区', '江源区', '临江市', '靖宇县', '抚松县', '长白朝鲜族自治县', '其他'] }, { name:'松原', area:['宁江区', '乾安县', '长岭县', '扶余县', '前郭尔罗斯蒙古族自治县', '其他'] }, { name:'白城', area:['洮北区', '大安市', '洮南市', '镇赉县', '通榆县', '其他'] }, { name:'延边朝鲜族自治州', area:['延吉市', '图们市', '敦化市', '龙井市', '珲春市', '和龙市', '安图县', '汪清县', '其他'] }, { name:'其他', area:['其他'] }] }, { name:'黑龙江', city:[{ name:'哈尔滨', area:['松北区', '道里区', '南岗区', '平房区', '香坊区', '道外区', '呼兰区', '阿城区', '双城市', '尚志市', '五常市', '宾县', '方正县', '通河县', '巴彦县', '延寿县', '木兰县', '依兰县', '其他'] }, { name:'齐齐哈尔', area:['龙沙区', '昂昂溪区', '铁锋区', '建华区', '富拉尔基区', '碾子山区', '梅里斯达斡尔族区', '讷河市', '富裕县', '拜泉县', '甘南县', '依安县', '克山县', '泰来县', '克东县', '龙江县', '其他'] }, { name:'鹤岗', area:['兴山区', '工农区', '南山区', '兴安区', '向阳区', '东山区', '萝北县', '绥滨县', '其他'] }, { name:'双鸭山', area:['尖山区', '岭东区', '四方台区', '宝山区', '集贤县', '宝清县', '友谊县', '饶河县', '其他'] }, { name:'鸡西', area:['鸡冠区', '恒山区', '城子河区', '滴道区', '梨树区', '麻山区', '密山市', '虎林市', '鸡东县', '其他'] }, { name:'大庆', area:['萨尔图区', '红岗区', '龙凤区', '让胡路区', '大同区', '林甸县', '肇州县', '肇源县', '杜尔伯特蒙古族自治县', '其他'] }, { name:'伊春', area:['伊春区', '带岭区', '南岔区', '金山屯区', '西林区', '美溪区', '乌马河区', '翠峦区', '友好区', '上甘岭区', '五营区', '红星区', '新青区', '汤旺河区', '乌伊岭区', '铁力市', '嘉荫县', '其他'] }, { name:'牡丹江', area:['爱民区', '东安区', '阳明区', '西安区', '绥芬河市', '宁安市', '海林市', '穆棱市', '林口县', '东宁县', '其他'] }, { name:'佳木斯', area:['向阳区', '前进区', '东风区', '郊区', '同江市', '富锦市', '桦川县', '抚远县', '桦南县', '汤原县', '其他'] }, { name:'七台河', area:['桃山区', '新兴区', '茄子河区', '勃利县', '其他'] }, { name:'黑河', area:['爱辉区', '北安市', '五大连池市', '逊克县', '嫩江县', '孙吴县', '其他'] }, { name:'绥化', area:['北林区', '安达市', '肇东市', '海伦市', '绥棱县', '兰西县', '明水县', '青冈县', '庆安县', '望奎县', '其他'] }, { name:'大兴安岭地区', area:['呼玛县', '塔河县', '漠河县', '大兴安岭辖区', '其他'] }, { name:'其他', area:['其他'] }] }, { name:'上海', city:[{ name:'上海', area:['黄浦区', '卢湾区', '徐汇区', '长宁区', '静安区', '普陀区', '闸北区', '虹口区', '杨浦区', '宝山区', '闵行区', '嘉定区', '松江区', '金山区', '青浦区', '南汇区', '奉贤区', '浦东新区', '崇明县', '其他'] }] }, { name:'江苏', city:[{ name:'南京', area:['玄武区', '白下区', '秦淮区', '建邺区', '鼓楼区', '下关区', '栖霞区', '雨花台区', '浦口区', '江宁区', '六合区', '溧水县', '高淳县', '其他'] }, { name:'苏州', area:['金阊区', '平江区', '沧浪区', '虎丘区', '吴中区', '相城区', '常熟市', '张家港市', '昆山市', '吴江市', '太仓市', '其他'] }, { name:'无锡', area:['崇安区', '南长区', '北塘区', '滨湖区', '锡山区', '惠山区', '江阴市', '宜兴市', '其他'] }, { name:'常州', area:['钟楼区', '天宁区', '戚墅堰区', '新北区', '武进区', '金坛市', '溧阳市', '其他'] }, { name:'镇江', area:['京口区', '润州区', '丹徒区', '丹阳市', '扬中市', '句容市', '其他'] }, { name:'南通', area:['崇川区', '港闸区', '通州市', '如皋市', '海门市', '启东市', '海安县', '如东县', '其他'] }, { name:'泰州', area:['海陵区', '高港区', '姜堰市', '泰兴市', '靖江市', '兴化市', '其他'] }, { name:'扬州', area:['广陵区', '维扬区', '邗江区', '江都市', '仪征市', '高邮市', '宝应县', '其他'] }, { name:'盐城', area:['亭湖区', '盐都区', '大丰市', '东台市', '建湖县', '射阳县', '阜宁县', '滨海县', '响水县', '其他'] }, { name:'连云港', area:['新浦区', '海州区', '连云区', '东海县', '灌云县', '赣榆县', '灌南县', '其他'] }, { name:'徐州', area:['云龙区', '鼓楼区', '九里区', '泉山区', '贾汪区', '邳州市', '新沂市', '铜山县', '睢宁县', '沛县', '丰县', '其他'] }, { name:'淮安', area:['清河区', '清浦区', '楚州区', '淮阴区', '涟水县', '洪泽县', '金湖县', '盱眙县', '其他'] }, { name:'宿迁', area:['宿城区', '宿豫区', '沭阳县', '泗阳县', '泗洪县', '其他'] }, { name:'其他', area:['其他'] }] }, { name:'浙江', city:[{ name:'杭州', area:['拱墅区', '西湖区', '上城区', '下城区', '江干区', '滨江区', '余杭区', '萧山区', '建德市', '富阳市', '临安市', '桐庐县', '淳安县', '其他'] }, { name:'宁波', area:['海曙区', '江东区', '江北区', '镇海区', '北仑区', '鄞州区', '余姚市', '慈溪市', '奉化市', '宁海县', '象山县', '其他'] }, { name:'温州', area:['鹿城区', '龙湾区', '瓯海区', '瑞安市', '乐清市', '永嘉县', '洞头县', '平阳县', '苍南县', '文成县', '泰顺县', '其他'] }, { name:'嘉兴', area:['秀城区', '秀洲区', '海宁市', '平湖市', '桐乡市', '嘉善县', '海盐县', '其他'] }, { name:'湖州', area:['吴兴区', '南浔区', '长兴县', '德清县', '安吉县', '其他'] }, { name:'绍兴', area:['越城区', '诸暨市', '上虞市', '嵊州市', '绍兴县', '新昌县', '其他'] }, { name:'金华', area:['婺城区', '金东区', '兰溪市', '义乌市', '东阳市', '永康市', '武义县', '浦江县', '磐安县', '其他'] }, { name:'衢州', area:['柯城区', '衢江区', '江山市', '龙游县', '常山县', '开化县', '其他'] }, { name:'舟山', area:['定海区', '普陀区', '岱山县', '嵊泗县', '其他'] }, { name:'台州', area:['椒江区', '黄岩区', '路桥区', '临海市', '温岭市', '玉环县', '天台县', '仙居县', '三门县', '其他'] }, { name:'丽水', area:['莲都区', '龙泉市', '缙云县', '青田县', '云和县', '遂昌县', '松阳县', '庆元县', '景宁畲族自治县', '其他'] }, { name:'其他', area:['其他'] }] }, { name:'安徽', city:[{ name:'合肥', area:['庐阳区', '瑶海区', '蜀山区', '包河区', '长丰县', '肥东县', '肥西县', '其他'] }, { name:'芜湖', area:['镜湖区', '弋江区', '鸠江区', '三山区', '芜湖县', '南陵县', '繁昌县', '其他'] }, { name:'蚌埠', area:['蚌山区', '龙子湖区', '禹会区', '淮上区', '怀远县', '固镇县', '五河县', '其他'] }, { name:'淮南', area:['田家庵区', '大通区', '谢家集区', '八公山区', '潘集区', '凤台县', '其他'] }, { name:'马鞍山', area:['雨山区', '花山区', '金家庄区', '当涂县', '其他'] }, { name:'淮北', area:['相山区', '杜集区', '烈山区', '濉溪县', '其他'] }, { name:'铜陵', area:['铜官山区', '狮子山区', '郊区', '铜陵县', '其他'] }, { name:'安庆', area:['迎江区', '大观区', '宜秀区', '桐城市', '宿松县', '枞阳县', '太湖县', '怀宁县', '岳西县', '望江县', '潜山县', '其他'] }, { name:'黄山', area:['屯溪区', '黄山区', '徽州区', '休宁县', '歙县', '祁门县', '黟县', '其他'] }, { name:'滁州', area:['琅琊区', '南谯区', '天长市', '明光市', '全椒县', '来安县', '定远县', '凤阳县', '其他'] }, { name:'阜阳', area:['颍州区', '颍东区', '颍泉区', '界首市', '临泉县', '颍上县', '阜南县', '太和县', '其他'] }, { name:'宿州', area:['埇桥区', '萧县', '泗县', '砀山县', '灵璧县', '其他'] }, { name:'巢湖', area:['居巢区', '含山县', '无为县', '庐江县', '和县', '其他'] }, { name:'六安', area:['金安区', '裕安区', '寿县', '霍山县', '霍邱县', '舒城县', '金寨县', '其他'] }, { name:'亳州', area:['谯城区', '利辛县', '涡阳县', '蒙城县', '其他'] }, { name:'池州', area:['贵池区', '东至县', '石台县', '青阳县', '其他'] }, { name:'宣城', area:['宣州区', '宁国市', '广德县', '郎溪县', '泾县', '旌德县', '绩溪县', '其他'] }, { name:'其他', area:['其他'] }] }, { name:'福建', city:[{ name:'福州', area:['鼓楼区', '台江区', '仓山区', '马尾区', '晋安区', '福清市', '长乐市', '闽侯县', '闽清县', '永泰县', '连江县', '罗源县', '平潭县', '其他'] }, { name:'厦门', area:['思明区', '海沧区', '湖里区', '集美区', '同安区', '翔安区', '其他'] }, { name:'莆田', area:['城厢区', '涵江区', '荔城区', '秀屿区', '仙游县', '其他'] }, { name:'三明', area:['梅列区', '三元区', '永安市', '明溪县', '将乐县', '大田县', '宁化县', '建宁县', '沙县', '尤溪县', '清流县', '泰宁县', '其他'] }, { name:'泉州', area:['鲤城区', '丰泽区', '洛江区', '泉港区', '石狮市', '晋江市', '南安市', '惠安县', '永春县', '安溪县', '德化县', '金门县', '其他'] }, { name:'漳州', area:['芗城区', '龙文区', '龙海市', '平和县', '南靖县', '诏安县', '漳浦县', '华安县', '东山县', '长泰县', '云霄县', '其他'] }, { name:'南平', area:['延平区', '建瓯市', '邵武市', '武夷山市', '建阳市', '松溪县', '光泽县', '顺昌县', '浦城县', '政和县', '其他'] }, { name:'龙岩', area:['新罗区', '漳平市', '长汀县', '武平县', '上杭县', '永定县', '连城县', '其他'] }, { name:'宁德', area:['蕉城区', '福安市', '福鼎市', '寿宁县', '霞浦县', '柘荣县', '屏南县', '古田县', '周宁县', '其他'] }, { name:'其他', area:['其他'] }] }, { name:'江西', city:[{ name:'南昌', area:['东湖区', '西湖区', '青云谱区', '湾里区', '青山湖区', '新建县', '南昌县', '进贤县', '安义县', '其他'] }, { name:'景德镇', area:['珠山区', '昌江区', '乐平市', '浮梁县', '其他'] }, { name:'萍乡', area:['安源区', '湘东区', '莲花县', '上栗县', '芦溪县', '其他'] }, { name:'九江', area:['浔阳区', '庐山区', '瑞昌市', '九江县', '星子县', '武宁县', '彭泽县', '永修县', '修水县', '湖口县', '德安县', '都昌县', '其他'] }, { name:'新余', area:['渝水区', '分宜县', '其他'] }, { name:'鹰潭', area:['月湖区', '贵溪市', '余江县', '其他'] }, { name:'赣州', area:['章贡区', '瑞金市', '南康市', '石城县', '安远县', '赣县', '宁都县', '寻乌县', '兴国县', '定南县', '上犹县', '于都县', '龙南县', '崇义县', '信丰县', '全南县', '大余县', '会昌县', '其他'] }, { name:'吉安', area:['吉州区', '青原区', '井冈山市', '吉安县', '永丰县', '永新县', '新干县', '泰和县', '峡江县', '遂川县', '安福县', '吉水县', '万安县', '其他'] }, { name:'宜春', area:['袁州区', '丰城市', '樟树市', '高安市', '铜鼓县', '靖安县', '宜丰县', '奉新县', '万载县', '上高县', '其他'] }, { name:'抚州', area:['临川区', '南丰县', '乐安县', '金溪县', '南城县', '东乡县', '资溪县', '宜黄县', '广昌县', '黎川县', '崇仁县', '其他'] }, { name:'上饶', area:['信州区', '德兴市', '上饶县', '广丰县', '鄱阳县', '婺源县', '铅山县', '余干县', '横峰县', '弋阳县', '玉山县', '万年县', '其他'] }, { name:'其他', area:['其他'] }] }, { name:'山东', city:[{ name:'济南', area:['市中区', '历下区', '天桥区', '槐荫区', '历城区', '长清区', '章丘市', '平阴县', '济阳县', '商河县', '其他'] }, { name:'青岛', area:['市南区', '市北区', '城阳区', '四方区', '李沧区', '黄岛区', '崂山区', '胶南市', '胶州市', '平度市', '莱西市', '即墨市', '其他'] }, { name:'淄博', area:['张店区', '临淄区', '淄川区', '博山区', '周村区', '桓台县', '高青县', '沂源县', '其他'] }, { name:'枣庄', area:['市中区', '山亭区', '峄城区', '台儿庄区', '薛城区', '滕州市', '其他'] }, { name:'东营', area:['东营区', '河口区', '垦利县', '广饶县', '利津县', '其他'] }, { name:'烟台', area:['芝罘区', '福山区', '牟平区', '莱山区', '龙口市', '莱阳市', '莱州市', '招远市', '蓬莱市', '栖霞市', '海阳市', '长岛县', '其他'] }, { name:'潍坊', area:['潍城区', '寒亭区', '坊子区', '奎文区', '青州市', '诸城市', '寿光市', '安丘市', '高密市', '昌邑市', '昌乐县', '临朐县', '其他'] }, { name:'济宁', area:['市中区', '任城区', '曲阜市', '兖州市', '邹城市', '鱼台县', '金乡县', '嘉祥县', '微山县', '汶上县', '泗水县', '梁山县', '其他'] }, { name:'泰安', area:['泰山区', '岱岳区', '新泰市', '肥城市', '宁阳县', '东平县', '其他'] }, { name:'威海', area:['环翠区', '乳山市', '文登市', '荣成市', '其他'] }, { name:'日照', area:['东港区', '岚山区', '五莲县', '莒县', '其他'] }, { name:'莱芜', area:['莱城区', '钢城区', '其他'] }, { name:'临沂', area:['兰山区', '罗庄区', '河东区', '沂南县', '郯城县', '沂水县', '苍山县', '费县', '平邑县', '莒南县', '蒙阴县', '临沭县', '其他'] }, { name:'德州', area:['德城区', '乐陵市', '禹城市', '陵县', '宁津县', '齐河县', '武城县', '庆云县', '平原县', '夏津县', '临邑县', '其他'] }, { name:'聊城', area:['东昌府区', '临清市', '高唐县', '阳谷县', '茌平县', '莘县', '东阿县', '冠县', '其他'] }, { name:'滨州', area:['滨城区', '邹平县', '沾化县', '惠民县', '博兴县', '阳信县', '无棣县', '其他'] }, { name:'菏泽', area:['牡丹区', '鄄城县', '单县', '郓城县', '曹县', '定陶县', '巨野县', '东明县', '成武县', '其他'] }, { name:'其他', area:['其他'] }] }, { name:'河南', city:[{ name:'郑州', area:['中原区', '金水区', '二七区', '管城回族区', '上街区', '惠济区', '巩义市', '新郑市', '新密市', '登封市', '荥阳市', '中牟县', '其他'] }, { name:'开封', area:['鼓楼区', '龙亭区', '顺河回族区', '禹王台区', '金明区', '开封县', '尉氏县', '兰考县', '杞县', '通许县', '其他'] }, { name:'洛阳', area:['西工区', '老城区', '涧西区', '瀍河回族区', '洛龙区', '吉利区', '偃师市', '孟津县', '汝阳县', '伊川县', '洛宁县', '嵩县', '宜阳县', '新安县', '栾川县', '其他'] }, { name:'平顶山', area:['新华区', '卫东区', '湛河区', '石龙区', '汝州市', '舞钢市', '宝丰县', '叶县', '郏县', '鲁山县', '其他'] }, { name:'安阳', area:['北关区', '文峰区', '殷都区', '龙安区', '林州市', '安阳县', '滑县', '内黄县', '汤阴县', '其他'] }, { name:'鹤壁', area:['淇滨区', '山城区', '鹤山区', '浚县', '淇县', '其他'] }, { name:'新乡', area:['卫滨区', '红旗区', '凤泉区', '牧野区', '卫辉市', '辉县市', '新乡县', '获嘉县', '原阳县', '长垣县', '封丘县', '延津县', '其他'] }, { name:'焦作', area:['解放区', '中站区', '马村区', '山阳区', '沁阳市', '孟州市', '修武县', '温县', '武陟县', '博爱县', '其他'] }, { name:'濮阳', area:['华龙区', '濮阳县', '南乐县', '台前县', '清丰县', '范县', '其他'] }, { name:'许昌', area:['魏都区', '禹州市', '长葛市', '许昌县', '鄢陵县', '襄城县', '其他'] }, { name:'漯河', area:['源汇区', '郾城区', '召陵区', '临颍县', '舞阳县', '其他'] }, { name:'三门峡', area:['湖滨区', '义马市', '灵宝市', '渑池县', '卢氏县', '陕县', '其他'] }, { name:'南阳', area:['卧龙区', '宛城区', '邓州市', '桐柏县', '方城县', '淅川县', '镇平县', '唐河县', '南召县', '内乡县', '新野县', '社旗县', '西峡县', '其他'] }, { name:'商丘', area:['梁园区', '睢阳区', '永城市', '宁陵县', '虞城县', '民权县', '夏邑县', '柘城县', '睢县', '其他'] }, { name:'信阳', area:['浉河区', '平桥区', '潢川县', '淮滨县', '息县', '新县', '商城县', '固始县', '罗山县', '光山县', '其他'] }, { name:'周口', area:['川汇区', '项城市', '商水县', '淮阳县', '太康县', '鹿邑县', '西华县', '扶沟县', '沈丘县', '郸城县', '其他'] }, { name:'驻马店', area:['驿城区', '确山县', '新蔡县', '上蔡县', '西平县', '泌阳县', '平舆县', '汝南县', '遂平县', '正阳县', '其他'] }, { name:'焦作', area:['济源市', '其他'] }, { name:'其他', area:['其他'] }] }, { name:'湖北', city:[{ name:'武汉', area:['江岸区', '武昌区', '江汉区', '硚口区', '汉阳区', '青山区', '洪山区', '东西湖区', '汉南区', '蔡甸区', '江夏区', '黄陂区', '新洲区', '其他'] }, { name:'黄石', area:['黄石港区', '西塞山区', '下陆区', '铁山区', '大冶市', '阳新县', '其他'] }, { name:'十堰', area:['张湾区', '茅箭区', '丹江口市', '郧县', '竹山县', '房县', '郧西县', '竹溪县', '其他'] }, { name:'荆州', area:['沙市区', '荆州区', '洪湖市', '石首市', '松滋市', '监利县', '公安县', '江陵县', '其他'] }, { name:'宜昌', area:['西陵区', '伍家岗区', '点军区', '猇亭区', '夷陵区', '宜都市', '当阳市', '枝江市', '秭归县', '远安县', '兴山县', '五峰土家族自治县', '长阳土家族自治县', '其他'] }, { name:'襄樊', area:['襄城区', '樊城区', '襄阳区', '老河口市', '枣阳市', '宜城市', '南漳县', '谷城县', '保康县', '其他'] }, { name:'鄂州', area:['鄂城区', '华容区', '梁子湖区', '其他'] }, { name:'荆门', area:['东宝区', '掇刀区', '钟祥市', '京山县', '沙洋县', '其他'] }, { name:'孝感', area:['孝南区', '应城市', '安陆市', '汉川市', '云梦县', '大悟县', '孝昌县', '其他'] }, { name:'黄冈', area:['黄州区', '麻城市', '武穴市', '红安县', '罗田县', '浠水县', '蕲春县', '黄梅县', '英山县', '团风县', '其他'] }, { name:'咸宁', area:['咸安区', '赤壁市', '嘉鱼县', '通山县', '崇阳县', '通城县', '其他'] }, { name:'随州', area:['曾都区', '广水市', '其他'] }, { name:'恩施土家族苗族自治州', area:['恩施市', '利川市', '建始县', '来凤县', '巴东县', '鹤峰县', '宣恩县', '咸丰县', '其他'] }, { name:'仙桃', area:['仙桃'] }, { name:'天门', area:['天门'] }, { name:'潜江', area:['潜江'] }, { name:'神农架林区', area:['神农架林区'] }, { name:'其他', area:['其他'] }] }, { name:'湖南', city:[{ name:'长沙', area:['岳麓区', '芙蓉区', '天心区', '开福区', '雨花区', '浏阳市', '长沙县', '望城县', '宁乡县', '其他'] }, { name:'株洲', area:['天元区', '荷塘区', '芦淞区', '石峰区', '醴陵市', '株洲县', '炎陵县', '茶陵县', '攸县', '其他'] }, { name:'湘潭', area:['岳塘区', '雨湖区', '湘乡市', '韶山市', '湘潭县', '其他'] }, { name:'衡阳', area:['雁峰区', '珠晖区', '石鼓区', '蒸湘区', '南岳区', '耒阳市', '常宁市', '衡阳县', '衡东县', '衡山县', '衡南县', '祁东县', '其他'] }, { name:'邵阳', area:['双清区', '大祥区', '北塔区', '武冈市', '邵东县', '洞口县', '新邵县', '绥宁县', '新宁县', '邵阳县', '隆回县', '城步苗族自治县', '其他'] }, { name:'岳阳', area:['岳阳楼区', '云溪区', '君山区', '临湘市', '汨罗市', '岳阳县', '湘阴县', '平江县', '华容县', '其他'] }, { name:'常德', area:['武陵区', '鼎城区', '津市市', '澧县', '临澧县', '桃源县', '汉寿县', '安乡县', '石门县', '其他'] }, { name:'张家界', area:['永定区', '武陵源区', '慈利县', '桑植县', '其他'] }, { name:'益阳', area:['赫山区', '资阳区', '沅江市', '桃江县', '南县', '安化县', '其他'] }, { name:'郴州', area:['北湖区', '苏仙区', '资兴市', '宜章县', '汝城县', '安仁县', '嘉禾县', '临武县', '桂东县', '永兴县', '桂阳县', '其他'] }, { name:'永州', area:['冷水滩区', '零陵区', '祁阳县', '蓝山县', '宁远县', '新田县', '东安县', '江永县', '道县', '双牌县', '江华瑶族自治县', '其他'] }, { name:'怀化', area:['鹤城区', '洪江市', '会同县', '沅陵县', '辰溪县', '溆浦县', '中方县', '新晃侗族自治县', '芷江侗族自治县', '通道侗族自治县', '靖州苗族侗族自治县', '麻阳苗族自治县', '其他'] }, { name:'娄底', area:['娄星区', '冷水江市', '涟源市', '新化县', '双峰县', '其他'] }, { name:'湘西土家族苗族自治州', area:['吉首市', '古丈县', '龙山县', '永顺县', '凤凰县', '泸溪县', '保靖县', '花垣县', '其他'] }, { name:'其他', area:['其他'] }] }, { name:'广东', city:[{ name:'广州', area:['越秀区', '荔湾区', '海珠区', '天河区', '白云区', '黄埔区', '番禺区', '花都区', '南沙区', '萝岗区', '增城市', '从化市', '其他'] }, { name:'深圳', area:['福田区', '罗湖区', '南山区', '宝安区', '龙岗区', '盐田区', '其他'] }, { name:'东莞', area:['莞城', '常平', '塘厦', '塘厦', '塘厦', '其他'] }, { name:'中山', area:['中山'] }, { name:'潮州', area:['湘桥区', '潮安县', '饶平县', '其他'] }, { name:'揭阳', area:['榕城区', '揭东县', '揭西县', '惠来县', '普宁市', '其他'] }, { name:'云浮', area:['云城区', '新兴县', '郁南县', '云安县', '罗定市', '其他'] }, { name:'珠海', area:['香洲区', '斗门区', '金湾区', '其他'] }, { name:'汕头', area:['金平区', '濠江区', '龙湖区', '潮阳区', '潮南区', '澄海区', '南澳县', '其他'] }, { name:'韶关', area:['浈江区', '武江区', '曲江区', '乐昌市', '南雄市', '始兴县', '仁化县', '翁源县', '新丰县', '乳源瑶族自治县', '其他'] }, { name:'佛山', area:['禅城区', '南海区', '顺德区', '三水区', '高明区', '其他'] }, { name:'江门', area:['蓬江区', '江海区', '新会区', '恩平市', '台山市', '开平市', '鹤山市', '其他'] }, { name:'湛江', area:['赤坎区', '霞山区', '坡头区', '麻章区', '吴川市', '廉江市', '雷州市', '遂溪县', '徐闻县', '其他'] }, { name:'茂名', area:['茂南区', '茂港区', '化州市', '信宜市', '高州市', '电白县', '其他'] }, { name:'肇庆', area:['端州区', '鼎湖区', '高要市', '四会市', '广宁县', '怀集县', '封开县', '德庆县', '其他'] }, { name:'惠州', area:['惠城区', '惠阳区', '博罗县', '惠东县', '龙门县', '其他'] }, { name:'梅州', area:['梅江区', '兴宁市', '梅县', '大埔县', '丰顺县', '五华县', '平远县', '蕉岭县', '其他'] }, { name:'汕尾', area:['城区', '陆丰市', '海丰县', '陆河县', '其他'] }, { name:'河源', area:['源城区', '紫金县', '龙川县', '连平县', '和平县', '东源县', '其他'] }, { name:'阳江', area:['江城区', '阳春市', '阳西县', '阳东县', '其他'] }, { name:'清远', area:['清城区', '英德市', '连州市', '佛冈县', '阳山县', '清新县', '连山壮族瑶族自治县', '连南瑶族自治县', '其他'] }] }, { name:'广西', city:[{ name:'南宁', area:['青秀区', '兴宁区', '西乡塘区', '良庆区', '江南区', '邕宁区', '武鸣县', '隆安县', '马山县', '上林县', '宾阳县', '横县', '其他'] }, { name:'柳州', area:['城中区', '鱼峰区', '柳北区', '柳南区', '柳江县', '柳城县', '鹿寨县', '融安县', '融水苗族自治县', '三江侗族自治县', '其他'] }, { name:'桂林', area:['象山区', '秀峰区', '叠彩区', '七星区', '雁山区', '阳朔县', '临桂县', '灵川县', '全州县', '平乐县', '兴安县', '灌阳县', '荔浦县', '资源县', '永福县', '龙胜各族自治县', '恭城瑶族自治县', '其他'] }, { name:'梧州', area:['万秀区', '蝶山区', '长洲区', '岑溪市', '苍梧县', '藤县', '蒙山县', '其他'] }, { name:'北海', area:['海城区', '银海区', '铁山港区', '合浦县', '其他'] }, { name:'防城港', area:['港口区', '防城区', '东兴市', '上思县', '其他'] }, { name:'钦州', area:['钦南区', '钦北区', '灵山县', '浦北县', '其他'] }, { name:'贵港', area:['港北区', '港南区', '覃塘区', '桂平市', '平南县', '其他'] }, { name:'玉林', area:['玉州区', '北流市', '容县', '陆川县', '博白县', '兴业县', '其他'] }, { name:'百色', area:['右江区', '凌云县', '平果县', '西林县', '乐业县', '德保县', '田林县', '田阳县', '靖西县', '田东县', '那坡县', '隆林各族自治县', '其他'] }, { name:'贺州', area:['八步区', '钟山县', '昭平县', '富川瑶族自治县', '其他'] }, { name:'河池', area:['金城江区', '宜州市', '天峨县', '凤山县', '南丹县', '东兰县', '都安瑶族自治县', '罗城仫佬族自治县', '巴马瑶族自治县', '环江毛南族自治县', '大化瑶族自治县', '其他'] }, { name:'来宾', area:['兴宾区', '合山市', '象州县', '武宣县', '忻城县', '金秀瑶族自治县', '其他'] }, { name:'崇左', area:['江州区', '凭祥市', '宁明县', '扶绥县', '龙州县', '大新县', '天等县', '其他'] }, { name:'其他', area:['其他'] }] }, { name:'海南', city:[{ name:'海口', area:['龙华区', '秀英区', '琼山区', '美兰区', '其他'] }, { name:'三亚', area:['三亚市', '其他'] }, { name:'五指山', area:['五指山'] }, { name:'琼海', area:['琼海'] }, { name:'儋州', area:['儋州'] }, { name:'文昌', area:['文昌'] }, { name:'万宁', area:['万宁'] }, { name:'东方', area:['东方'] }, { name:'澄迈县', area:['澄迈县'] }, { name:'定安县', area:['定安县'] }, { name:'屯昌县', area:['屯昌县'] }, { name:'临高县', area:['临高县'] }, { name:'白沙黎族自治县', area:['白沙黎族自治县'] }, { name:'昌江黎族自治县', area:['昌江黎族自治县'] }, { name:'乐东黎族自治县', area:['乐东黎族自治县'] }, { name:'陵水黎族自治县', area:['陵水黎族自治县'] }, { name:'保亭黎族苗族自治县', area:['保亭黎族苗族自治县'] }, { name:'琼中黎族苗族自治县', area:['琼中黎族苗族自治县'] }, { name:'其他', area:['其他'] }] }, { name:'重庆', city:[{ name:'重庆', area:['渝中区', '大渡口区', '江北区', '南岸区', '北碚区', '渝北区', '巴南区', '长寿区', '双桥区', '沙坪坝区', '万盛区', '万州区', '涪陵区', '黔江区', '永川区', '合川区', '江津区', '九龙坡区', '南川区', '綦江县', '潼南县', '荣昌县', '璧山县', '大足县', '铜梁县', '梁平县', '开县', '忠县', '城口县', '垫江县', '武隆县', '丰都县', '奉节县', '云阳县', '巫溪县', '巫山县', '石柱土家族自治县', '秀山土家族苗族自治县', '酉阳土家族苗族自治县', '彭水苗族土家族自治县', '其他'] }] }, { name:'四川', city:[{ name:'成都', area:['青羊区', '锦江区', '金牛区', '武侯区', '成华区', '龙泉驿区', '青白江区', '新都区', '温江区', '都江堰市', '彭州市', '邛崃市', '崇州市', '金堂县', '郫县', '新津县', '双流县', '蒲江县', '大邑县', '其他'] }, { name:'自贡', area:['大安区', '自流井区', '贡井区', '沿滩区', '荣县', '富顺县', '其他'] }, { name:'攀枝花', area:['仁和区', '米易县', '盐边县', '东区', '西区', '其他'] }, { name:'泸州', area:['江阳区', '纳溪区', '龙马潭区', '泸县', '合江县', '叙永县', '古蔺县', '其他'] }, { name:'德阳', area:['旌阳区', '广汉市', '什邡市', '绵竹市', '罗江县', '中江县', '其他'] }, { name:'绵阳', area:['涪城区', '游仙区', '江油市', '盐亭县', '三台县', '平武县', '安县', '梓潼县', '北川羌族自治县', '其他'] }, { name:'广元', area:['元坝区', '朝天区', '青川县', '旺苍县', '剑阁县', '苍溪县', '市中区', '其他'] }, { name:'遂宁', area:['船山区', '安居区', '射洪县', '蓬溪县', '大英县', '其他'] }, { name:'内江', area:['市中区', '东兴区', '资中县', '隆昌县', '威远县', '其他'] }, { name:'乐山', area:['市中区', '五通桥区', '沙湾区', '金口河区', '峨眉山市', '夹江县', '井研县', '犍为县', '沐川县', '马边彝族自治县', '峨边彝族自治县', '其他'] }, { name:'南充', area:['顺庆区', '高坪区', '嘉陵区', '阆中市', '营山县', '蓬安县', '仪陇县', '南部县', '西充县', '其他'] }, { name:'眉山', area:['东坡区', '仁寿县', '彭山县', '洪雅县', '丹棱县', '青神县', '其他'] }, { name:'宜宾', area:['翠屏区', '宜宾县', '兴文县', '南溪县', '珙县', '长宁县', '高县', '江安县', '筠连县', '屏山县', '其他'] }, { name:'广安', area:['广安区', '华蓥市', '岳池县', '邻水县', '武胜县', '其他'] }, { name:'达州', area:['通川区', '万源市', '达县', '渠县', '宣汉县', '开江县', '大竹县', '其他'] }, { name:'雅安', area:['雨城区', '芦山县', '石棉县', '名山县', '天全县', '荥经县', '宝兴县', '汉源县', '其他'] }, { name:'巴中', area:['巴州区', '南江县', '平昌县', '通江县', '其他'] }, { name:'资阳', area:['雁江区', '简阳市', '安岳县', '乐至县', '其他'] }, { name:'阿坝藏族羌族自治州', area:['马尔康县', '九寨沟县', '红原县', '汶川县', '阿坝县', '理县', '若尔盖县', '小金县', '黑水县', '金川县', '松潘县', '壤塘县', '茂县', '其他'] }, { name:'甘孜藏族自治州', area:['康定县', '丹巴县', '炉霍县', '九龙县', '甘孜县', '雅江县', '新龙县', '道孚县', '白玉县', '理塘县', '德格县', '乡城县', '石渠县', '稻城县', '色达县', '巴塘县', '泸定县', '得荣县', '其他'] }, { name:'凉山彝族自治州', area:['西昌市', '美姑县', '昭觉县', '金阳县', '甘洛县', '布拖县', '雷波县', '普格县', '宁南县', '喜德县', '会东县', '越西县', '会理县', '盐源县', '德昌县', '冕宁县', '木里藏族自治县', '其他'] }, { name:'其他', area:['其他'] }] }, { name:'贵州', city:[{ name:'贵阳', area:['南明区', '云岩区', '花溪区', '乌当区', '白云区', '小河区', '清镇市', '开阳县', '修文县', '息烽县', '其他'] }, { name:'六盘水', area:['钟山区', '水城县', '盘县', '六枝特区', '其他'] }, { name:'遵义', area:['红花岗区', '汇川区', '赤水市', '仁怀市', '遵义县', '绥阳县', '桐梓县', '习水县', '凤冈县', '正安县', '余庆县', '湄潭县', '道真仡佬族苗族自治县', '务川仡佬族苗族自治县', '其他'] }, { name:'安顺', area:['西秀区', '普定县', '平坝县', '镇宁布依族苗族自治县', '紫云苗族布依族自治县', '关岭布依族苗族自治县', '其他'] }, { name:'铜仁地区', area:['铜仁市', '德江县', '江口县', '思南县', '石阡县', '玉屏侗族自治县', '松桃苗族自治县', '印江土家族苗族自治县', '沿河土家族自治县', '万山特区', '其他'] }, { name:'毕节地区', area:['毕节市', '黔西县', '大方县', '织金县', '金沙县', '赫章县', '纳雍县', '威宁彝族回族苗族自治县', '其他'] }, { name:'黔西南布依族苗族自治州', area:['兴义市', '望谟县', '兴仁县', '普安县', '册亨县', '晴隆县', '贞丰县', '安龙县', '其他'] }, { name:'黔东南苗族侗族自治州', area:['凯里市', '施秉县', '从江县', '锦屏县', '镇远县', '麻江县', '台江县', '天柱县', '黄平县', '榕江县', '剑河县', '三穗县', '雷山县', '黎平县', '岑巩县', '丹寨县', '其他'] }, { name:'黔南布依族苗族自治州', area:['都匀市', '福泉市', '贵定县', '惠水县', '罗甸县', '瓮安县', '荔波县', '龙里县', '平塘县', '长顺县', '独山县', '三都水族自治县', '其他'] }, { name:'其他', area:['其他'] }] }, { name:'云南', city:[{ name:'昆明', area:['盘龙区', '五华区', '官渡区', '西山区', '东川区', '安宁市', '呈贡县', '晋宁县', '富民县', '宜良县', '嵩明县', '石林彝族自治县', '禄劝彝族苗族自治县', '寻甸回族彝族自治县', '其他'] }, { name:'曲靖', area:['麒麟区', '宣威市', '马龙县', '沾益县', '富源县', '罗平县', '师宗县', '陆良县', '会泽县', '其他'] }, { name:'玉溪', area:['红塔区', '江川县', '澄江县', '通海县', '华宁县', '易门县', '峨山彝族自治县', '新平彝族傣族自治县', '元江哈尼族彝族傣族自治县', '其他'] }, { name:'保山', area:['隆阳区', '施甸县', '腾冲县', '龙陵县', '昌宁县', '其他'] }, { name:'昭通', area:['昭阳区', '鲁甸县', '巧家县', '盐津县', '大关县', '永善县', '绥江县', '镇雄县', '彝良县', '威信县', '水富县', '其他'] }, { name:'丽江', area:['古城区', '永胜县', '华坪县', '玉龙纳西族自治县', '宁蒗彝族自治县', '其他'] }, { name:'普洱', area:['思茅区', '普洱哈尼族彝族自治县', '墨江哈尼族自治县', '景东彝族自治县', '景谷傣族彝族自治县', '镇沅彝族哈尼族拉祜族自治县', '江城哈尼族彝族自治县', '孟连傣族拉祜族佤族自治县', '澜沧拉祜族自治县', '西盟佤族自治县', '其他'] }, { name:'临沧', area:['临翔区', '凤庆县', '云县', '永德县', '镇康县', '双江拉祜族佤族布朗族傣族自治县', '耿马傣族佤族自治县', '沧源佤族自治县', '其他'] }, { name:'德宏傣族景颇族自治州', area:['潞西市', '瑞丽市', '梁河县', '盈江县', '陇川县', '其他'] }, { name:'怒江傈僳族自治州', area:['泸水县', '福贡县', '贡山独龙族怒族自治县', '兰坪白族普米族自治县', '其他'] }, { name:'迪庆藏族自治州', area:['香格里拉县', '德钦县', '维西傈僳族自治县', '其他'] }, { name:'大理白族自治州', area:['大理市', '祥云县', '宾川县', '弥渡县', '永平县', '云龙县', '洱源县', '剑川县', '鹤庆县', '漾濞彝族自治县', '南涧彝族自治县', '巍山彝族回族自治县', '其他'] }, { name:'楚雄彝族自治州', area:['楚雄市', '双柏县', '牟定县', '南华县', '姚安县', '大姚县', '永仁县', '元谋县', '武定县', '禄丰县', '其他'] }, { name:'红河哈尼族彝族自治州', area:['蒙自县', '个旧市', '开远市', '绿春县', '建水县', '石屏县', '弥勒县', '泸西县', '元阳县', '红河县', '金平苗族瑶族傣族自治县', '河口瑶族自治县', '屏边苗族自治县', '其他'] }, { name:'文山壮族苗族自治州', area:['文山县', '砚山县', '西畴县', '麻栗坡县', '马关县', '丘北县', '广南县', '富宁县', '其他'] }, { name:'西双版纳傣族自治州', area:['景洪市', '勐海县', '勐腊县', '其他'] }, { name:'其他', area:['其他'] }] }, { name:'西藏', city:[{ name:'拉萨', area:['城关区', '林周县', '当雄县', '尼木县', '曲水县', '堆龙德庆县', '达孜县', '墨竹工卡县', '其他'] }, { name:'那曲地区', area:['那曲县', '嘉黎县', '比如县', '聂荣县', '安多县', '申扎县', '索县', '班戈县', '巴青县', '尼玛县', '其他'] }, { name:'昌都地区', area:['昌都县', '江达县', '贡觉县', '类乌齐县', '丁青县', '察雅县', '八宿县', '左贡县', '芒康县', '洛隆县', '边坝县', '其他'] }, { name:'林芝地区', area:['林芝县', '工布江达县', '米林县', '墨脱县', '波密县', '察隅县', '朗县', '其他'] }, { name:'山南地区', area:['乃东县', '扎囊县', '贡嘎县', '桑日县', '琼结县', '曲松县', '措美县', '洛扎县', '加查县', '隆子县', '错那县', '浪卡子县', '其他'] }, { name:'日喀则地区', area:['日喀则市', '南木林县', '江孜县', '定日县', '萨迦县', '拉孜县', '昂仁县', '谢通门县', '白朗县', '仁布县', '康马县', '定结县', '仲巴县', '亚东县', '吉隆县', '聂拉木县', '萨嘎县', '岗巴县', '其他'] }, { name:'阿里地区', area:['噶尔县', '普兰县', '札达县', '日土县', '革吉县', '改则县', '措勤县', '其他'] }, { name:'其他', area:['其他'] }] }, { name:'陕西', city:[{ name:'西安', area:['莲湖区', '新城区', '碑林区', '雁塔区', '灞桥区', '未央区', '阎良区', '临潼区', '长安区', '高陵县', '蓝田县', '户县', '周至县', '其他'] }, { name:'铜川', area:['耀州区', '王益区', '印台区', '宜君县', '其他'] }, { name:'宝鸡', area:['渭滨区', '金台区', '陈仓区', '岐山县', '凤翔县', '陇县', '太白县', '麟游县', '扶风县', '千阳县', '眉县', '凤县', '其他'] }, { name:'咸阳', area:['秦都区', '渭城区', '杨陵区', '兴平市', '礼泉县', '泾阳县', '永寿县', '三原县', '彬县', '旬邑县', '长武县', '乾县', '武功县', '淳化县', '其他'] }, { name:'渭南', area:['临渭区', '韩城市', '华阴市', '蒲城县', '潼关县', '白水县', '澄城县', '华县', '合阳县', '富平县', '大荔县', '其他'] }, { name:'延安', area:['宝塔区', '安塞县', '洛川县', '子长县', '黄陵县', '延川县', '富县', '延长县', '甘泉县', '宜川县', '志丹县', '黄龙县', '吴起县', '其他'] }, { name:'汉中', area:['汉台区', '留坝县', '镇巴县', '城固县', '南郑县', '洋县', '宁强县', '佛坪县', '勉县', '西乡县', '略阳县', '其他'] }, { name:'榆林', area:['榆阳区', '清涧县', '绥德县', '神木县', '佳县', '府谷县', '子洲县', '靖边县', '横山县', '米脂县', '吴堡县', '定边县', '其他'] }, { name:'安康', area:['汉滨区', '紫阳县', '岚皋县', '旬阳县', '镇坪县', '平利县', '石泉县', '宁陕县', '白河县', '汉阴县', '其他'] }, { name:'商洛', area:['商州区', '镇安县', '山阳县', '洛南县', '商南县', '丹凤县', '柞水县', '其他'] }, { name:'其他', area:['其他'] }] }, { name:'甘肃', city:[{ name:'兰州', area:['城关区', '七里河区', '西固区', '安宁区', '红古区', '永登县', '皋兰县', '榆中县', '其他'] }, { name:'嘉峪关', area:['嘉峪关市', '其他'] }, { name:'金昌', area:['金川区', '永昌县', '其他'] }, { name:'白银', area:['白银区', '平川区', '靖远县', '会宁县', '景泰县', '其他'] }, { name:'天水', area:['清水县', '秦安县', '甘谷县', '武山县', '张家川回族自治县', '北道区', '秦城区', '其他'] }, { name:'武威', area:['凉州区', '民勤县', '古浪县', '天祝藏族自治县', '其他'] }, { name:'酒泉', area:['肃州区', '玉门市', '敦煌市', '金塔县', '肃北蒙古族自治县', '阿克塞哈萨克族自治县', '安西县', '其他'] }, { name:'张掖', area:['甘州区', '民乐县', '临泽县', '高台县', '山丹县', '肃南裕固族自治县', '其他'] }, { name:'庆阳', area:['西峰区', '庆城县', '环县', '华池县', '合水县', '正宁县', '宁县', '镇原县', '其他'] }, { name:'平凉', area:['崆峒区', '泾川县', '灵台县', '崇信县', '华亭县', '庄浪县', '静宁县', '其他'] }, { name:'定西', area:['安定区', '通渭县', '临洮县', '漳县', '岷县', '渭源县', '陇西县', '其他'] }, { name:'陇南', area:['武都区', '成县', '宕昌县', '康县', '文县', '西和县', '礼县', '两当县', '徽县', '其他'] }, { name:'临夏回族自治州', area:['临夏市', '临夏县', '康乐县', '永靖县', '广河县', '和政县', '东乡族自治县', '积石山保安族东乡族撒拉族自治县', '其他'] }, { name:'甘南藏族自治州', area:['合作市', '临潭县', '卓尼县', '舟曲县', '迭部县', '玛曲县', '碌曲县', '夏河县', '其他'] }, { name:'其他', area:['其他'] }] }, { name:'青海', city:[{ name:'西宁', area:['城中区', '城东区', '城西区', '城北区', '湟源县', '湟中县', '大通回族土族自治县', '其他'] }, { name:'海东地区', area:['平安县', '乐都县', '民和回族土族自治县', '互助土族自治县', '化隆回族自治县', '循化撒拉族自治县', '其他'] }, { name:'海北藏族自治州', area:['海晏县', '祁连县', '刚察县', '门源回族自治县', '其他'] }, { name:'海南藏族自治州', area:['共和县', '同德县', '贵德县', '兴海县', '贵南县', '其他'] }, { name:'黄南藏族自治州', area:['同仁县', '尖扎县', '泽库县', '河南蒙古族自治县', '其他'] }, { name:'果洛藏族自治州', area:['玛沁县', '班玛县', '甘德县', '达日县', '久治县', '玛多县', '其他'] }, { name:'玉树藏族自治州', area:['玉树县', '杂多县', '称多县', '治多县', '囊谦县', '曲麻莱县', '其他'] }, { name:'海西蒙古族藏族自治州', area:['德令哈市', '格尔木市', '乌兰县', '都兰县', '天峻县', '其他'] }, { name:'其他', area:['其他'] }] }, { name:'宁夏', city:[{ name:'银川', area:['兴庆区', '西夏区', '金凤区', '灵武市', '永宁县', '贺兰县', '其他'] }, { name:'石嘴山', area:['大武口区', '惠农区', '平罗县', '其他'] }, { name:'吴忠', area:['利通区', '青铜峡市', '盐池县', '同心县', '其他'] }, { name:'固原', area:['原州区', '西吉县', '隆德县', '泾源县', '彭阳县', '其他'] }, { name:'中卫', area:['沙坡头区', '中宁县', '海原县', '其他'] }, { name:'其他', area:['其他'] }] }, { name:'新疆', city:[{ name:'乌鲁木齐', area:['天山区', '沙依巴克区', '新市区', '水磨沟区', '头屯河区', '达坂城区', '东山区', '乌鲁木齐县', '其他'] }, { name:'克拉玛依', area:['克拉玛依区', '独山子区', '白碱滩区', '乌尔禾区', '其他'] }, { name:'吐鲁番地区', area:['吐鲁番市', '托克逊县', '鄯善县', '其他'] }, { name:'哈密地区', area:['哈密市', '伊吾县', '巴里坤哈萨克自治县', '其他'] }, { name:'和田地区', area:['和田市', '和田县', '洛浦县', '民丰县', '皮山县', '策勒县', '于田县', '墨玉县', '其他'] }, { name:'阿克苏地区', area:['阿克苏市', '温宿县', '沙雅县', '拜城县', '阿瓦提县', '库车县', '柯坪县', '新和县', '乌什县', '其他'] }, { name:'喀什地区', area:['喀什市', '巴楚县', '泽普县', '伽师县', '叶城县', '岳普湖县', '疏勒县', '麦盖提县', '英吉沙县', '莎车县', '疏附县', '塔什库尔干塔吉克自治县', '其他'] }, { name:'克孜勒苏柯尔克孜自治州', area:['阿图什市', '阿合奇县', '乌恰县', '阿克陶县', '其他'] }, { name:'巴音郭楞蒙古自治州', area:['库尔勒市', '和静县', '尉犁县', '和硕县', '且末县', '博湖县', '轮台县', '若羌县', '焉耆回族自治县', '其他'] }, { name:'昌吉回族自治州', area:['昌吉市', '阜康市', '奇台县', '玛纳斯县', '吉木萨尔县', '呼图壁县', '木垒哈萨克自治县', '米泉市', '其他'] }, { name:'博尔塔拉蒙古自治州', area:['博乐市', '精河县', '温泉县', '其他'] }, { name:'石河子', area:['石河子'] }, { name:'阿拉尔', area:['阿拉尔'] }, { name:'图木舒克', area:['图木舒克'] }, { name:'五家渠', area:['五家渠'] }, { name:'伊犁哈萨克自治州', area:['伊宁市', '奎屯市', '伊宁县', '特克斯县', '尼勒克县', '昭苏县', '新源县', '霍城县', '巩留县', '察布查尔锡伯自治县', '塔城地区', '阿勒泰地区', '其他'] }, { name:'其他', area:['其他'] }] }, { name:'台湾', city:[{ name:'台湾', area:['台北市', '高雄市', '台北县', '桃园县', '新竹县', '苗栗县', '台中县', '彰化县', '南投县', '云林县', '嘉义县', '台南县', '高雄县', '屏东县', '宜兰县', '花莲县', '台东县', '澎湖县', '基隆市', '新竹市', '台中市', '嘉义市', '台南市', '其他'] }, { name:'其他', area:['其他'] }] }, { name:'澳门', city:[{ name:'澳门', area:['花地玛堂区', '圣安多尼堂区', '大堂区', '望德堂区', '风顺堂区', '嘉模堂区', '圣方济各堂区', '路凼', '其他'] }] }, { name:'香港', city:[{ name:'香港', area:['中西区', '湾仔区', '东区', '南区', '深水埗区', '油尖旺区', '九龙城区', '黄大仙区', '观塘区', '北区', '大埔区', '沙田区', '西贡区', '元朗区', '屯门区', '荃湾区', '葵青区', '离岛区', '其他'] }] }, { name:'钓鱼岛', city:[{ name:'钓鱼岛', area:['钓鱼岛'] }] }];
-
-```
-
-* PDClient/project/App/resource/audio.js
-
-```js
-module.exports = {};
-
-```
-
-* PDClient/project/App/resource/image.js
-
-```js
-module.exports = {
-    cargo_balance_background:require('./image/cargo/balance_background.png'),
-    cargo_cancel:require('./image/cargo/cancel.png'),
-    cargo_endPoint:require('./image/cargo/endPoint.png'),
-    cargo_point:require('./image/cargo/point.png'),
-    common_back:require('./image/common/back.png'),
-    common_close:require('./image/common/close.png'),
-    common_default:require('./image/common/default.png'),
-    common_go:require('./image/common/go.png'),
-    common_home:require('./image/common/home.png'),
-    common_left_menu:require('./image/common/left_menu.png'),
-    common_radio:require('./image/common/radio.png'),
-    common_search:require('./image/common/search.png'),
-    common_search_button:require('./image/common/search_button.png'),
-    home_cargo:require('./image/home/cargo.png'),
-    home_cargo_press:require('./image/home/cargo_press.png'),
-    home_main:require('./image/home/main.png'),
-    home_main_press:require('./image/home/main_press.png'),
-    home_mine:require('./image/home/mine.png'),
-    home_mine_press:require('./image/home/mine_press.png'),
-    home_order:require('./image/home/order.png'),
-    home_order_press:require('./image/home/order_press.png'),
-    home_pre_order:require('./image/home/pre_order.png'),
-    home_pre_order_press:require('./image/home/pre_order_press.png'),
-    home_receivePoint:require('./image/home/receivePoint.png'),
-    home_receivePoint_press:require('./image/home/receivePoint_press.png'),
-    home_roadmap:require('./image/home/roadmap.png'),
-    home_roadmap_press:require('./image/home/roadmap_press.png'),
-    home_truck:require('./image/home/truck.png'),
-    home_truck_unselect:require('./image/home/truck_unselect.png'),
-    login_alipay_button:require('./image/login/alipay_button.png'),
-    login_logo:require('./image/login/logo.png'),
-    login_password:require('./image/login/password.png'),
-    login_password_check:require('./image/login/password_check.png'),
-    login_password_look:require('./image/login/password_look.png'),
-    login_phone:require('./image/login/phone.png'),
-    login_qq_button:require('./image/login/qq_button.png'),
-    login_weixin_button:require('./image/login/weixin_button.png'),
-    order_add:require('./image/order/add.png'),
-    order_choose:require('./image/order/choose.png'),
-    order_choose_r:require('./image/order/choose_r.png'),
-    order_delete:require('./image/order/delete.png'),
-    order_down:require('./image/order/down.png'),
-    order_logo:require('./image/order/logo.png'),
-    order_no_choose:require('./image/order/no_choose.png'),
-    order_no_choose_r:require('./image/order/no_choose_r.png'),
-    order_pay_success:require('./image/order/pay_success.png'),
-    order_point:require('./image/order/point.png'),
-    order_point_green:require('./image/order/point_green.png'),
-    order_upload_picture:require('./image/order/upload_picture.png'),
-    personal_add:require('./image/personal/add.png'),
-    personal_default_head:require('./image/personal/default_head.png'),
-    personal_delete:require('./image/personal/delete.png'),
-    personal_female:require('./image/personal/female.png'),
-    personal_info:require('./image/personal/info.png'),
-    personal_male:require('./image/personal/male.png'),
-    personal_money:require('./image/personal/money.png'),
-    personal_personal_center:require('./image/personal/personal_center.png'),
-    personal_scan:require('./image/personal/scan.png'),
-    personal_settings:require('./image/personal/settings.png'),
-    personal_wallet:require('./image/personal/wallet.png'),
-    roadmap_add_photos:require('./image/roadmap/add_photos.png'),
-    roadmap_address:require('./image/roadmap/address.png'),
-    roadmap_collection_normal:require('./image/roadmap/collection_normal.png'),
-    roadmap_collection_press:require('./image/roadmap/collection_press.png'),
-    roadmap_comment:require('./image/roadmap/comment.png'),
-    roadmap_share:require('./image/roadmap/share.png'),
-    shipper_care_normal:require('./image/shipper/care_normal.png'),
-    shipper_care_press:require('./image/shipper/care_press.png'),
-    shipper_phone:require('./image/shipper/phone.png'),
-    shipper_tell_phone:require('./image/shipper/tell_phone.png'),
-    shop_add_photos:require('./image/shop/add_photos.png'),
-    shop_address:require('./image/shop/address.png'),
-    shop_back:require('./image/shop/back.png'),
-    shop_choice:require('./image/shop/choice.png'),
-    shop_comment:require('./image/shop/comment.png'),
-    shop_follow_normal:require('./image/shop/follow_normal.png'),
-    shop_follow_press:require('./image/shop/follow_press.png'),
-    shop_home:require('./image/shop/home.png'),
-    shop_no_comment:require('./image/shop/no_comment.png'),
-    shop_no_share:require('./image/shop/no_share.png'),
-    shop_phone:require('./image/shop/phone.png'),
-    shop_praise_normal:require('./image/shop/praise_normal.png'),
-    shop_praise_press:require('./image/shop/praise_press.png'),
-    shop_report_normal:require('./image/shop/report_normal.png'),
-    shop_report_press:require('./image/shop/report_press.png'),
-    shop_share:require('./image/shop/share.png'),
-    shop_shop_down_left:require('./image/shop/shop_down_left.png'),
-    shop_shop_down_right:require('./image/shop/shop_down_right.png'),
-    shop_unchoice:require('./image/shop/unchoice.png'),
-    shop_zan_normal:require('./image/shop/zan_normal.png'),
-    shop_zan_press:require('./image/shop/zan_press.png'),
-    splash_logo:require('./image/splash/logo.png'),
-    splash_splash1:require('./image/splash/splash1.png'),
-    splash_splash2:require('./image/splash/splash2.png'),
-    splash_splash3:require('./image/splash/splash3.png'),
-    splash_start:require('./image/splash/start.png'),
-};
-
-```
-
-* PDClient/project/App/native/index.js
-
-```js
-
-const WeixinPay = require('./wxpay/index.js');
-const UPPay = require('./uppay/index.js');
-module.exports = {
-    WeixinPay: WeixinPay,
-    UPPay: UPPay,
-};
-
-```
-
-* PDClient/project/App/utils/index.js
-
-```js
-const common = require('./common');
-const net = require('./net');
-const check = require('./check');
-const date = require('./date');
-const qrcode = require('./qrcode');
-
-module.exports = {
-    ...common,
-    ...net,
-    ...check,
-    ...date,
-    ...qrcode,
-};
-
-```
-
-* PDClient/project/App/components/ActionSheet/button.js
-
-```js
-'use strict';
-
-const React = require('react');const ReactNative = require('react-native');
-const {
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-} = ReactNative;
-
-module.exports = React.createClass({
-    render () {
-        return (
-            <TouchableOpacity
-                activeOpacity={0.5}
-                style={[styles.button, this.props.buttonStyle]}
-                onPress={this.props.onPress}>
-                <Text style={[styles.buttonText, this.props.textStyle]}>
-                    {this.props.children}
-                </Text>
-            </TouchableOpacity>
-        );
-    },
-});
-
-const styles = StyleSheet.create({
-    buttonText: {
-        color: '#A1A2A3',
-        alignSelf: 'center',
-        fontSize: 18,
-    },
-    button: {
-        height: 50,
-        backgroundColor: '#FEFFFF',
-        borderColor: '#EDEEEF',
-        borderBottomWidth: 1,
-        alignSelf: 'stretch',
-        justifyContent: 'center',
-    },
-});
-
-```
-
-* PDClient/project/App/components/ActionSheet/index.js
-
-```js
-'use strict';
-
-const React = require('react');const ReactNative = require('react-native');
-const {
-    StyleSheet,
-    TouchableOpacity,
-    View,
-} = ReactNative;
-
-const Button = require('./button');
-const Overlay = require('./overlay');
-const Sheet = require('./sheet');
-
-module.exports = React.createClass({
-    getDefaultProps () {
-        return {
-            cancelText: 'Cancel',
-        };
-    },
-    render () {
-        return (
-            <Overlay visible={this.props.visible}>
-                <View style={styles.actionSheetContainer}>
-                    <TouchableOpacity
-                        style={{ flex:1 }}
-                        onPress={this.props.onCancel} />
-                    <Sheet visible={this.props.visible}>
-                        <View style={styles.buttonContainer}>
-                            {this.props.children}
-                        </View>
-                        <Button
-                            buttonStyle={styles.cancelButton}
-                            textStyle={styles.cancelText}
-                            onPress={this.props.onCancel}>{this.props.cancelText}</Button>
-                    </Sheet>
-                </View>
-            </Overlay>
-        );
-    },
-});
-module.exports.Button = Button;
-
-const styles = StyleSheet.create({
-    actionSheetContainer: {
-        flex: 1,
-        padding: 10,
-        paddingBottom: 6,
-        justifyContent: 'flex-end',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    },
-    buttonContainer: {
-        borderRadius:6,
-        overflow: 'hidden',
-    },
-    cancelButton: {
-        marginTop:6,
-        marginBottom:6,
-        borderRadius:6,
-        backgroundColor: '#A0D26F',
-        borderBottomWidth: 0,
-    },
-    cancelText: {
-        color:'#FFFFFF',
-    },
-});
-
-```
-
-* PDClient/project/App/components/ActionSheet/overlay.js
-
-```js
-'use strict';
-
-const React = require('react');const ReactNative = require('react-native');
-const {
-    Animated,
-    StyleSheet,
-} = ReactNative;
-
-const DEFAULT_ANIMATE_TIME = 300;
-
-module.exports = React.createClass({
-    getInitialState () {
-        return {
-            fadeAnim: new Animated.Value(0),
-            overlayStyle: styles.emptyOverlay, // on android opacity=0 also can cover screen, so use overlayStyle fix it
-        };
-    },
-    onAnimatedEnd () {
-        !this.props.visible && this.setState({ overlayStyle:styles.emptyOverlay });
-    },
-    componentWillReceiveProps (newProps) {
-        newProps.visible && this.setState({ overlayStyle: styles.fullOverlay });
-        return Animated.timing(this.state.fadeAnim, {
-            toValue: newProps.visible ? 1 : 0,
-            duration: DEFAULT_ANIMATE_TIME,
-        }).start(this.onAnimatedEnd);
-    },
-
-    render () {
-        return (
-            <Animated.View style={[this.state.overlayStyle, { opacity: this.state.fadeAnim }]}>
-                {this.props.children}
-            </Animated.View>
-        );
-    },
-});
-
-const styles = StyleSheet.create({
-    fullOverlay: {
-        top: 0,
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: 'transparent',
-        position: 'absolute',
-    },
-    emptyOverlay: {
-        backgroundColor: 'transparent',
-        position: 'absolute',
-        left: -sr.w,
-    },
-});
-
-```
-
-* PDClient/project/App/components/ActionSheet/sheet.js
-
-```js
-'use strict';
-
-const React = require('react');const ReactNative = require('react-native');
-const {
-    Animated,
-} = ReactNative;
-
-const DEFAULT_BOTTOM = -300;
-const DEFAULT_ANIMATE_TIME = 300;
-
-module.exports = React.createClass({
-    getInitialState () {
-        return {
-            bottom: new Animated.Value(DEFAULT_BOTTOM),
-        };
-    },
-    componentWillReceiveProps (newProps) {
-        return Animated.timing(this.state.bottom, {
-            toValue: newProps.visible ? 0 : DEFAULT_BOTTOM,
-            duration: DEFAULT_ANIMATE_TIME,
-        }).start();
-    },
-
-    render () {
-        return (
-            <Animated.View style={{ bottom: this.state.bottom }}>
-                {this.props.children}
-            </Animated.View>
-        );
-    },
-});
-
-```
-
-* PDClient/project/App/components/ActionSheet/view.js
+* PDDriver/project/App/modules/baidumap/index.js
 
 ```js
 'use strict';
@@ -4647,97 +3518,5606 @@ const React = require('react');
 const ReactNative = require('react-native');
 const {
     StyleSheet,
-    TouchableOpacity,
     View,
+    Text,
 } = ReactNative;
 
-const Button = require('./button');
-const Sheet = require('./sheet');
+import { MapView, MapTypes, Geolocation, YYTrace } from '@remobile/react-native-baidu-map';
+
+const { Button } = COMPONENTS;
 
 module.exports = React.createClass({
-    getDefaultProps () {
+    statics: {
+        title: '货物所在地',
+    },
+    getInitialState () {
         return {
-            cancelText: 'Cancel',
+            mayType: MapTypes.NORMAL,
+            zoom: 15,
+            center: {
+                longitude: 106.6886,
+                latitude: 26.566621,
+            },
+            trafficEnabled: false,
+            baiduHeatMapEnabled: false,
+            marker: {
+                longitude: 106.6886,
+                latitude: 26.566621,
+                title: '花果园',
+                city:'贵阳市',
+                province:'贵州省',
+            },
+            line:[]
+        };
+    },
+    componentWillMount () {
+        Geolocation.getCurrentPosition()
+            .then(data => {
+                console.warn(JSON.stringify(data));
+                this.setState({
+                    zoom: 15,
+                    marker: {
+                        latitude: data.latitude,
+                        longitude: data.longitude,
+                        title: data.address,
+                        city:data.city,
+                        province:data.province,
+                    },
+                    center: {
+                        latitude: data.latitude,
+                        longitude: data.longitude,
+                        rand: Math.random(),
+                    },
+                });
+            })
+            .catch(e => {
+                console.warn(e, 'error');
+            });
+    },
+    queryHistoryTrack () {
+        YYTrace.queryHistoryTrack('test',CONSTANTS.BAIDU_TRACE_SERVERID)
+            .then(e => {
+                console.warn(JSON.stringify(e));
+                this.setState({line:e.points});
+            })
+            .catch(e => {
+                console.warn(e, 'error');
+            });
+    },
+    queryLatestPoint () {
+        YYTrace.queryLatestPoint('test',CONSTANTS.BAIDU_TRACE_SERVERID,false, false)
+            .then(e => {
+                console.warn(JSON.stringify(e));
+                e.point.longitude!=0&&
+                this.setState({marker:e.point});
+            })
+            .catch(e => {
+                console.warn(e, 'error');
+            });
+    },
+    startService () {
+        if (app.isandroid) {
+            YYTrace.startService('test3',CONSTANTS.BAIDU_TRACE_SERVERID)
+                .then(e => {
+                    console.warn(JSON.stringify(e));
+                })
+                .catch(e => {
+                    console.warn(e, 'error');
+                });
+        } else {
+            YYTrace.startService('test2')
+                .then(e => {
+                    console.warn(JSON.stringify(e));
+                })
+                .catch(e => {
+                    console.warn(e, 'error');
+                });
+        }
+
+    },
+    startGather () {
+        YYTrace.startGather()
+            .then(e => {
+                console.warn(JSON.stringify(e));
+            })
+            .catch(e => {
+                console.warn(e, 'error');
+            });
+    },
+    render () {
+        const { marker } = this.state;
+        return (
+            <View style={styles.container}>
+                <View>
+                    <Text style={styles.selectPositionText}>{marker.title}</Text>
+                    <Button onPress={() => { this.props.confirm(marker); app.pop(); }} style={styles.btnConfirm} >
+                        确认货物所在地
+                    </Button>
+                </View>
+                <MapView
+                    trafficEnabled={this.state.trafficEnabled}
+                    baiduHeatMapEnabled={this.state.baiduHeatMapEnabled}
+                    zoom={this.state.zoom}
+                    mapType={this.state.mapType}
+                    center={this.state.center}
+                    marker={this.state.marker}
+                    markers={this.state.markers}
+                    polyline={this.state.line}
+                    style={styles.map}
+                    onMarkerClick={(data) => {
+                        console.warn('onMarkerClick', JSON.stringify(data));
+                        Geolocation.reverseGeoCodeGPS(data.position.latitude, data.position.longitude)
+                            .then(e => {
+                                console.warn(JSON.stringify(e));
+                                this.setState({
+                                    zoom: 15,
+                                    marker: {
+                                        latitude: data.position.latitude,
+                                        longitude: data.position.longitude,
+                                        title: e.address,
+                                        city:e.city,
+                                        province:e.province,
+                                    },
+                                });
+                            })
+                            .catch(e => {
+                                console.warn(e, 'error');
+                            });
+                    }}
+                    onMapPoiClick={(data) => {
+                        console.warn('onMapPoiClick', JSON.stringify(data));
+                        Geolocation.reverseGeoCodeGPS(data.latitude, data.longitude)
+                            .then(e => {
+                                console.warn(JSON.stringify(e));
+                                this.setState({
+                                    zoom: 15,
+                                    marker: {
+                                        latitude: data.latitude,
+                                        longitude: data.longitude,
+                                        title: e.address,
+                                        city:e.city,
+                                        province:e.province,
+                                    },
+                                });
+                            })
+                            .catch(e => {
+                                console.warn(e, 'error');
+                            });
+                    }}
+                    onMapClick={(data) => {
+                        console.warn('onMapClick', JSON.stringify(data));
+                        Geolocation.reverseGeoCodeGPS(data.latitude, data.longitude)
+                            .then(e => {
+                                console.warn(JSON.stringify(e));
+                                this.setState({
+                                    zoom: 15,
+                                    marker: {
+                                        latitude: data.latitude,
+                                        longitude: data.longitude,
+                                        title: e.address,
+                                        city:e.city,
+                                        province:e.province,
+                                    },
+                                });
+                            })
+                            .catch(e => {
+                                console.warn(e, 'error');
+                            });
+                    }}
+
+                    />
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        backgroundColor: '#F5FCFF',
+    },
+    map: {
+        width: sr.w,
+        height: sr.h - 150,
+        marginBottom: 50,
+        marginTop:10,
+        backgroundColor: 'red',
+    },
+    selectPositionText :{
+        paddingVertical:12,
+        alignSelf:'center',
+        fontSize:16,
+    },
+    btnConfirm:{
+        height:35,
+        width:200,
+        borderRadius:2,
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/baidumap/test.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    Button,
+} = ReactNative;
+
+import { MapView, MapTypes, Geolocation } from '@remobile/react-native-baidu-map';
+
+const SplashScreen = require('@remobile/react-native-splashscreen');
+
+module.exports = React.createClass({
+    componentWillMount () {
+        SplashScreen.hide();
+    },
+    getInitialState () {
+        return {
+            mayType: MapTypes.NORMAL,
+            zoom: 15,
+            center: {
+                longitude: 113.981718,
+                latitude: 22.542449,
+            },
+            trafficEnabled: false,
+            baiduHeatMapEnabled: false,
+            markers: [{
+                longitude: 113.981718,
+                latitude: 22.542449,
+                title: 'Window of the world',
+            }, {
+                longitude: 113.995516,
+                latitude: 22.537642,
+                title: '',
+            }],
         };
     },
     render () {
         return (
-            <View style={styles.actionSheetContainer}>
-                <TouchableOpacity
-                    style={{ flex:1 }}
-                    onPress={this.props.onCancel} />
-                <View visible={this.props.visible}>
-                    <View style={styles.buttonContainer}>
-                        {this.props.children}
-                    </View>
-                    <Button
-                        buttonStyle={styles.cancelButton}
-                        textStyle={styles.cancelText}
-                        onPress={this.props.onCancel}>{this.props.cancelText}</Button>
+            <View style={styles.container}>
+                <MapView
+                    trafficEnabled={this.state.trafficEnabled}
+                    baiduHeatMapEnabled={this.state.baiduHeatMapEnabled}
+                    zoom={this.state.zoom}
+                    mapType={this.state.mapType}
+                    center={this.state.center}
+                    marker={this.state.marker}
+                    markers={this.state.markers}
+                    style={styles.map}
+                    onMarkerClick={(e) => {
+                        console.warn(JSON.stringify(e));
+                    }}
+                    onMapPoiClick={(e) => {
+                        console.warn('onMapPoiClick', JSON.stringify(e));
+                        this.setState({
+                            zoom: 15,
+                            marker: {
+                                latitude: e.latitude,
+                                longitude: e.longitude,
+                                title: e.name,
+                            },
+                        });
+                    }}
+                    onMapClick={(data) => {
+                        console.warn(JSON.stringify(data));
+                        Geolocation.reverseGeoCodeGPS(data.latitude, data.longitude)
+                            .then(e => {
+                                console.warn(JSON.stringify(e));
+                                this.setState({
+                                    zoom: 15,
+                                    marker: {
+                                        latitude: data.latitude,
+                                        longitude: data.longitude,
+                                        title: e.address,
+                                    },
+                                });
+                            })
+                            .catch(e => {
+                                console.warn(e, 'error');
+                            });
+                    }}
+
+                    />
+                <View style={styles.row}>
+                    <Button title='Normal' onPress={() => {
+                        this.setState({
+                            mapType: MapTypes.NORMAL,
+                        });
+                    }}
+                        />
+                    <Button style={styles.btn} title='Satellite' onPress={() => {
+                        this.setState({
+                            mapType: MapTypes.SATELLITE,
+                        });
+                    }}
+                        />
+
+                    <Button style={styles.btn} title='Locate' onPress={() => {
+                        console.warn('center', this.state.center);
+                        Geolocation.getCurrentPosition()
+                            .then(data => {
+                                console.warn(JSON.stringify(data));
+                                this.setState({
+                                    zoom: 15,
+                                    marker: {
+                                        latitude: data.latitude,
+                                        longitude: data.longitude,
+                                        title: 'Your location',
+                                    },
+                                    center: {
+                                        latitude: data.latitude,
+                                        longitude: data.longitude,
+                                        rand: Math.random(),
+                                    },
+                                });
+                            })
+                            .catch(e => {
+                                console.warn(e, 'error');
+                            });
+                    }}
+                        />
+                </View>
+
+                <View style={styles.row}>
+                    <Button title='Zoom+' onPress={() => {
+                        this.setState({
+                            zoom: this.state.zoom + 1,
+                        });
+                    }}
+                        />
+                    <Button title='Zoom-' onPress={() => {
+                        if (this.state.zoom > 0) {
+                            this.setState({
+                                zoom: this.state.zoom - 1,
+                            });
+                        }
+                    }}
+                        />
+                </View>
+
+                <View style={styles.row}>
+                    <Button title='Traffic' onPress={() => {
+                        this.setState({
+                            trafficEnabled: !this.state.trafficEnabled,
+                        });
+                    }}
+                        />
+
+                    <Button title='Baidu HeatMap' onPress={() => {
+                        this.setState({
+                            baiduHeatMapEnabled: !this.state.baiduHeatMapEnabled,
+                        });
+                    }}
+                        />
                 </View>
             </View>
         );
     },
 });
-module.exports.Button = Button;
 
 const styles = StyleSheet.create({
-    actionSheetContainer: {
+    container: {
         flex: 1,
-        width:sr.w,
-        padding: 10,
-        paddingBottom: 6,
-        justifyContent: 'flex-end',
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        backgroundColor: '#F5FCFF',
     },
-    buttonContainer: {
-        borderRadius:6,
-        overflow: 'hidden',
+    row: {
+        flexDirection: 'row',
+        height: 40,
     },
-    cancelButton: {
-        marginTop:6,
-        marginBottom:6,
-        borderRadius:6,
-        backgroundColor: '#A0D26F',
-        borderBottomWidth: 0,
+    map: {
+        width: sr.w,
+        height: sr.h / 2,
+        marginBottom: 50,
+        backgroundColor: 'red',
     },
-    cancelText: {
-        color:'#FFFFFF',
+    closeTouchableHighlight: {
+        position:'absolute',
+        top:0,
+        left:sr.w * 6 / 7 + 3,
+        width: 38,
+        height: 38,
+        marginTop: (sr.h - 200 - 20) / 2,
+    },
+    closeIcon: {
+        width: 38,
+        height: 38,
     },
 });
 
 ```
 
-* PDClient/project/App/native/uppay/index.js
+* PDDriver/project/App/modules/baidumap/trace.js
 
 ```js
-const exec = require('@remobile/react-native-cordova').exec;
+'use strict';
 
-const UPPay = {
-    pay (json, successFn, failureFn) {
-        exec(successFn, failureFn, 'UPPay', 'payment', [json]);
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    Text,
+} = ReactNative;
+
+import { MapView, MapTypes, Geolocation, YYTrace } from '@remobile/react-native-baidu-map';
+const schedule = require('node-cron');
+const { Button } = COMPONENTS;
+
+module.exports = React.createClass({
+    statics: {
+        title: '货物所在地',
     },
-};
+    getInitialState () {
+        return {
+            mayType: MapTypes.NORMAL,
+            zoom: 15,
+            center: {
+                longitude: 106.6886,
+                latitude: 26.566621,
+            },
+            trafficEnabled: false,
+            baiduHeatMapEnabled: false,
+            marker: {
+                longitude: 106.6886,
+                latitude: 26.566621,
+                title: '花果园',
+                city:'贵阳市',
+                province:'贵州省',
+            },
+            line:[]
+        };
+    },
+    componentWillMount () {
+        this.setSchedule();
+    },
+    componentWillUnmount () {
+        this.task.destroy();
+    },
+    setSchedule () {
+        this.task = schedule.schedule('*/3 * * * * *', ()=> {
+            this.queryHistoryTrack();
+        });
+    },
+    queryHistoryTrack () {
+        YYTrace.queryHistoryTrack('test2',CONSTANTS.BAIDU_TRACE_SERVERID)
+            .then(e => {
+                console.warn(JSON.stringify(e));
+                let lastPoint = e.points[e.points.length-1];
+                this.setState({line:e.points,center:lastPoint, marker:{title:'货物当前位置',city:'',province:'',...lastPoint}});
+            })
+            .catch(e => {
+                console.warn(e, 'error');
+            });
+    },
+    queryLatestPoint () {
+        YYTrace.queryLatestPoint('test',CONSTANTS.BAIDU_TRACE_SERVERID,false,false)
+            .then(e => {
+                console.warn(JSON.stringify(e));
+                e.point.longitude!=0&&
+                this.setState({marker:e.point,center:e.point});
+            })
+            .catch(e => {
+                console.warn(e, 'error');
+            });
+    },
+    startService () {
+        YYTrace.startService('test111')
+            .then(e => {
+                console.warn(JSON.stringify(e));
+            })
+            .catch(e => {
+                console.warn(e, 'error');
+            });
+    },
+    startGather () {
+        YYTrace.startGather()
+            .then(e => {
+                console.warn(JSON.stringify(e));
+            })
+            .catch(e => {
+                console.warn(e, 'error');
+            });
+    },
+    render () {
+        const { marker, mapType, center, line } = this.state;
+        return (
+            <View style={styles.container}>
+                <MapView
+                    trafficEnabled={this.state.trafficEnabled}
+                    baiduHeatMapEnabled={this.state.baiduHeatMapEnabled}
+                    zoom={this.state.zoom}
+                    mapType={mapType}
+                    center={center}
+                    marker={marker}
+                    polyline={line}
+                    style={styles.map}
+                    onMarkerClick={(data) => {
+                        console.warn('onMarkerClick', JSON.stringify(data));
+                        Geolocation.reverseGeoCodeGPS(data.position.latitude, data.position.longitude)
+                            .then(e => {
+                                console.warn(JSON.stringify(e));
+                                this.setState({
+                                    zoom: 15,
+                                    marker: {
+                                        latitude: data.position.latitude,
+                                        longitude: data.position.longitude,
+                                        title: e.address,
+                                        city:e.city,
+                                        province:e.province,
+                                    },
+                                });
+                            })
+                            .catch(e => {
+                                console.warn(e, 'error');
+                            });
+                    }}
+                    onMapPoiClick={(data) => {
+                        console.warn('onMapPoiClick', JSON.stringify(data));
+                        Geolocation.reverseGeoCodeGPS(data.latitude, data.longitude)
+                            .then(e => {
+                                console.warn(JSON.stringify(e));
+                                this.setState({
+                                    zoom: 15,
+                                    marker: {
+                                        latitude: data.latitude,
+                                        longitude: data.longitude,
+                                        title: e.address,
+                                        city:e.city,
+                                        province:e.province,
+                                    },
+                                });
+                            })
+                            .catch(e => {
+                                console.warn(e, 'error');
+                            });
+                    }}
+                    onMapClick={(data) => {
+                        console.warn('onMapClick', JSON.stringify(data));
+                        Geolocation.reverseGeoCodeGPS(data.latitude, data.longitude)
+                            .then(e => {
+                                console.warn(JSON.stringify(e));
+                                this.setState({
+                                    zoom: 15,
+                                    marker: {
+                                        latitude: data.latitude,
+                                        longitude: data.longitude,
+                                        title: e.address,
+                                        city:e.city,
+                                        province:e.province,
+                                    },
+                                });
+                            })
+                            .catch(e => {
+                                console.warn(e, 'error');
+                            });
+                    }}
 
-module.exports = UPPay;
+                    />
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        backgroundColor: '#F5FCFF',
+    },
+    map: {
+        width: sr.w,
+        height: sr.h,
+    },
+});
 
 ```
 
-* PDClient/project/App/native/wxpay/index.js
+* PDDriver/project/App/modules/home/index.js
 
 ```js
-const exec = require('@remobile/react-native-cordova').exec;
+'use strict';
+const React = require('react');const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    Image,
+} = ReactNative;
 
-const WeixinPay = {
-    pay (json, successFn, failureFn) {
-        exec(successFn, failureFn, 'WeixinPay', 'payment', [json]);
+import TabNavigator from 'react-native-tab-navigator';
+import { Geolocation } from '@remobile/react-native-baidu-map';
+const Position = require('../position');
+const Qrcode = require('../qrcode');
+const Person = require('../person');
+const schedule = require('node-cron');
+
+const INIT_ROUTE_INDEX = 0;
+const ROUTE_STACK = [
+    { index: 0, component: Position },
+    { index: 1, component: Qrcode },
+    { index: 2, component: Person },
+];
+
+const HomeTabBar = React.createClass({
+    componentWillMount () {
+        app.showMainScene = (i) => {
+            const { title, leftButton, rightButton } = _.find(ROUTE_STACK, (o) => o.index === i).component;
+            Object.assign(app.getCurrentRoute().component, {
+                title: title,
+                leftButton: leftButton,
+                rightButton: rightButton,
+            });
+            this.props.onTabIndex(i);
+            app.forceUpdateNavbar();
+        };
     },
-};
+    componentDidMount () {
+        app.hasLoadMainPage = true;
+        app.toggleNavigationBar(true);
+        this.setSchedule();
+    },
+    componentWillUnmount () {
+        app.hasLoadMainPage = false;
+        this.task.destroy();
+    },
+    getInitialState () {
+        return {
+            tabIndex: this.props.initTabIndex,
+        };
+    },
+    handleWillFocus (route) {
+        const tabIndex = route.index;
+        this.setState({ tabIndex });
+    },
+    setSchedule () {
+        // this.task = schedule.schedule('0 1,3,5,7,9,11,13,15,17,19,21,23 * * *', function () {
+        this.task = schedule.schedule('*/30 * * * * *', function () {
+            Geolocation.getCurrentPosition()
+                .then(data => {
+                    console.warn(JSON.stringify(data));
+                    const param = {
+                        userId: app.personal.info.userId,
+                        address:data.address || '未知',
+                        latitude:data.latitude,
+                        longitude:data.longitude,
+                    };
+                    POST(app.route.ROUTE_UPLOAD_LOCATION, param, () => {}, null);
+                })
+                .catch(e => {
+                    console.warn(e, 'error');
+                });
+        });
+    },
+    render () {
+        const menus = [
+            { index: 0, title: '位置', icon: app.img.home_position, selected: app.img.home_position_press },
+            { index: 1, title: '二维码', icon: app.img.home_qrcode, selected: app.img.home_qrcode_press },
+            { index: 2, title: '我的', icon: app.img.home_mine, selected: app.img.home_mine_press },
+        ];
+        const TabNavigatorItems = menus.map((item) => {
+            return (
+                <TabNavigator.Item
+                    key={item.index}
+                    selected={this.state.tabIndex === item.index}
+                    title={item.title}
+                    titleStyle={styles.titleStyle}
+                    selectedTitleStyle={styles.titleSelectedStyle}
+                    renderIcon={() =>
+                        <Image
+                            resizeMode='stretch'
+                            source={item.icon}
+                            style={styles.icon} />
+                    }
+                    renderSelectedIcon={() =>
+                        <Image
+                            resizeMode='stretch'
+                            source={item.selected}
+                            style={styles.icon} />
+                    }
+                    onPress={() => {
+                        app.showMainScene(item.index);
+                    }}>
+                    <View />
+                </TabNavigator.Item>
+            );
+        });
+        return (
+            <View style={styles.tabs}>
+                <TabNavigator
+                    tabBarStyle={styles.tabBarStyle}
+                    tabBarShadowStyle={styles.tabBarShadowStyle}
+                    hidesTabTouch >
+                    {TabNavigatorItems}
+                </TabNavigator>
+            </View>
+        );
+    },
+});
 
-module.exports = WeixinPay;
+module.exports = React.createClass({
+    statics: {
+        title: ROUTE_STACK[INIT_ROUTE_INDEX].component.title,
+        leftButton: ROUTE_STACK[INIT_ROUTE_INDEX].component.leftButton,
+        rightButton: ROUTE_STACK[INIT_ROUTE_INDEX].component.rightButton,
+    },
+    getChildScene () {
+        return this.scene;
+    },
+    renderScene (route, navigator) {
+        return <route.component ref={(ref) => { if (ref)route.ref = ref; }} />;
+    },
+    render () {
+        return (
+            <Navigator
+                debugOverlay={false}
+                style={styles.container}
+                ref={(navigator) => {
+                    this._navigator = navigator;
+                }}
+                initialRoute={ROUTE_STACK[INIT_ROUTE_INDEX]}
+                initialRouteStack={ROUTE_STACK}
+                renderScene={this.renderScene}
+                onDidFocus={(route) => {
+                    const ref = this.scene = app.scene = route.ref;
+                    ref && ref.onDidFocus && ref.onDidFocus();
+                }}
+                onWillFocus={(route) => {
+                    if (this._navigator) {
+                        const { routeStack, presentedIndex } = this._navigator.state;
+                        const preRoute = routeStack[presentedIndex];
+                        if (preRoute) {
+                            const preRef = preRoute.ref;
+                            preRef && preRef.onWillHide && preRef.onWillHide();
+                        }
+                    }
+                    const ref = route.ref;
+                    ref && ref.onWillFocus && ref.onWillFocus(true); // 注意：因为有initialRouteStack，在mounted的时候所有的页面都会加载，因此只有第一个页面首次不会调用，需要在componentDidMount中调用，其他页面可以调用
+                }}
+                configureScene={(route) => ({
+                    ...app.configureScene(route),
+                })}
+                navigationBar={
+                    <HomeTabBar
+                        initTabIndex={INIT_ROUTE_INDEX}
+                        onTabIndex={(index) => {
+                            this._navigator.jumpTo(_.find(ROUTE_STACK, (o) => o.index === index));
+                        }}
+                        />
+                }
+                />
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container: {
+        overflow: 'hidden',
+        flex: 1,
+    },
+    tabs: {
+        height: 50,
+        width: sr.w,
+        left: 0,
+        bottom:0,
+    },
+    titleStyle: {
+        fontSize:10,
+        color: '#929292',
+    },
+    titleSelectedStyle: {
+        fontSize:10,
+        color: '#DF3932',
+    },
+    tabBarStyle: {
+        borderColor: '#EEEEEE',
+        borderTopWidth: 1,
+        height:50,
+        backgroundColor: '#FEFCFD',
+        alignItems: 'center',
+    },
+    tabBarShadowStyle: {
+        height: 1,
+        backgroundColor: '#EEEEEE',
+    },
+    icon: {
+        width:22,
+        height:22,
+    },
+});
 
 ```
 
-* PDClient/project/App/utils/check/index.js
+* PDDriver/project/App/modules/login/ForgetPassword.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    TextInput,
+    Text,
+    Image,
+    TouchableOpacity,
+} = ReactNative;
+
+const { Button } = COMPONENTS;
+const PasswordConfirm = require('./PasswordConfirm');
+const TimerMixin = require('react-timer-mixin');
+
+module.exports = React.createClass({
+    mixins: [TimerMixin],
+    statics: {
+        title: '忘记密码',
+    },
+    getInitialState () {
+        return {
+            phone:'',
+            readSecond:false,
+            time:59,
+            verifyCode:'',
+        };
+    },
+    doPress () {
+        const { phone } = this.state;
+        if (!app.utils.checkPhone(phone)) {
+            Toast('请填写正确的手机号码');
+            return;
+        };
+        const param = {
+            phone,
+        };
+        POST(app.route.ROUTE_REQUEST_SEND_VERIFY_CODE, param, this.requestSendVerifyCodeSuccess, false);
+    },
+    timer () {
+        this.setState({ readSecond:true });
+        this.setTimeout(
+            () => {
+                this.setState({ time:(this.state.time - 1) });
+                if (this.state.time <= 0) {
+                    return this.setState({ readSecond:false, time:59 });
+                }
+                this.timer();
+            },
+            1000
+        );
+    },
+    requestSendVerifyCodeSuccess (data) {
+        if (data.success) {
+            this.timer();
+        } else {
+            Toast(data.msg);
+        }
+    },
+    doNext () {
+        const { phone, verifyCode } = this.state;
+        if (!app.utils.checkPhone(phone)) {
+            Toast('请填写正确的手机号码');
+            return;
+        };
+        if (!verifyCode) {
+            Toast('请填写验证码');
+            return;
+        }
+        if (!app.utils.checkVerificationCode(verifyCode)) {
+            Toast('请填写正确的验证码');
+            return;
+        }
+        app.push({
+            component:PasswordConfirm,
+            passProps:{
+                phone,
+                verifyCode,
+            },
+        });
+    },
+    render () {
+        const { readSecond } = this.state;
+        return (
+            <View style={styles.container}>
+                <View style={styles.ItemBgTop}>
+                    <View style={styles.infoStyle}>
+                        <Image resizeMode='stretch'
+                            source={app.img.login_phone}
+                            style={styles.icon_add} />
+                        <TextInput placeholderTextColor='#aaaaaa'
+                            placeholder='请填写手机号码'
+                            underlineColorAndroid='transparent'
+                            keyboardType='numeric'
+                            maxLength={11}
+                            onChangeText={(text) => this.setState({ phone: text })}
+                            style={styles.itemNameText} />
+                    </View>
+                </View>
+                <View style={styles.ItemBg}>
+                    <View style={styles.infoStyle}>
+                        <TextInput placeholderTextColor='#aaaaaa'
+                            placeholder='请填写验证码'
+                            keyboardType='numeric'
+                            maxLength={CONSTANTS.VERIFICATION_MAX_LENGTH}
+                            underlineColorAndroid='transparent'
+                            onChangeText={(text) => this.setState({ verifyCode: text })}
+                            style={styles.itemNameText} />
+                        <TouchableOpacity
+                            disabled={readSecond}
+                            onPress={this.doPress}
+                            style={styles.btnBind}>
+                            { !readSecond ?
+                                <View style={styles.btnContainer}>
+                                    <Text style={readSecond ? styles.btnBindTextGray : styles.btnBindText}>获取验证码</Text>
+                                </View>
+                                :
+                                <View style={styles.btnContainerGray}>
+                                    <Text style={readSecond ? styles.btnBindTextGray : styles.btnBindText}>{this.state.time}s后重新发送</Text>
+                                </View>
+                            }
+                        </TouchableOpacity>
+                    </View>
+                </View>
+                <Button onPress={this.doNext}
+                    style={styles.btnNext}
+                    textStyle={styles.btnNextText} >
+                    下一步
+                </Button>
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container:{
+        flex: 1,
+    },
+    ItemBgTop: {
+        height: 45,
+        marginTop:10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor:'white',
+    },
+    ItemBg: {
+        height: 45,
+        marginTop:1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor:'white',
+    },
+    infoStyle: {
+        width:sr.w,
+        flexDirection: 'row',
+        alignItems:'center',
+        justifyContent: 'space-between',
+    },
+    icon_add:{
+        width:25,
+        height:25,
+        marginLeft: 8,
+    },
+    itemNameText: {
+        flex:1,
+        fontSize: 14,
+        color: '#444444',
+        marginLeft: 10,
+    },
+
+    btnNext:{
+        marginTop:50,
+        height:45,
+        width:300,
+        marginLeft:(sr.w - 300) / 2,
+        borderRadius:4,
+        backgroundColor:'#c81622',
+    },
+    btnNextText:{
+        color:'#ffffff',
+        fontSize:16,
+        fontWeight:'500',
+    },
+    btnBind:{
+        height:45,
+        width:137,
+        borderLeftWidth:1,
+        borderColor:'#f4f4f4',
+        alignItems:'center',
+    },
+    btnContainer:{
+        height:45,
+        alignItems:'center',
+        justifyContent:'center',
+        width:137,
+    },
+    btnBindText:{
+        color:'#FF981A',
+        fontSize:14,
+        fontWeight:'500',
+        textAlign:'center',
+        width:sr.w - 254,
+    },
+    btnContainerGray:{
+        height:45,
+        width:137,
+        alignItems:'center',
+        justifyContent:'center',
+        backgroundColor:'#fafafa',
+    },
+    btnBindTextGray:{
+        color:'#999999',
+        backgroundColor:'#fafafa',
+        fontSize:14,
+        fontWeight:'500',
+        textAlign:'center',
+        width:sr.w - 254,
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/login/Login.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    Image,
+    View,
+    TextInput,
+    ListView,
+    Text,
+    TouchableOpacity,
+} = ReactNative;
+
+const ForgetPassword = require('./ForgetPassword');
+const Register = require('./Register');
+const home = require('../home/index');
+
+const { Button } = COMPONENTS;
+
+const WeixinQQPanel = React.createClass({
+    render () {
+        return (
+            <View style={styles.thirdpartyContainer}>
+                <View style={styles.sepratorContainer}>
+                    <View style={styles.sepratorLine} />
+                    <Text style={styles.sepratorText} >{app.isandroid ? '    ' : ''}或者您也可以</Text>
+                </View>
+                <View style={styles.thirdpartyButtonContainer}>
+                    {
+                        !!this.props.weixininstalled &&
+                        <View style={styles.thirdpartyLeftButtonContainer}>
+                            <Image
+                                resizeMode='stretch'
+                                source={app.img.login_weixin_button}
+                                style={styles.image_button}
+                                />
+                            <Text style={styles.image_button_text}>微信登录</Text>
+                        </View>
+                    }
+                    {
+                        !!this.props.qqinstalled &&
+                        <View style={styles.thirdpartyRightButtonContainer}>
+                            <Image
+                                resizeMode='stretch'
+                                source={app.img.login_qq_button}
+                                style={styles.image_button}
+                                />
+                            <Text style={styles.image_button_text}>QQ登录</Text>
+                        </View>
+                    }
+                </View>
+            </View>
+        );
+    },
+});
+
+const NoWeixinQQPanel = React.createClass({
+    render () {
+        return (
+            <View style={styles.thirdpartyContainer2}>
+                <Text style={[styles.thirdpartyContainer2_text, { color: app.setting.THEME_COLOR }]} />
+            </View>
+        );
+    },
+});
+
+module.exports = React.createClass({
+    mixins: [SceneMixin],
+    statics: {
+        title: '',
+    },
+    componentDidMount () {
+        app.toggleNavigationBar(true);
+    },
+    doLogin () {
+        const { phone, password } = this.state;
+        if (!app.utils.checkPhone(phone)) {
+            Toast('手机号码不是有效的手机号码');
+            return;
+        }
+        if (!app.utils.checkPassword(password)) {
+            Toast('密码必须有6-20位的数字，字母，下划线组成');
+            return;
+        }
+        const param = {
+            phone,
+            password,
+        };
+        app.showLoading();
+        POST(app.route.ROUTE_LOGIN, param, this.doLoginSuccess, this.doLoginError);
+    },
+    doLoginSuccess (data) {
+        if (data.success) {
+            app.personal.info.userId = data.context.userId;
+            app.login.savePhone(this.state.phone);
+            this.getPersonalInfo();
+        } else {
+            Toast(data.msg);
+            app.hideLoading();
+        }
+    },
+    doLoginError (error) {
+        app.hideLoading();
+    },
+    doShowForgetPassword () {
+        app.push({
+            component: ForgetPassword,
+            passProps: {
+                phone: this.state.phone,
+            },
+        });
+    },
+    doShowRegister () {
+        app.push({
+            component: Register,
+            passProps: {
+                phone: this.state.phone,
+                changeToLoginPanel: this.changeToLoginPanel,
+            },
+        });
+    },
+    getPersonalInfo () {
+        const param = {
+            userId: app.personal.info.userId,
+        };
+        POST(app.route.ROUTE_GET_PERSONAL_INFO, param, this.getPersonalInfoSuccess, this.getPersonalInfoError);
+    },
+    getPersonalInfoSuccess (data) {
+        if (data.success) {
+            const context = data.context;
+            app.personal.set(context);
+            app.personal.get();
+            app.navigator.replace({
+                component: home,
+            });
+            app.personal.setNeedLogin(false);
+        } else {
+            Toast(data.msg);
+        }
+        app.hideLoading();
+    },
+    getPersonalInfoError (error) {
+        app.hideLoading();
+    },
+    getInitialState () {
+        const ds = new ListView.DataSource({ rowHasChanged: (r1, r2) => r1 !== r2 });
+        return {
+            phone: app.login.list[0] || '',
+            password: '',
+            dataSource: ds.cloneWithRows(app.login.list),
+            showList: false,
+            weixininstalled: false,
+            qqinstalled: false,
+        };
+    },
+    changeToLoginPanel (phone) {
+        this.setState({ phone });
+    },
+    onPhoneTextInputLayout (e) {
+        const frame = e.nativeEvent.layout;
+        this.listTop = frame.y + frame.height;
+    },
+    renderRow (text) {
+        return (
+            <TouchableOpacity onPress={() => this.setState({ phone: text, showList:false })}>
+                <View style={styles.itemTextContainer}>
+                    <Text style={styles.itemText}>
+                        {text}
+                    </Text>
+                </View>
+            </TouchableOpacity>
+        );
+    },
+    renderSeparator (sectionID, rowID) {
+        return (
+            <View style={styles.separator} key={sectionID + rowID} />
+        );
+    },
+    onFocus () {
+        this.setState({ showList: this.state.dataSource.getRowCount() > 0 && this.state.dataSource.getRowData(0, 0).length < 11 });
+    },
+    onBlur () {
+        this.setState({ showList: false });
+    },
+    onPhoneTextChange (text) {
+        const dataSource = this.state.dataSource;
+        if (!(/[!~@#$*+%]+/.test(text))) {
+            const newData = _.filter(app.login.list, (item) => { const reg = new RegExp('^' + text + '.*'); return reg.test(item); });
+            this.setState({
+                phone: text,
+                dataSource: dataSource.cloneWithRows(newData),
+                showList: newData.length > 0 && text.length < 11,
+            });
+        } else {
+            this.setState({
+                phone: text
+            });
+        }
+    },
+    render () {
+        const row = this.state.dataSource.getRowCount();
+        const listHeight = row > 4 ? styles.listHeightMax : row < 2 ? styles.listHeightMin : null;
+        return (
+            <View style={styles.container}>
+                <View style={styles.logoContainer}>
+                    <Image
+                        resizeMode='stretch'
+                        source={app.img.login_logo}
+                        style={styles.logo}
+                        />
+                </View>
+                <View style={styles.loginBox}>
+                    <View
+                        style={styles.phoneContainer}
+                        onLayout={this.onPhoneTextInputLayout}>
+                        <Image
+                            resizeMode='stretch'
+                            source={app.img.login_phone}
+                            style={styles.input_icon}
+                            />
+                        <TextInput
+                            underlineColorAndroid='transparent'
+                            placeholder='您的手机号码'
+                            maxLength={11}
+                            onChangeText={this.onPhoneTextChange}
+                            defaultValue={this.state.phone}
+                            style={styles.text_input}
+                            keyboardType='phone-pad'
+                            onFocus={this.onFocus}
+                            onBlur={this.onBlur}
+                            />
+                    </View>
+                    <View style={styles.listView} />
+                    <View style={styles.passwordContainer}
+                        >
+                        <Image
+                            resizeMode='stretch'
+                            source={app.img.login_password}
+                            style={styles.input_icon}
+                            />
+                        <TextInput
+                            underlineColorAndroid='transparent'
+                            placeholder='您的密码'
+                            secureTextEntry
+                            onChangeText={(text) => this.setState({ password: text })}
+                            defaultValue={this.state.password}
+                            style={styles.text_input}
+                            />
+                    </View>
+                </View>
+
+                <View style={styles.un_loading} >
+                    <TouchableOpacity onPress={this.doShowRegister}>
+                        <Text style={styles.register}>新用户注册</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={this.doShowForgetPassword}>
+                        <Text style={styles.forgetPassword}>忘记密码</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <Button onPress={this.doLogin} style={styles.btnLogin} textStyle={styles.btnLoginText}>登录</Button>
+
+                {this.state.qqinstalled || this.state.weixininstalled ? <WeixinQQPanel qqinstalled={this.state.qqinstalled} weixininstalled={this.state.weixininstalled} /> : <NoWeixinQQPanel />}
+                {
+                    this.state.showList &&
+                    <ListView
+                        initialListSize={1}
+                        enableEmptySections
+                        dataSource={this.state.dataSource}
+                        keyboardShouldPersistTaps='always'
+                        renderRow={this.renderRow}
+                        renderSeparator={this.renderSeparator}
+                        style={[styles.list, { top: this.listTop + 135 }, listHeight]}
+                        />
+                }
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor:'#ffffff',
+    },
+    logoContainer: {
+        height: 120,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop:18,
+    },
+    logo: {
+        width: 85.5,
+        height: 96,
+    },
+    listView:{
+        height:1,
+        width: 300,
+        backgroundColor:'#dddddd',
+    },
+    loginBox:{
+        marginLeft: (sr.w - 300) / 2,
+        width: 300,
+        height: 90,
+        borderRadius:4,
+        borderColor:'#dddddd',
+        borderWidth:1,
+        alignItems:'center',
+        justifyContent:'center',
+    },
+    phoneContainer: {
+        width: 300,
+        height: 45,
+        flexDirection: 'row',
+        overflow: 'hidden',
+        alignItems:'center',
+    },
+    passwordContainer:{
+        width: 300,
+        height: 45,
+        flexDirection: 'row',
+        alignItems:'center',
+    },
+    input_icon: {
+        width: 28,
+        height: 28,
+        marginLeft: 10,
+        marginRight: 10,
+    },
+    text_input: {
+        height:40,
+        width: 200,
+        padding:0,
+        fontSize:14,
+        alignSelf: 'center',
+    },
+    un_loading:{
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop:12,
+    },
+    register:{
+        color:'#fd7b1b',
+        marginLeft: (sr.w - 300) / 2,
+    },
+    forgetPassword:{
+        color:'#f41728',
+        marginRight: (sr.w - 300) / 2,
+    },
+
+    btnLogin: {
+        height: 46,
+        width: 300,
+        marginLeft: (sr.w - 300) / 2,
+        marginTop: 60,
+        backgroundColor: '#c81622',
+        borderRadius:4,
+    },
+    btnLoginText: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#FFFFFF',
+    },
+    thirdpartyContainer: {
+        flex:1,
+    },
+    sepratorContainer: {
+        height: 30,
+        alignItems:'center',
+        justifyContent: 'center',
+        marginTop: 50,
+    },
+    sepratorLine: {
+        top: 10,
+        height: 2,
+        width: sr.w - 20,
+        backgroundColor: '#858687',
+    },
+    sepratorText: {
+        backgroundColor:'#EEEEEE',
+        color: '#A3A3A4',
+        paddingHorizontal: 10,
+    },
+    thirdpartyButtonContainer: {
+        marginTop: 30,
+        height: 120,
+        flexDirection: 'row',
+    },
+    thirdpartyLeftButtonContainer: {
+        flex:1,
+        alignItems:'center',
+    },
+    thirdpartyRightButtonContainer: {
+        flex:1,
+        alignItems:'center',
+    },
+    image_button: {
+        width: 80,
+        height: 80,
+        margin: 10,
+    },
+    image_button_text: {
+        color: '#4C4D4E',
+        fontSize: 16,
+    },
+    thirdpartyContainer2: {
+        marginTop: 30,
+        height: 200,
+        alignItems:'center',
+        justifyContent: 'flex-end',
+    },
+    thirdpartyContainer2_text: {
+        fontSize: 18,
+        marginBottom:60,
+    },
+    list: {
+        position: 'absolute',
+        backgroundColor: 'rgba(255, 255, 255, 0.6)',
+        borderWidth: 1,
+        borderRadius: 5,
+        borderColor: '#D7D7D7',
+        width: 150,
+        left: 80,
+        paddingLeft: 10,
+    },
+    listHeightMin: {
+        height: 30,
+    },
+    listHeightMax: {
+        height: 184,
+    },
+    itemTextContainer: {
+        height: 30,
+        justifyContent: 'center',
+    },
+    itemText: {
+        fontSize: 16,
+    },
+    separator: {
+        backgroundColor: '#DDDDDD',
+        height: 1,
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/login/PasswordConfirm.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    TextInput,
+    Image,
+} = ReactNative;
+
+const { Button } = COMPONENTS;
+
+module.exports = React.createClass({
+    statics: {
+        title: '忘记密码',
+    },
+    doPress () {
+        const { newPassword, rePassword } = this.state;
+        const { phone, verifyCode } = this.props;
+        if (newPassword != rePassword) {
+            Toast('两次输入密码不一致');
+            return;
+        }
+        const param = {
+            phone,
+            verifyCode,
+            password:newPassword,
+        };
+        POST(app.route.ROUTE_FIND_PASSWORD, param, this.findPasswordSuccess, false);
+    },
+    findPasswordSuccess (data) {
+        if (data.success) {
+            Toast('密码设置成功');
+            app.navigator.popToTop();
+        } else {
+            Toast(data.msg);
+        }
+    },
+    render () {
+        return (
+            <View style={styles.container}>
+                <View style={[styles.ItemBg, { marginTop:10 }]}>
+                    <View style={styles.infoStyle}>
+                        <Image resizeMode='stretch'
+                            source={app.img.login_password}
+                            style={styles.icon_add} />
+                        <TextInput placeholderTextColor='#aaaaaa'
+                            placeholder='请输入新密码'
+                            onChangeText={(text) => this.setState({ newPassword: text })}
+                            style={styles.itemNameText} />
+                    </View>
+                </View>
+                <View style={styles.ItemBg}>
+                    <View style={styles.infoStyle}>
+                        <Image resizeMode='stretch'
+                            source={app.img.login_password_check}
+                            style={styles.icon_add} />
+                        <TextInput placeholderTextColor='#aaaaaa'
+                            placeholder='确认新密码'
+                            onChangeText={(text) => this.setState({ rePassword: text })}
+                            style={styles.itemNameText} />
+                    </View>
+                </View>
+                <Button onPress={this.doPress}
+                    style={styles.btnSubmit}
+                    textStyle={styles.btnSubmitText} >
+                    确认修改
+                </Button>
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container:{
+        flex: 1,
+    },
+    ItemBg: {
+        height: 45,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor:'white',
+    },
+    infoStyle: {
+        width:sr.w,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    icon_add:{
+        width:25,
+        height:25,
+        marginLeft: 8,
+    },
+    itemNameText: {
+        flex:1,
+        fontSize: 18,
+        color: '#444444',
+        marginLeft: 10,
+    },
+    btnSubmit:{
+        marginTop:50,
+        height:45,
+        width:300,
+        marginLeft:(sr.w - 300) / 2,
+        borderRadius:4,
+        backgroundColor:'#c81622',
+    },
+    btnSubmitText:{
+        color:'#ffffff',
+        fontSize:16,
+        fontWeight:'500',
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/login/Register.js
+
+```js
+'use strict';
+
+const React = require('react');const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    Image,
+    Text,
+    View,
+    TextInput,
+    TouchableOpacity,
+} = ReactNative;
+
+const TimerMixin = require('react-timer-mixin');
+const { Button, WebviewMessageBox } = COMPONENTS;
+
+module.exports = React.createClass({
+    mixins: [TimerMixin],
+    statics: {
+        title: '手机注册',
+    },
+    doRegister () {
+        const { protocalRead, phone, password, rePassword, verifyCode } = this.state;
+        if (!protocalRead) {
+            Toast('注册前请先阅读用户协议');
+            return;
+        }
+        if (!app.utils.checkPhone(phone)) {
+            Toast('请填写正确的手机号码');
+            return;
+        }
+        if (!app.utils.checkVerificationCode(verifyCode)) {
+            Toast('请填写正确的验证码');
+            return;
+        }
+        if (!app.utils.checkPassword(password)) {
+            Toast('密码必须由 6-20 位的数字或，字母，下划线组成');
+            return;
+        }
+        if (password !== rePassword) {
+            Toast('两次输入的密码不一致');
+            return;
+        }
+        const param = {
+            phone,
+            verifyCode,
+            password,
+        };
+        POST(app.route.ROUTE_REGISTER, param, this.doRegisterSuccess, true);
+    },
+    doRegisterSuccess (data) {
+        if (data.success) {
+            Toast('注册成功');
+            this.props.changeToLoginPanel(this.state.phone);
+            app.pop();
+        } else {
+            Toast(data.msg);
+        }
+    },
+    doPress () {
+        const { phone } = this.state;
+        if (!app.utils.checkPhone(phone)) {
+            Toast('请填写正确的手机号码');
+            return;
+        };
+        const param = {
+            phone,
+        };
+        POST(app.route.ROUTE_REQUEST_SEND_VERIFY_CODE, param, this.requestSendVerifyCodeSuccess, false);
+    },
+    timer () {
+        this.setState({ readSecond:true });
+        this.setTimeout(
+            () => {
+                this.setState({ time:(this.state.time - 1) });
+                if (this.state.time <= 0) {
+                    return this.setState({ readSecond:false, time:59 });
+                }
+                this.timer();
+            },
+            1000
+        );
+    },
+    requestSendVerifyCodeSuccess (data) {
+        if (data.success) {
+            this.timer();
+        } else {
+            Toast(data.msg);
+        }
+    },
+    doShowProtocal () {
+        app.showModal(
+            <WebviewMessageBox webAddress={app.route.ROUTE_USER_LICENSE} title={CONSTANTS.APP_NAME + '用户协议'} />
+        );
+    },
+    getInitialState () {
+        return {
+            phone: '',
+            password: '',
+            rePassword: '',
+            verifyCode: '',
+            protocalRead: true,
+            overlayShow:false,
+            readSecond:false,
+            time:parseInt(59),
+        };
+    },
+    changeProtocalState () {
+        this.setState({ protocalRead: !this.state.protocalRead });
+    },
+    render () {
+        const { readSecond, time } = this.state;
+        return (
+            <View style={styles.container}>
+                <View style={[styles.phoneContainer, { marginTop:10 }]}>
+                    <Image
+                        source={app.img.login_phone}
+                        style={styles.text_phone_header} />
+                    <TextInput
+                        underlineColorAndroid='transparent'
+                        placeholder='手机号'
+                        maxLength={11}
+                        onChangeText={(text) => this.setState({ phone: text })}
+                        style={styles.text_input}
+                        keyboardType='phone-pad'
+                        />
+                </View>
+                <View style={styles.verification}>
+                    <TextInput
+                        underlineColorAndroid='transparent'
+                        placeholder='请填写验证码'
+                        keyboardType='phone-pad'
+                        maxLength={CONSTANTS.VERIFICATION_MAX_LENGTH}
+                        onChangeText={(text) => this.setState({ verifyCode: text })}
+                        style={styles.text_input2}
+                        />
+                    <TouchableOpacity
+                        disabled={readSecond}
+                        style={styles.btnBind}
+                        onPress={this.doPress}>
+                        {
+                            !readSecond ?
+                                <Text style={readSecond ? styles.btnBindTextGray : styles.btnBindText}>获取验证码</Text>
+                            :
+                                <Text style={readSecond ? styles.btnBindTextGray : styles.btnBindText}>{time}s后重新发送</Text>
+                        }
+                    </TouchableOpacity>
+                </View>
+                <View style={styles.phoneContainer}>
+                    <Image
+                        source={app.img.login_password}
+                        style={styles.text_phone_header} />
+                    <TextInput
+                        underlineColorAndroid='transparent'
+                        placeholder='请输入密码'
+                        maxLength={11}
+                        onChangeText={(text) => this.setState({ password: text })}
+                        style={styles.text_input}
+                        />
+                </View>
+                <View style={styles.phoneContainer}>
+                    <Image
+                        source={app.img.login_password_check}
+                        style={styles.text_phone_header} />
+                    <TextInput
+                        underlineColorAndroid='transparent'
+                        placeholder='请再次输入密码'
+                        maxLength={11}
+                        onChangeText={(text) => this.setState({ rePassword: text })}
+                        style={styles.text_input}
+                        />
+                </View>
+                <View style={styles.agreement}>
+                    <TouchableOpacity onPress={this.changeProtocalState}>
+                        <Image
+                            resizeMode='stretch'
+                            source={this.state.protocalRead ? app.img.login_choose : app.img.login_unchoose}
+                            style={styles.protocal_icon}
+                            />
+                    </TouchableOpacity>
+                    <Text style={styles.protocal_text}>  我已阅读并同意 </Text>
+                    <Button onPress={this.doShowProtocal}
+                        style={styles.protocal_button}
+                        textStyle={styles.protocal_button_text}>
+                        {'《四面通物流超市协议》'}
+                    </Button>
+                </View>
+                <Button onPress={this.doRegister} style={styles.btnRegister} textStyle={styles.btnRegisterText}>注  册</Button>
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor:'#f4f4f4',
+    },
+    phoneContainer:{
+        height:45,
+        flexDirection: 'row',
+        alignItems:'center',
+        borderBottomWidth:1,
+        borderColor:'#f9f9f9',
+        backgroundColor:'#FFFFFF',
+    },
+    text_phone_header: {
+        height:20,
+        width:16,
+        marginLeft:12,
+    },
+    verification:{
+        height:45,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        backgroundColor:'#FFFFFF',
+        borderBottomWidth:1,
+        borderColor:'#f9f9f9',
+        alignItems:'center',
+    },
+    text_input: {
+        marginLeft:14,
+        marginTop:5,
+        padding:0,
+        fontSize:14,
+        height:40,
+        width: 180,
+    },
+    text_input2: {
+        marginLeft: 12,
+        fontSize:14,
+        marginTop:5,
+        padding:0,
+        height: 40,
+        width: 220,
+        alignSelf: 'center',
+    },
+    btnRegister: {
+        height: 46,
+        width: sr.w - 100,
+        marginLeft: 50,
+        marginTop: 35,
+        borderRadius: 4,
+        backgroundColor: '#c81622',
+    },
+    btnRegisterText: {
+        fontSize: 20,
+        fontWeight: '600',
+        color: '#FFFFFF',
+    },
+    protocal_icon: {
+        height: 15,
+        width: 15,
+        marginRight: 10,
+    },
+    protocal_text: {
+        fontSize: 13,
+    },
+    agreement:{
+        flexDirection: 'row',
+        height:20,
+        alignItems:'center',
+        marginLeft:13,
+        marginTop:10,
+    },
+    protocal_button: {
+        height: 18,
+        backgroundColor:'#f4f4f4',
+    },
+    protocal_button_text: {
+        fontSize: 13,
+        color: '#c81622',
+        fontWeight:'400',
+    },
+    btnBind:{
+        justifyContent:'center',
+        alignItems:'center',
+        borderLeftWidth:1,
+        borderColor:'#f4f4f4',
+        height:45,
+    },
+    btnBindText:{
+        color:'#FF981A',
+        fontSize:16,
+        fontWeight:'500',
+        width:sr.w - 254,
+        textAlign:'center',
+    },
+    btnBindTextGray:{
+        color:'#999999',
+        backgroundColor:'#fafafa',
+        borderLeftWidth:1,
+        borderColor:'#f4f4f4',
+        fontSize:16,
+        fontWeight:'500',
+        textAlign:'center',
+        width:sr.w - 254,
+        flex:1,
+        textAlignVertical:'center',
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/person/About.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    WebView,
+} = ReactNative;
+
+module.exports = React.createClass({
+    statics: {
+        title: '关于软件',
+    },
+    render () {
+        return (
+            <WebView
+                style={styles.container}
+                source={{ uri: app.route.ROUTE_ABOUT_PAGE }}
+                scalesPageToFit
+                />
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container:{
+        flex: 1,
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/person/BalanceDetail.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    Text,
+} = ReactNative;
+
+module.exports = React.createClass({
+    statics: {
+        title: '详情',
+    },
+    render () {
+        const obj = this.props.obj;
+        return (
+            <View style={styles.container}>
+                <View style={[styles.item, { paddingTop:2 }]}>
+                    <Text style={styles.itemLeft}> 平台 </Text>
+                    <Text style={styles.itemRight}> {obj.thirdpartyAccount == null ? '内部支付' : obj.thirdpartyAccount} </Text>
+                </View>
+                <View style={styles.item}>
+                    <Text style={styles.itemLeft}> 类型 </Text>
+                    <Text style={styles.itemRight}> {obj.remark} </Text>
+                </View>
+                <View style={styles.item}>
+                    <Text style={styles.itemLeft}> 金额 </Text>
+                    <Text style={obj.tradeAmountYuan > 0 ? styles.itemMoneyGreen : styles.itemMoneyRed}>
+                        {obj.tradeAmountYuan}
+                    </Text>
+                </View>
+                <View style={styles.item}>
+                    <Text style={styles.itemLeft}> 时间 </Text>
+                    <Text style={styles.itemRight}> {obj.tradeTime} </Text>
+                </View>
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container:{
+        flex: 1,
+        backgroundColor:'#F4F4F4',
+    },
+    item:{
+        marginTop:8,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems:'center',
+    },
+    itemLeft:{
+        fontSize:14,
+        color:'#333333',
+        paddingLeft:8,
+    },
+    itemRight:{
+        fontSize:14,
+        color:'#333333',
+        paddingRight:10,
+    },
+    itemMoneyRed:{
+        fontSize:14,
+        color:'#C81622',
+        paddingRight:10,
+    },
+    itemMoneyGreen:{
+        fontSize:14,
+        color:'#2F971C',
+        paddingRight:10,
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/person/BalanceDetailList.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    Text,
+    TouchableOpacity,
+} = ReactNative;
+
+const { PageList } = COMPONENTS;
+const BalanceDetail = require('./BalanceDetail');
+
+module.exports = React.createClass({
+    statics: {
+        title: '余额明细',
+    },
+    renderRow (obj) {
+        return (
+            <TouchableOpacity onPress={this.toAccountDetails.bind(null, obj)}>
+                <View style={styles.recharge}>
+                    <View>
+                        <Text style={styles.rechargeText}>
+                            {obj.remark}
+                        </Text>
+                        <Text style={styles.rechargeDate}>
+                            {obj.tradeTime}
+                        </Text>
+                    </View>
+                    <Text style={obj.tradeAmountYuan > 0 ? styles.rechargeMoney : styles.expenditureMoney}>
+                        {obj.tradeAmountYuan}
+                    </Text>
+                </View>
+            </TouchableOpacity>
+        );
+    },
+    toAccountDetails (obj) {
+        app.push({
+            component:BalanceDetail,
+            passProps: {
+                obj:obj,
+            },
+        });
+    },
+    render () {
+        return (
+            <View style={styles.container}>
+                <PageList
+                    ref={(ref) => { this.listView = ref; }}
+                    renderRow={this.renderRow}
+                    listParam={{ userId: app.personal.info.userId }}
+                    listName={'billList'}
+                    listUrl={app.route.ROUTE_GET_BILL_LIST}
+                    refreshEnable
+                    />
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container:{
+        flex: 1,
+        backgroundColor:'#F4F4F4',
+    },
+    recharge:{
+        height:50,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems:'center',
+        backgroundColor:'#FFFFFF',
+    },
+    rechargeText:{
+        paddingTop:5,
+        paddingLeft:8,
+        color:'#333333',
+        fontSize:14,
+    },
+    rechargeDate:{
+        color:'#aaaaaa',
+        paddingVertical:5,
+        paddingLeft:8,
+    },
+    rechargeMoney:{
+        color:'#2F971C',
+        fontSize:14,
+        paddingRight:10,
+    },
+    expenditureMoney:{
+        color:'#C81622',
+        fontSize:14,
+        paddingRight:10,
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/person/BindBankcard.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    Image,
+    Text,
+    TextInput,
+    TouchableOpacity,
+} = ReactNative;
+
+const { Button } = COMPONENTS;
+module.exports = React.createClass({
+    statics: {
+        title: '绑定银行卡',
+    },
+    doBind () {
+
+    },
+    doScanBankcard () {
+
+    },
+    render () {
+        return (
+            <View style={styles.container}>
+                <View style={styles.ItemBg}>
+                    <View style={styles.infoStyle}>
+                        <Text style={styles.itemNameText}>{'账号'}</Text>
+                        <TextInput style={styles.itemNameLeftText}
+                            placeholderTextColor='#aaaaaa'
+                            placeholder='请填入银行卡号'
+                            onChangeText={this.onContentTextChange}
+                            />
+                        <TouchableOpacity
+                            activeOpacity={0.6}
+                            onPress={this.doScanBankcard}>
+                            <Image
+                                resizeMode='stretch'
+                                source={app.img.personal_scan}
+                                style={styles.icon_add} />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+                <View style={styles.ItemBg}>
+                    <View style={styles.infoStyle}>
+                        <Text style={styles.itemNameText}>{'姓名'}</Text>
+                        <TextInput style={styles.itemNameLeftText}
+                            placeholderTextColor='#aaaaaa'
+                            placeholder='请填入姓名'
+                            onChangeText={this.onContentTextChange}
+                            />
+                    </View>
+                    <View style={styles.lineView} />
+                </View>
+                <Button onPress={this.doBind} style={styles.btnBind} textStyle={styles.btnBindText} >
+                    绑定
+                </Button>
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container:{
+        flex: 1,
+        paddingVertical: 10,
+    },
+    ItemBg: {
+        padding: 10,
+        height: 44,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor:'white',
+    },
+    infoStyle: {
+        flexDirection: 'row',
+    },
+    icon_add:{
+        flex:1,
+        width:20,
+        height:30,
+    },
+    itemNameText: {
+        fontSize: 15,
+        color: '#444444',
+        marginLeft: 8,
+    },
+    itemNameLeftText: {
+        flex:1,
+        fontSize: 15,
+        color: '#444444',
+        marginLeft: 8,
+    },
+    lineView: {
+        position:'absolute',
+        top: 0,
+        width: sr.w,
+        height: 1,
+        backgroundColor: '#f4f4f4',
+    },
+    btnBind:{
+        marginTop:50,
+        height:45,
+        width:351,
+        marginLeft:(sr.w - 351) / 2,
+        borderRadius:2,
+        backgroundColor:'#c81622',
+    },
+    btnBindText:{
+        color:'#ffffff',
+        fontSize:16,
+        fontWeight:'300',
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/person/BindBankcardList.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    Text,
+    Image,
+    TouchableOpacity,
+    ListView,
+} = ReactNative;
+
+const BindBankcard = require('./BindBankcard');
+
+module.exports = React.createClass({
+    statics: {
+        title: '银行卡',
+    },
+    getInitialState () {
+        return {
+            ds: new ListView.DataSource({ rowHasChanged: (r1, r2) => r1 !== r2 }),
+            list: [1, 2],
+        };
+    },
+    doAddBankcard () {
+        app.push({
+            component: BindBankcard,
+        });
+    },
+    doUnBindBankcard (rowID) {
+        this.state.list.splice(rowID, 1);
+        this.setState({
+            dataSource: this.state.list,
+        });
+    },
+    renderRow (obj, sectionID, rowID) {
+        return (
+            <View style={styles.ItemBg}>
+                <View style={styles.infoStyle}>
+                    <View >
+                        <Text style={styles.itemNameText}>{'农业银行'}</Text>
+                        <Text style={styles.itemNumberText}>{'**0851储蓄卡'}</Text>
+                    </View>
+                    <TouchableOpacity
+                        activeOpacity={0.6}
+                        onPress={() => this.doUnBindBankcard(rowID)}>
+                        <Text style={styles.itemNameRightText}>{'解绑'}</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    },
+    renderFooter (obj, sectionID, rowId) {
+        return (
+            <TouchableOpacity
+                activeOpacity={0.6}
+                onPress={this.doAddBankcard}
+                style={styles.touch_add}>
+                <Image
+                    resizeMode='stretch'
+                    source={app.img.personal_add}
+                    style={styles.icon_add} />
+                <Text style={styles.itemAddText}>{'添加银行卡'}</Text>
+            </TouchableOpacity>
+        );
+    },
+    render () {
+        return (
+            <View style={styles.container}>
+                <ListView
+                    style={styles.ListView}
+                    dataSource={this.state.ds.cloneWithRows(this.state.list)}
+                    renderRow={this.renderRow}
+                    renderFooter={this.renderFooter}
+                    />
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container:{
+        flex: 1,
+    },
+    ItemBg: {
+        height: 42,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor:'white',
+        marginTop:2,
+    },
+    ListView:{
+        marginTop:8,
+    },
+    infoStyle: {
+        width:sr.w,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    touch_add:{
+        alignItems:'center',
+        marginTop:29,
+    },
+    icon_add:{
+        width:30,
+        height:30,
+    },
+    itemAddText: {
+        fontSize: 14,
+        color: '#888888',
+        marginTop:10,
+    },
+    itemNameText: {
+        fontSize: 14,
+        color: '#333333',
+        marginLeft: 8,
+        marginBottom:2,
+    },
+    itemNumberText:{
+        fontSize: 12,
+        color: '#888888',
+        marginLeft: 8,
+        marginTop:2,
+    },
+    itemNameRightText: {
+        textAlign:'right',
+        fontSize: 13,
+        color: '#3fa0ff',
+        marginRight:10,
+        marginTop:10,
+    },
+    lineView: {
+        position:'absolute',
+        top: 0,
+        width: sr.w,
+        height: 1,
+        backgroundColor: '#f4f4f4',
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/person/CashBalance.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    Text,
+    Image,
+    TouchableOpacity,
+} = ReactNative;
+
+const WithdrawCash = require('./WithdrawCash');
+const Recharge = require('./Recharge');
+const BalanceDetailList = require('./BalanceDetailList');
+
+module.exports = React.createClass({
+    statics: {
+        title: '余额',
+        rightButton: { title: '明细', handler: () => { app.scene.detail&&app.scene.detail(); } },
+    },
+    getInitialState () {
+        return {
+            amount:'',
+            type:'1',
+        };
+    },
+    componentWillMount () {
+        this.setState({
+            amount:app.personal.remainAmount,
+        });
+    },
+    detail () {
+        app.push({
+            component:BalanceDetailList,
+        });
+    },
+    setCash (cash) {
+        app.personal.setRemainAmount(cash);
+        this.setState({
+            amount:app.personal.remainAmount,
+        });
+    },
+    showWithdrawCash () {
+        app.push({
+            component: WithdrawCash,
+            passProps:{
+                money:this.state.amount,
+                setType:this.setCash,
+            },
+        });
+    },
+    showRecharge () {
+        app.push({
+            component: Recharge,
+            passProps:{
+                setType:this.setCash,
+            },
+        });
+    },
+    render () {
+        const { amount } = this.state;
+        return (
+            <View style={styles.container}>
+                <View style={styles.TopView}>
+                    <Text style={styles.CashBalanceTitle}>账户余额</Text>
+                    <View style={styles.CashBalance}>
+                        <Text style={styles.CashBalanceTitleLeft}>￥</Text><Text style={styles.CashBalanceContent}>{amount}</Text>
+                    </View>
+                </View>
+                <TouchableOpacity
+                    activeOpacity={0.6}
+                    onPress={this.showWithdrawCash}
+                    style={styles.ItemBg}>
+                    <View style={styles.infoStyle}>
+                        <Text style={styles.itemNameText}>{'提现'}</Text>
+                    </View>
+                    <Image
+                        resizeMode='stretch'
+                        source={app.img.common_go}
+                        style={styles.icon_go} />
+                    <View style={styles.lineView} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                    activeOpacity={0.6}
+                    onPress={this.showRecharge}
+                    style={styles.ItemBg}>
+                    <View style={styles.infoStyle}>
+                        <Text style={styles.itemNameText}>{'充值'}</Text>
+                    </View>
+                    <Image
+                        resizeMode='stretch'
+                        source={app.img.common_go}
+                        style={styles.icon_go} />
+                    <View style={styles.lineView} />
+                </TouchableOpacity>
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container:{
+        flex: 1,
+    },
+    TopView: {
+        height:100,
+        backgroundColor:'#c81622',
+        marginBottom:8,
+        paddingLeft:20,
+        paddingTop:15,
+        paddingBottom:20,
+    },
+    CashBalanceTitle:{
+        fontSize:14,
+        color:'white',
+    },
+    CashBalance: {
+        flexDirection: 'row',
+        marginTop:22,
+    },
+    CashBalanceTitleLeft:{
+        fontSize:14,
+        color:'white',
+        alignSelf:'flex-end',
+        paddingBottom:5,
+    },
+    CashBalanceContent:{
+        fontSize:24,
+        color:'white',
+        alignSelf:'flex-end',
+    },
+    ItemBg: {
+        padding: 10,
+        height: 44,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor:'white',
+    },
+    infoStyle: {
+        flexDirection: 'row',
+    },
+    itemNameText: {
+        fontSize: 15,
+        color: '#444444',
+        marginLeft: 8,
+    },
+    icon_go: {
+        width: 8,
+        height: 15,
+        marginRight: 7,
+    },
+    lineView: {
+        position:'absolute',
+        top: 0,
+        width: sr.w,
+        height: 1,
+        backgroundColor: '#f4f4f4',
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/person/CommonSetting.js
+
+```js
+'use strict';
+
+const React = require('react');const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    Switch,
+    View,
+    Text,
+    TouchableOpacity,
+} = ReactNative;
+
+module.exports = React.createClass({
+    statics: {
+        title: '基础设置',
+    },
+    getInitialState () {
+        return {
+            onlyWifiUpload: !!app.setting.data.onlyWifiUpload,
+        };
+    },
+    onValueChange (value) {
+        this.setState({ onlyWifiUpload: value });
+        app.setting.setOnlyWifiUpload(value);
+    },
+    selectThemeColor (color) {
+        app.setting.setThemeColor(color);
+    },
+    render () {
+        return (
+            <View style={styles.container}>
+                <View style={styles.row}>
+                    <Text style={styles.title}>只在wifi下上传</Text>
+                    <Switch
+                        style={styles.switch}
+                        onValueChange={this.onValueChange}
+                        value={this.state.onlyWifiUpload} />
+                </View>
+                <View style={styles.row}>
+                    <Text style={styles.title}>主题颜色</Text>
+                    <View style={styles.colorContainer}>
+                        {
+                            CONSTANTS.THEME_COLORS.map((color, i) => {
+                                return (
+                                    <TouchableOpacity
+                                        key={i}
+                                        onPress={this.selectThemeColor.bind(null, color)}
+                                        style={[styles.color, { backgroundColor: color }]}
+                                        />
+                                );
+                            })
+                        }
+                    </View>
+                </View>
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container:{
+        flex: 1,
+        paddingVertical: 20,
+    },
+    row: {
+        paddingHorizontal: 14,
+        height: 80,
+        flexDirection: 'row',
+        backgroundColor: '#FFFFFF',
+        alignItems: 'center',
+    },
+    title: {
+        flex: 7,
+        fontSize: 17,
+        color: 'gray',
+        marginLeft: 2,
+    },
+    switch: {
+        flex: 2,
+    },
+    colorContainer: {
+        flex: 20,
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+    },
+    color: {
+        flex: 1,
+        height:80,
+        marginRight: 10,
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/person/EditBirthday.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    Text,
+    StyleSheet,
+    View,
+    TouchableOpacity,
+} = ReactNative;
+
+const { Picker } = COMPONENTS;
+const moment = require('moment');
+
+module.exports = React.createClass({
+    getInitialState () {
+        const info = app.personal.info;
+        return {
+            birthday: info.birthday,
+        };
+    },
+    goBack () {
+        Picker.hide();
+    },
+    createBirthdayData (now) {
+        const date = [];
+        const iy = now.year(), im = now.month() + 1, id = now.date();
+        for (let y = 1916; y <= iy; y++) {
+            const month = [];
+            const mm = [0, 31, (!(y % 4) & (!!(y % 100))) | (!(y % 400)) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+            const iim = (y == iy) ? im : 12;
+            for (let m = 1; m <= iim; m++) {
+                const day = [];
+                const iid = (y == iy && m == im) ? id : mm[m];
+                for (let d = 1; d <= iid; d++) {
+                    day.push(d + '日');
+                }
+                month.push({ [m + '月']: day });
+            }
+            date.push({ [y + '年']: month });
+        }
+        return date;
+    },
+    toEditBirth () {
+        const date = moment(this.state.birthday, 'YYYY-MM-DD');
+        const selectedValue = [date.year() + '年', (date.month() + 1) + '月', date.date() + '日'];
+        const pickerData = this.createBirthdayData(moment());
+        Picker(pickerData, selectedValue, '选择生日').then((value) => {
+            const birthday = moment(value.join(''), 'YYYY年M月D日').format('YYYY-MM-DD');
+            this.setState({ birthday }, () => {
+                this.modifyPersonalInfo();
+            });
+        });
+    },
+    modifyPersonalInfo () {
+        const info = app.personal.info;
+        const param = {
+            userId: info.userId,
+            birthday: this.state.birthday,
+        };
+        POST(app.route.ROUTE_MODIFY_PERSONAL_INFO, param, this.modifyUserInfoSuccess, true);
+    },
+    modifyUserInfoSuccess (data) {
+        if (data.success) {
+            let info = app.personal.info;
+            info.birthday = this.state.birthday;
+            app.personal.set(info);
+            this.props.setBirth(info.birthday);
+            app.pop();
+        } else {
+            Toast(data.msg);
+        }
+    },
+    render () {
+        const { birthday } = this.state;
+        return (
+            <View style={styles.container}>
+                <View style={[styles.separatorView, { marginTop: 30 }]} />
+                <TouchableOpacity
+                    onPress={this.toEditBirth}
+                    style={styles.itemView}>
+                    <Text style={styles.itemKeyText}>{birthday || '请选择您的生日'}</Text>
+                </TouchableOpacity>
+                <View style={styles.separatorView} />
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container: {
+        flex:1,
+        backgroundColor: '#EEEEEE',
+    },
+    itemView: {
+        backgroundColor: 'white',
+        height: 45,
+        justifyContent: 'center',
+        alignItems:'center',
+    },
+    separatorView: {
+        height: 1,
+        width: sr.w,
+        backgroundColor: '#aab9ba',
+    },
+    itemKeyText: {
+        color: '#444444',
+        fontSize: 15,
+        marginLeft: 20,
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/person/EditPersonInfo.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    Image,
+    Text,
+    StyleSheet,
+    View,
+    TouchableOpacity,
+} = ReactNative;
+
+const { DImage, Button, Picker } = COMPONENTS;
+
+const ImagePicker = require('./ImagePicker');
+const EditSingleInfo = require('./EditSingleInfo');
+
+module.exports = React.createClass({
+    mixins: [SceneMixin],
+    statics: {
+        title: '个人信息',
+        leftButton: { handler: () => { app.scene.goBack&&app.scene.goBack(); } },
+    },
+    goBack () {
+        this.props.updateInfo(app.personal.info);
+        Picker.hide();
+        app.pop();
+    },
+    getInitialState () {
+        const info = app.personal.info;
+        return {
+            name: info.name,
+            licenseNo:info.licenseNo,
+            address: info.address,
+            head: info.head,
+            sex: info.sex === 0 ? '男' : '女',
+            phone:info.phone,
+            pickerData: ['男', '女'],
+        };
+    },
+    toEditHead () {
+        Picker.hide();
+        app.push({
+            component: ImagePicker,
+            passProps: {
+                onCropImage: this.setUserHead,
+            },
+        });
+    },
+    setUserHead (uri) {
+        this.setState({ head: uri });
+    },
+    toEditSingleInfo (name, tip, maxLength, keyboardType, checkFunc) {
+        Picker.hide();
+        app.push({
+            title: '修改' + tip,
+            component: EditSingleInfo,
+            passProps: {
+                keyName: name,
+                placeholder: tip,
+                maxLength,
+                keyboardType,
+                checkFunc,
+                updateSingleState:this.updateSingleState,
+            },
+        });
+    },
+    updateSingleState (keyName, value) {
+        let state = this.state;
+        state[keyName] = value;
+        this.setState({ state });
+    },
+    toEditSex () {
+        const { sex, pickerData } = this.state;
+        Picker(pickerData, [sex], '选择性别').then((value) => {
+            const sex = value[0];
+            this.setState({ sex }, () => {
+                this.modifyPersonalInfo();
+            });
+        });
+    },
+    modifyPersonalInfo () {
+        const info = app.personal.info;
+        const param = {
+            userId: info.userId,
+            sex: this.state.sex === '男' ? 0 : 1,
+        };
+        POST(app.route.ROUTE_MODIFY_PERSONAL_INFO, param, this.modifyUserInfoSuccess, true);
+    },
+    modifyUserInfoSuccess (data) {
+        if (data.success) {
+            let info = app.personal.info;
+            info.sex = this.state.sex === '男' ? 0 : 1;
+            app.personal.set(info);
+        } else {
+            Toast(data.msg);
+        }
+    },
+    doLogout () {
+        app.navigator.resetTo({
+            component: require('../login/Login'),
+        }, 0);
+        app.personal.clear();
+        app.personal.setNeedLogin(true);
+    },
+    render () {
+        const { name, address, sex, head, phone, licenseNo } = this.state;
+        return (
+            <View style={styles.container}>
+                <View style={[styles.headStyle, { marginTop: 10 }]} >
+                    <TouchableOpacity
+                        onPress={this.toEditHead}
+                        style={styles.head_itemView}>
+                        <DImage
+                            defaultSource={app.img.personal_default_head}
+                            source={{ uri: head }}
+                            style={styles.headImgStyle} />
+                        <View style={styles.rightView} >
+                            <Image
+                                source={app.img.common_go}
+                                style={styles.goStyle} />
+                        </View>
+                    </TouchableOpacity>
+                </View>
+                <TouchableOpacity
+                    onPress={this.toEditSingleInfo.bind(null, 'licenseNo', '驾驶证号', 18, 'default', app.utils.checkIdentifyNumber)}
+                    style={styles.itemView}>
+                    <Text style={styles.itemKeyText}>驾驶证号</Text>
+                    <View style={styles.rightView} >
+                        <Text style={styles.itemValueText}>{licenseNo}</Text>
+                        <Image
+                            source={app.img.common_go}
+                            style={styles.goStyle} />
+                    </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={this.toEditSingleInfo.bind(null, 'name', '真实姓名', CONSTANTS.NAME_MAX_LENGTH, 'default', app.utils.checkStr)}
+                    style={[styles.itemView, { marginTop: 8 }]} >
+                    <Text style={styles.itemKeyText}>真实姓名</Text>
+                    <View style={styles.rightView} >
+                        <Text style={styles.itemValueText}>{name}</Text>
+                        <Image
+                            source={app.img.common_go}
+                            style={styles.goStyle} />
+                    </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={this.toEditSex}
+                    style={styles.itemView}>
+                    <Text style={styles.itemKeyText}>性别</Text>
+                    <View style={styles.rightView} >
+                        <Text style={styles.itemValueText}>{sex}</Text>
+                        <Image
+                            source={app.img.common_go}
+                            style={styles.goStyle} />
+                    </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={this.toEditSingleInfo.bind(null, 'address', '地址', CONSTANTS.ADDRESS_MAX_LENGTH, 'default', app.utils.checkStr)}
+                    style={styles.itemView}>
+                    <Text style={styles.itemKeyText}>家庭地址</Text>
+                    <View style={styles.rightView} >
+                        <Text style={styles.addressText}
+                            numberOfLines={1}>{address}</Text>
+                        <Image
+                            source={app.img.common_go}
+                            style={styles.goStyle} />
+                    </View>
+                </TouchableOpacity>
+                <View
+                    style={styles.itemView}>
+                    <Text style={styles.itemKeyText}>手机号码</Text>
+                    <View style={styles.rightView} >
+                        <Text style={styles.itemValueText}>{phone}</Text>
+                    </View>
+                </View>
+                <Button onPress={this.doLogout} style={styles.btnLogout} textStyle={styles.btnLogoutText} >
+                    退出登录
+                </Button>
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container: {
+        flex:1,
+        backgroundColor: '#F4F4F4',
+    },
+    headStyle: {
+        width: sr.w,
+        height:60,
+
+    },
+    head_itemView:{
+        backgroundColor: 'white',
+        flexDirection: 'row',
+        height: 60,
+        justifyContent: 'space-between',
+        alignItems:'center',
+    },
+    itemView: {
+        marginTop:1,
+        backgroundColor: 'white',
+        flexDirection: 'row',
+        height: 42,
+        justifyContent: 'space-between',
+        alignItems:'center',
+    },
+    rightView: {
+        flexDirection: 'row',
+        height: 45,
+        alignItems:'center',
+    },
+    headImgStyle: {
+        height: 36,
+        width: 36,
+        borderRadius: 18,
+        marginLeft: 20,
+    },
+    goStyle: {
+        height: 15,
+        width: 8,
+        marginRight: 20,
+    },
+    separatorView: {
+        height: 1,
+        width: sr.w,
+        backgroundColor: '#aab9ba',
+    },
+    itemKeyText: {
+        color: '#444444',
+        fontSize: 15,
+        marginLeft: 20,
+    },
+    itemValueText: {
+        color: '#888888',
+        fontSize: 14,
+        marginRight: 10,
+    },
+    addressText:{
+        color: '#888888',
+        fontSize: 14,
+        marginRight: 10,
+        width: sr.w / 2,
+        textAlign:'right',
+    },
+    btnChangeRole:{
+        marginTop:15,
+        height:45,
+        width:351,
+        marginLeft:(sr.w - 351) / 2,
+        borderRadius:2,
+    },
+    btnLogout:{
+        marginTop:215,
+        height:45,
+        width:351,
+        marginLeft:(sr.w - 351) / 2,
+        borderRadius:2,
+        backgroundColor:'#D9D9D9',
+    },
+    btnLogoutText:{
+        color:'#000000',
+        fontSize:16,
+        fontWeight:'300',
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/person/EditSingleInfo.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    Text,
+    StyleSheet,
+    View,
+    TextInput,
+} = ReactNative;
+
+module.exports = React.createClass({
+    mixins: [SceneMixin],
+    statics: {
+        rightButton: { title: '保存', handler: () => { app.scene.doSave&&app.scene.doSave(); } },
+    },
+    doSave () {
+        const { placeholder, checkFunc } = this.props;
+        const { value } = this.state;
+        const info = app.personal.info;
+        if (!!checkFunc && !checkFunc(value)) {
+            Toast('请填写正确的' + placeholder);
+            return;
+        } else {
+            if (value.length == 0) {
+                Toast(placeholder + '不能为空');
+                return;
+            }
+        }
+        let param = {
+            userId: info.userId,
+        };
+        param[this.keyName] = value;
+        POST(app.route.ROUTE_MODIFY_PERSONAL_INFO, param, this.modifyUserInfoSuccess, true);
+    },
+    getInitialState () {
+        const info = app.personal.info;
+        this.keyName = this.props.keyName;
+        return {
+            value: info[this.keyName] || '',
+        };
+    },
+    modifyUserInfoSuccess (data) {
+        if (data.success) {
+            let info = app.personal.info;
+            info[this.keyName] = this.state.value;
+            app.personal.set(info);
+            this.props.updateSingleState(this.keyName, info[this.keyName]);
+            app.pop();
+        } else {
+            Toast(data.msg);
+        }
+    },
+    render () {
+        const { value } = this.state;
+        const { placeholder, keyboardType, maxLength } = this.props;
+        return (
+            <View style={styles.container}>
+                <View style={styles.itemView}>
+                    <Text style={styles.itemKeyText} />
+                    <TextInput
+                        ref={(ref) => { this.contentInput = ref; }}
+                        style={styles.rightView}
+                        onChangeText={(text) => this.setState({ value: text })}
+                        multiline={false}
+                        keyboardType={keyboardType}
+                        maxLength={maxLength}
+                        placeholder={'请输入你的' + placeholder}
+                        autoCapitalize={'none'}
+                        underlineColorAndroid={'transparent'}
+                        defaultValue={value}
+                        />
+                </View>
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container: {
+        flex:1,
+        backgroundColor: '#F4F4F4',
+    },
+    itemView: {
+        marginTop:10,
+        backgroundColor: 'white',
+        flexDirection: 'row',
+        height: 42,
+        justifyContent: 'space-between',
+        alignItems:'center',
+    },
+    rightView: {
+        flex: 1,
+        fontSize: 15,
+        paddingVertical: 2,
+        color: '#444444',
+    },
+    separatorView: {
+        height: 1,
+        width: sr.w,
+        backgroundColor: '#aab9ba',
+    },
+    itemKeyText: {
+        color: '#444444',
+        fontSize: 15,
+        marginLeft: 20,
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/person/Feedback.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    TextInput,
+    Text,
+} = ReactNative;
+
+const { Button } = COMPONENTS;
+
+module.exports = React.createClass({
+    mixins: [SceneMixin],
+    statics: {
+        title: '意见反馈',
+    },
+    getInitialState () {
+        return {
+            content:'',
+            length:0,
+        };
+    },
+    onContentTextChange (text) {
+        this.setState({
+            content:text,
+            length:text.length,
+        });
+    },
+    doSubmit () {
+        if (!this.state.content) {
+            Toast('请填写您需要反馈的内容');
+            return;
+        }
+        const param = {
+            userId: app.personal.info.userId,
+            content: this.state.content,
+        };
+        POST(app.route.ROUTE_SUBMIT_FEEDBACK, param, this.doSubmitSuccess);
+    },
+    doSubmitSuccess (data) {
+        if (data.success) {
+            Toast('提交成功');
+            app.pop();
+        } else {
+            Toast(data.msg);
+        }
+    },
+    render () {
+        const length = this.state.length;
+        return (
+            <View style={styles.container}>
+                <Text style={styles.content_text}>
+                    具体内容
+                </Text>
+                <TextInput style={styles.content_input}
+                    placeholderTextColor='#aaaaaa'
+                    placeholder='请填入意见内容'
+                    onChangeText={this.onContentTextChange}
+                    underlineColorAndroid='transparent'
+                    multiline
+                    maxLength={CONSTANTS.FEEDBACK_MAX_LENGTH}
+                    />
+                <Text style={styles.wordnumber_text}>
+                    {length}/500
+                </Text>
+                <Button onPress={this.doSubmit}
+                    style={styles.button}
+                    textStyle={styles.btnLoginText}>
+                    提交反馈
+                    </Button>
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor:'#f4f4f4',
+    },
+    content_text:{
+        fontSize:14,
+        height:40,
+        width:351,
+        color:'#666666',
+        marginLeft:(sr.w - 351) / 2,
+        paddingTop:18,
+    },
+    content_input:{
+        fontSize:14,
+        height:200,
+        width:351,
+        marginLeft:(sr.w - 351) / 2,
+        backgroundColor:'#FFFFFF',
+        textAlignVertical: 'top',
+        padding:3,
+    },
+    wordnumber_text:{
+        fontSize:14,
+        height:30,
+        width:351,
+        color:'#666666',
+        marginLeft:(sr.w - 351) / 2,
+        paddingTop:5,
+        textAlign:'right',
+    },
+    button:{
+        height:50,
+        width:351,
+        marginLeft:(sr.w - 351) / 2,
+        backgroundColor:'#f69934',
+        borderRadius:4,
+        marginTop:60,
+    },
+    btnLoginText:{
+        fontSize:18,
+        color:'#FFFFFF',
+        fontWeight:'600',
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/person/Help.js
+
+```js
+'use strict';
+
+const React = require('react');const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    WebView,
+} = ReactNative;
+
+module.exports = React.createClass({
+    statics: {
+        title: '软件许可协议',
+    },
+    render () {
+        return (
+            <WebView
+                style={styles.container}
+                source={{ uri:app.route.ROUTE_SOFTWARE_LICENSE }}
+                scalesPageToFit
+                />
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container:{
+        flex: 1,
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/person/ImageCrop.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    ImageStore,
+    ImageEditor,
+} = ReactNative;
+
+const ImageCrop = require('@remobile/react-native-image-crop');
+
+module.exports = React.createClass({
+    mixins: [SceneMixin],
+    statics: {
+        title: '编辑头像',
+        rightButton: { title: '完成', handler: () => {
+            app.scene.cropImage&&app.scene.cropImage();
+        } },
+    },
+    goBack () {
+        app.pop();
+    },
+    cropImage () {
+        const { image } = this.props;
+        const cropData = this.imageCrop.getCropData();
+        ImageEditor.cropImage(
+            image.uri,
+            cropData,
+            (croppedImageURI) => {
+                this.uploadUserHead(croppedImageURI);
+            },
+            (error) => {
+                Toast('文件出错');
+                this.goBack();
+            }
+        );
+    },
+    uploadUserHead (filePath) {
+        if (app.isandroid) {
+            const options = {};
+            options.fileKey = 'file';
+            options.fileName = filePath.substr(filePath.lastIndexOf('/') + 1);
+            options.mimeType = 'image/png';
+            options.params = {
+                userId:app.personal.info.userId,
+            };
+            UPLOAD(filePath, app.route.ROUTE_UPDATE_FILE, options, (progress) => console.log(progress), this.uploadSuccessCallback, this.uploadErrorCallback, true);
+        } else {
+            ImageStore.getBase64ForTag(filePath, (data) => {
+                data = 'data:image/png;base64,' + data;
+                const options = {};
+                options.fileKey = 'file';
+                options.fileName = 'user_head.png';
+                options.mimeType = 'image/png';
+                options.params = {
+                    userId:app.personal.info.userId,
+                };
+                ImageStore.removeImageForTag(filePath);
+                UPLOAD(data, app.route.ROUTE_UPDATE_FILE, options, (progress) => console.log(progress), this.uploadSuccessCallback, this.uploadErrorCallback, true);
+            }, () => {
+                Toast('文件出错');
+                this.goBack();
+            });
+        }
+    },
+    uploadSuccessCallback (data) {
+        if (data.success) {
+            this.modifyPersonalInfo(data.context.url);
+        } else {
+            Toast('上传头像失败');
+            this.goBack();
+        }
+    },
+    uploadErrorCallback () {
+        Toast('上传头像失败');
+        this.goBack();
+    },
+    modifyPersonalInfo (url) {
+        const info = app.personal.info;
+        const param = {
+            userId: info.userId,
+            head: url,
+        };
+        POST(app.route.ROUTE_MODIFY_PERSONAL_INFO, param, this.modifyUserInfoSuccess.bind(null, url), this.modifyUserInfoError, true);
+    },
+    modifyUserInfoSuccess (url, data) {
+        if (data.success) {
+            let info = app.personal.info;
+            info.head = url;
+            app.personal.set(info);
+            this.props.onCropImage(url);
+            this.goBack();
+        } else {
+            Toast(data.msg);
+            this.goBack();
+        }
+    },
+    modifyUserInfoError () {
+        Toast('修改头像失败');
+        this.goBack();
+    },
+    render () {
+        const { image } = this.props;
+        return (
+            <View style={styles.container}>
+                <ImageCrop
+                    imageWidth={image.width}
+                    imageHeight={image.height}
+                    editRectRadius={0}
+                    ref={(ref) => { this.imageCrop = ref; }}
+                    source={{ uri: image.uri }} />
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/person/ImagePicker.js
+
+```js
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    Image,
+} = ReactNative;
+
+const CameraRollPicker = require('@remobile/react-native-camera-roll-picker');
+const Camera = require('@remobile/react-native-camera');
+const ImageCrop = require('./ImageCrop');
+
+module.exports = React.createClass({
+    statics: {
+        title: '选择头像',
+    },
+    cropImage (image) {
+        app.navigator.replace({
+            component: ImageCrop,
+            passProps: {
+                image,
+                onCropImage: this.props.onCropImage,
+            },
+        });
+    },
+    onSelectedImages (images, image) {
+        this.cropImage(image);
+    },
+    openCamera () {
+        Camera.getPicture((filePath) => {
+            const uri = 'file://' + filePath;
+            Image.getSize(uri, (width, height) => {
+                this.cropImage({
+                    uri,
+                    width,
+                    height,
+                });
+            });
+        }, null, {
+            quality: 100,
+            allowEdit: false,
+            cameraDirection: Camera.Direction.FRONT,
+            destinationType: Camera.DestinationType.FILE_URI,
+        });
+    },
+    render () {
+        return (
+            <CameraRollPicker selected={[]} onSelectedImages={this.onSelectedImages} openCamera={this.openCamera} maximum={1} />
+        );
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/person/ModifyPassword.js
+
+```js
+'use strict';
+
+const React = require('react');const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    TextInput,
+} = ReactNative;
+
+const { Button, Label } = COMPONENTS;
+
+module.exports = React.createClass({
+    statics: {
+        title: '修改密码',
+    },
+    getInitialState () {
+        return {
+            oldPassword: '',
+            newPassword1: '',
+            newPassword2: '',
+        };
+    },
+    goBack () {
+        app.pop();
+    },
+    doSubmit () {
+        const { oldPassword, newPassword1, newPassword2 } = this.state;
+        const { checkPassword } = app.utils;
+        if (!checkPassword(oldPassword) || !checkPassword(newPassword1)) {
+            Toast('密码必须有6-20位的数字，字母，下划线组成');
+            return;
+        }
+        if (!oldPassword) {
+            Toast('请填写旧密码');
+            return;
+        }
+        if (!newPassword1) {
+            Toast('请填写新密码');
+            return;
+        }
+        if (!newPassword2) {
+            Toast('请再次填写新密码');
+            return;
+        }
+        if (newPassword2 !== newPassword1) {
+            Toast('两次填写新密码不一致');
+            return;
+        }
+        if (oldPassword === newPassword1) {
+            Toast('新密码不能和原来密码一样');
+            return;
+        }
+        const param = {
+            userId: app.personal.info.userId,
+            oldPassword,
+            newPassword: newPassword1,
+        };
+        POST(app.route.ROUTE_MODIFY_PASSWORD, param, this.doSubmitSuccess, true);
+    },
+    doSubmitSuccess (data) {
+        if (data.success) {
+            Toast('修改成功');
+            this.goBack();
+        } else {
+            Toast(data.msg);
+        }
+    },
+    render () {
+        return (
+            <View style={styles.container}>
+                <Label img={app.img.login_user}>请输入旧密码</Label>
+                <TextInput
+                    underlineColorAndroid='transparent'
+                    placeholder='请输入旧密码'
+                    style={styles.text_input}
+                    secureTextEntry
+                    onChangeText={(text) => this.setState({ oldPassword: text })}
+                    />
+                <Label img={app.img.login_user}>请输入新密码</Label>
+                <TextInput
+                    underlineColorAndroid='transparent'
+                    placeholder='请输入新密码'
+                    style={styles.text_input}
+                    secureTextEntry
+                    onChangeText={(text) => this.setState({ newPassword1: text })}
+                    />
+                <Label img={app.img.login_user}>请再次输入新密码</Label>
+                <TextInput
+                    underlineColorAndroid='transparent'
+                    placeholder='请再次输入新密码'
+                    style={styles.text_input}
+                    secureTextEntry
+                    onChangeText={(text) => this.setState({ newPassword2: text })}
+                    />
+                <Button onPress={this.doSubmit} style={[styles.btnSubmit, { backgroundColor:app.setting.THEME_COLOR }]}>提交</Button>
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container: {
+        flex:1,
+        backgroundColor: 'white',
+        paddingVertical: 20,
+        paddingHorizontal: 25,
+    },
+    text_input: {
+        height: 40,
+        fontSize: 14,
+        paddingLeft: 10,
+        backgroundColor: 'white',
+        textAlignVertical: 'top',
+        borderWidth: 1,
+        borderRadius: 5,
+        marginBottom: 20,
+        borderColor: '#DBDBDB',
+    },
+    btnSubmit: {
+        width: sr.w - 50,
+        marginTop: 80,
+        height: 40,
+        borderRadius: 10,
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/person/NormalQuestions.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    WebView,
+} = ReactNative;
+
+module.exports = React.createClass({
+    statics: {
+        title: '常见问题',
+    },
+    render () {
+        return (
+            <WebView
+                style={styles.container}
+                source={{ uri: app.route.ROUTE_ABOUT_PAGE }}
+                scalesPageToFit
+                />
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container:{
+        flex: 1,
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/person/Recharge.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    Text,
+    Image,
+    TouchableOpacity,
+    TextInput,
+} = ReactNative;
+
+const { Button } = COMPONENTS;
+const BankCardList = require('./SelectBankCardList');
+
+module.exports = React.createClass({
+    statics: {
+        title: '充值',
+    },
+    getInitialState () {
+        return {
+            bankCard:'请选择银行卡',
+            amount:1,
+            type:'',
+        };
+    },
+    showBankList () {
+        app.push({
+            component:BankCardList,
+            passProps: { setBankCard: this.setBankCard },
+        });
+    },
+    doRecharge () {
+        const param = {
+            userId: app.personal.info.userId,
+            amount:this.state.amount,
+            thirdpartyAccount:'N1231242311',
+        };
+        POST(app.route.ROUTE_RECHARGE, param, this.doRechargeSuccess, true);
+    },
+    doRechargeSuccess (data) {
+        if (data.success) {
+            Toast('充值成功');
+        }
+        this.props.setType(data.context.amount);
+    },
+    setBankCard (bankCard) {
+        this.setState({ bankCard });
+    },
+    render () {
+        const { bankCard } = this.state;
+        return (
+            <View style={styles.container}>
+                <TextInput
+                    placeholderTextColor='#444444'
+                    placeholder='充值金额'
+                    onChangeText={(text) => this.setState({ amount: text })}
+                    style={styles.ItemBgText} />
+                <TouchableOpacity
+                    activeOpacity={0.6}
+                    onPress={this.showBankList}
+                    style={styles.ItemBg}>
+                    <View style={styles.infoStyle}>
+                        <Text style={styles.itemNameText}>{bankCard}</Text>
+                    </View>
+                    <Image
+                        resizeMode='stretch'
+                        source={app.img.common_go}
+                        style={styles.icon_go} />
+                    <View style={styles.lineView} />
+                </TouchableOpacity>
+                <Button onPress={this.doRecharge} style={styles.btnRecharge} textStyle={styles.btnRechargeText} >
+                    充值
+                </Button>
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container:{
+        flex: 1,
+        paddingVertical: 10,
+    },
+    ItemBg: {
+        paddingLeft:10,
+        height: 44,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor:'white',
+    },
+    ItemBgText: {
+        paddingLeft:10,
+        height: 44,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor:'white',
+        fontSize: 15,
+    },
+    infoStyle: {
+        flexDirection: 'row',
+    },
+    itemNameText: {
+        fontSize: 15,
+        color: '#444444',
+
+    },
+    icon_go: {
+        width: 8,
+        height: 15,
+        marginRight: 7,
+    },
+    lineView: {
+        position:'absolute',
+        top: 0,
+        width: sr.w,
+        height: 1,
+        backgroundColor: '#f4f4f4',
+    },
+    btnRecharge:{
+        marginTop:215,
+        height:45,
+        width:351,
+        marginLeft:(sr.w - 351) / 2,
+        borderRadius:2,
+        backgroundColor:'#c81622',
+    },
+    btnRechargeText:{
+        color:'#ffffff',
+        fontSize:16,
+        fontWeight:'300',
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/person/SelectBankCardList.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    Text,
+    Image,
+    TouchableOpacity,
+} = ReactNative;
+
+const { PageList } = COMPONENTS;
+
+module.exports = React.createClass({
+    statics: {
+        title: '银行卡',
+    },
+    getInitialState () {
+        return {
+            selectedRowID:'',
+            bankCard:'农业银行',
+        };
+    },
+    toChoose (obj, rowID) {
+        this.setState({
+            selectedRowID:rowID,
+        });
+        this.props.setBankCard(this.state.bankCard);
+    },
+    renderRow (obj, rowID) {
+        const { selectedRowID } = this.state;
+
+        return (
+            <View style={styles.container} >
+                <TouchableOpacity onPress={this.toChoose.bind(null, obj, rowID)}>
+                    <View style={styles.item}>
+                        <Text style={styles.nameText}>
+                            {this.state.bankCard}
+                        </Text>
+                        {
+                            (rowID == selectedRowID) &&
+                            <Image
+                                resizeMode='stretch'
+                                source={app.img.common_radio}
+                                style={styles.icon_go} />
+                        }
+
+                    </View>
+                </TouchableOpacity>
+            </View>
+        );
+    },
+    render () {
+        return (
+            <View style={styles.container}>
+                <PageList
+                    ref={(ref) => { this.listView = ref; }}
+                    renderRow={this.renderRow}
+                    listName={'clientList'}
+                    listUrl={app.route.ROUTE_GET_CLIENT_LIST}
+                    refreshEnable
+                    />
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container:{
+        flex: 1,
+        backgroundColor:'#F4F4F4',
+    },
+    item:{
+        height:42,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems:'center',
+        backgroundColor:'#FFFFFF',
+    },
+    nameText:{
+        paddingLeft:8,
+        color:'#333333',
+        fontSize:14,
+    },
+    icon_go: {
+        width: 10,
+        height: 10,
+        marginRight: 12,
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/person/Software.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    WebView,
+} = ReactNative;
+
+module.exports = React.createClass({
+    statics: {
+        title: '软件许可协议',
+    },
+    render () {
+        return (
+            <WebView
+                style={styles.container}
+                source={{ uri: app.route.ROUTE_SOFTWARE_LICENSE }}
+                scalesPageToFit
+                />
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container:{
+        flex: 1,
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/person/WithdrawCash.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    Text,
+    Image,
+    TouchableOpacity,
+    TextInput,
+} = ReactNative;
+
+const { Button } = COMPONENTS;
+const BankCardList = require('./SelectBankCardList');
+
+module.exports = React.createClass({
+    statics: {
+        title: '提现',
+    },
+    showRecharge () {
+        app.push({
+            component:BankCardList,
+            passProps: { setBankCard: this.setCardName },
+        });
+    },
+    getInitialState () {
+        return {
+            bankName: '请选择银行卡',
+            amount:1,
+            type:'',
+            money:'0.0',
+        };
+    },
+    doWithdraw () {
+        const param = {
+            userId: app.personal.info.userId,
+            amount:this.state.amount,
+            thirdpartyAccount:'N1231242311',
+        };
+        POST(app.route.ROUTE_WITHDRAW, param, this.doWithdrawSuccess, true);
+    },
+    doWithdrawSuccess (data) {
+        if (data.success) {
+            Toast('提现成功');
+        }
+        this.props.setType(data.context.amount);
+    },
+    setCardName (cardName) {
+        this.setState({ bankName:cardName });
+    },
+    WithdrawalsAllMoney () {
+        this.setState({
+            amount:this.props.money,
+            money:this.props.money + '',
+        });
+    },
+    render () {
+        return (
+            <View style={styles.container}>
+                <Text style={styles.drawCashTitle}>
+                    提现金额
+                </Text>
+                <View style={styles.drawCash}>
+                    <Text style={styles.drawCashLeft}>
+                        ￥
+                    </Text>
+                    <TextInput
+                        placeholderTextColor='#444444'
+                        placeholder={this.state.money}
+                        onChangeText={(text) => this.setState({ amount: text })}
+                        style={styles.drawCashContent} />
+                </View>
+                <View style={styles.balance}>
+                    <View style={styles.balanceLeft}>
+                        <Text style={styles.balanceTextLeft}>
+                            账户余额：
+                        </Text>
+                        <Text style={styles.balanceTextRight}>
+                            {this.props.money}元
+                        </Text>
+                    </View>
+                    <TouchableOpacity onPress={this.WithdrawalsAllMoney}>
+                        <Text style={styles.allDrawcash}>
+                            全部提现
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+                <TouchableOpacity
+                    activeOpacity={0.6}
+                    onPress={this.showRecharge}
+                    style={styles.ItemBg}>
+                    <View style={styles.infoStyle}>
+                        <Text style={styles.itemNameText}>{this.state.bankName}</Text>
+                    </View>
+                    <Image
+                        resizeMode='stretch'
+                        source={app.img.common_go}
+                        style={styles.icon_go} />
+                    <View style={styles.lineView} />
+                </TouchableOpacity>
+                <Button onPress={this.doWithdraw} style={styles.btnDrawCash} textStyle={styles.btnDrawCashText}>
+                    确认提现
+                </Button>
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container:{
+        flex: 1,
+        backgroundColor:'#F4F4F4',
+    },
+    drawCashTitle:{
+        marginTop:10,
+        paddingLeft:12,
+        paddingTop:10,
+        fontSize:12,
+        backgroundColor:'#FFFFFF',
+    },
+    drawCash:{
+        height:48,
+        backgroundColor:'#FFFFFF',
+        flexDirection: 'row',
+        alignItems:'flex-end',
+    },
+    drawCashLeft:{
+        fontSize:12,
+        paddingLeft:12,
+        paddingBottom:3,
+    },
+    drawCashContent:{
+        flex:1,
+        height:65,
+        paddingBottom:3,
+        fontSize:20,
+        paddingTop:10,
+    },
+    balance:{
+        height:34,
+        marginTop:1,
+        backgroundColor:'#FFFFFF',
+        flexDirection: 'row',
+        justifyContent:'space-between',
+    },
+    balanceLeft:{
+        height:34,
+        marginTop:1,
+        backgroundColor:'#FFFFFF',
+        flexDirection: 'row',
+    },
+    balanceTextLeft:{
+        fontSize:14,
+        color:'#888888',
+        paddingLeft:12,
+        paddingTop:10,
+    },
+    balanceTextRight:{
+        fontSize:14,
+        color:'#888888',
+        paddingTop:10,
+    },
+    allDrawcash:{
+        color:'#fd9a14',
+        paddingRight:10,
+        paddingTop:10,
+    },
+    ItemBg: {
+        marginTop:17,
+        padding: 10,
+        height: 44,
+        width:sr.w,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor:'white',
+    },
+    infoStyle: {
+        flexDirection: 'row',
+    },
+    itemNameText: {
+        fontSize: 15,
+        width:sr.w - 45,
+        color: '#444444',
+        marginLeft: 8,
+    },
+    icon_go: {
+        width: 8,
+        height: 15,
+        marginRight: 7,
+    },
+    btnDrawCash:{
+        marginTop:285,
+        backgroundColor:'#FE9917',
+        height:46,
+        width:351,
+        marginLeft:(sr.w - 351) / 2,
+        borderRadius:2,
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/person/index.js
+
+```js
+'use strict';
+
+const React = require('react');const ReactNative = require('react-native');
+const {
+    Image,
+    StyleSheet,
+    Text,
+    View,
+    TouchableOpacity,
+    ScrollView,
+} = ReactNative;
+
+const EditPersonInfo = require('./EditPersonInfo');
+const About = require('./About');
+const Feedback = require('./Feedback');
+const NormalQuestions = require('./NormalQuestions');
+const UpdatePage = require('../update/UpdatePage');
+const Software = require('./Software');
+const ModifyPassword = require('./ModifyPassword');
+
+const { DImage } = COMPONENTS;
+
+const CHILD_PAGES_BOTTOM = [
+    { strict:true, title:'修改密码', module: ModifyPassword, img:'' },
+    { strict:true, title:'软件许可协议', module: Software, img:'' },
+    { strict:true, title:'常见问题', module: NormalQuestions, img:'' },
+    { strict:true, title:'在线更新', module: UpdatePage, img:'' },
+    { strict:true, title:'关于软件', module: About, img:'' },
+    { strict:true, title:'意见反馈', module: Feedback, img:'' },
+];
+
+const MenuItem = React.createClass({
+    showChildPage () {
+        const { module } = this.props.page;
+        app.push({
+            component: module,
+        });
+    },
+    render () {
+        const { title } = this.props.page;
+        return (
+            <TouchableOpacity
+                activeOpacity={0.6}
+                onPress={this.showChildPage}
+                style={styles.ItemBg}>
+                <View style={styles.infoStyle}>
+                    <Text style={styles.itemNameText}>{title}</Text>
+                </View>
+                <Image
+                    resizeMode='stretch'
+                    source={app.img.common_go}
+                    style={styles.icon_go} />
+                <View style={styles.lineView} />
+            </TouchableOpacity>
+        );
+    },
+});
+
+module.exports = React.createClass({
+    statics: {
+        title: '个人中心',
+    },
+    getInitialState () {
+        const info = app.personal.info;
+        return {
+            info,
+        };
+    },
+    toExitDatum () {
+        app.push({
+            component: EditPersonInfo,
+            passProps: { updateInfo: this.updateInfo },
+        });
+    },
+    updateInfo (info) {
+        this.setState({ info });
+    },
+    render () {
+        const { info } = this.state;
+        return (
+            <ScrollView style={styles.container}>
+                <View style={styles.headImgBg}>
+                    <TouchableOpacity
+                        onPress={this.toExitDatum}>
+                        <DImage
+                            resizeMode='cover'
+                            defaultSource={app.img.personal_default_head}
+                            source={{ uri: info.head }}
+                            style={styles.headStyle} />
+                        <Image
+                            resizeMode='stretch'
+                            source={app.personal.info.sex == 1 ? app.img.personal_male : app.img.personal_female}
+                            style={styles.careStyle} />
+                    </TouchableOpacity>
+                    <Text style={styles.name}>{info.name || info.phone}</Text>
+                </View>
+                <View>
+                    <View style={styles.lineViewTop} />
+                    {
+                        CHILD_PAGES_BOTTOM.map((item, i) => {
+                            if (!app.personal.info.phone && item.strict) {
+                                return null;
+                            }
+                            return (
+                                !item.hidden &&
+                                <MenuItem page={item} key={i} />
+                            );
+                        })
+                    }
+                    <View style={styles.line} />
+                </View>
+            </ScrollView>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container: {
+        flex:1,
+        backgroundColor:'white',
+    },
+    headImgBg:{
+        height: 160,
+        width: sr.w,
+        backgroundColor:'#c81622',
+        alignItems:'center',
+    },
+    ItemBg: {
+        padding: 10,
+        height: 44,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    headStyle: {
+        width: 87,
+        height: 87,
+        marginTop: 10,
+        marginBottom: 5,
+        borderRadius: 43.5,
+    },
+    icon_go: {
+        width: 8,
+        height: 15,
+        marginRight: 7,
+    },
+    lineView: {
+        position:'absolute',
+        top: 0,
+        width: sr.w,
+        height: 1,
+        backgroundColor: '#f4f4f4',
+    },
+    lineViewTop:{
+        backgroundColor: '#f4f4f4',
+        height:8,
+    },
+    infoStyle: {
+        flexDirection: 'row',
+    },
+    careStyle: {
+        width: 20,
+        height: 20,
+        marginLeft:60,
+        marginTop:-25,
+    },
+    itemNameText: {
+        fontSize: 15,
+        color: '#444444',
+        marginLeft: 8,
+    },
+    name: {
+        marginTop: 20,
+        fontSize: 19,
+        color: 'white',
+        backgroundColor: 'transparent',
+    },
+    midView: {
+        width: sr.w,
+        height: 105,
+        alignItems: 'center',
+    },
+    careShop: {
+        marginVertical: 10,
+        width:sr.w / 2.0,
+        height: 50,
+        alignItems: 'center',
+        borderRadius: 8,
+        justifyContent: 'center',
+    },
+    line: {
+        width:sr.w,
+        height:1,
+        backgroundColor: '#f4f4f4',
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/position/index.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    Text,
+    Image,
+    ListView,
+    ScrollView,
+    RefreshControl,
+    TouchableOpacity,
+} = ReactNative;
+
+import { Geolocation } from '@remobile/react-native-baidu-map';
+
+module.exports = React.createClass({
+    statics: {
+        title: '首页',
+    },
+    componentWillMount () {
+        this.getOnWayTruck();
+    },
+    getOnWayTruck () {
+        const param = {
+            userId: app.personal.info.userId,
+        };
+        POST(app.route.ROUTE_GET_ON_WAY_TRUCK, param, this.getOnWayTruckSuccess, false);
+    },
+    getOnWayTruckSuccess (data) {
+        if (data.success) {
+            this.setState({
+                msg:null,
+                data: data.context,
+                list: data.context.locationList,
+                // list: _.uniqBy(data.context.locationList, 'address'),
+            });
+        } else {
+            this.setState({ msg:data.msg });
+        }
+    },
+    doConfirmDestination () {
+        Geolocation.getCurrentPosition()
+        .then(data => {
+            console.warn(JSON.stringify(data));
+            const param = {
+                userId: app.personal.info.userId,
+                address:data.address || '未知',
+                latitude:data.latitude,
+                longitude:data.longitude,
+            };
+            POST(app.route.ROUTE_CONFIRM_REACH, param, this.confirmReach, false);
+        })
+        .catch(e => {
+            console.warn(e, 'error');
+        });
+    },
+    confirmReach (data) {
+        if (data.success) {
+            Toast('确认成功');
+            this.getOnWayTruck();
+        } else {
+            Toast(data.msg);
+        }
+    },
+    getInitialState () {
+        return {
+            ds: new ListView.DataSource({ rowHasChanged: (r1, r2) => r1 !== r2 }),
+            list: [],
+            data: {},
+            msg:'暂无运输中的货车',
+        };
+    },
+    renderRow (obj, sectionID, rowId) {
+        return (
+            <View style={styles.row}>
+                <View style={styles.item}>
+                    <Image
+                        resizeMode='stretch'
+                        source={rowId == 0 ? app.img.position_point_green : app.img.position_point}
+                        style={styles.imagePoint} />
+                    <View style={styles.itemRight}>
+                        <Text style={rowId == 0 ? styles.addressGreen : styles.address}>{obj.address}</Text>
+                        <Text style={rowId == 0 ? styles.timeGreen : styles.time}>{obj.time}</Text>
+                    </View>
+                </View>
+            </View>
+        );
+    },
+    onScroll () {
+        this.getOnWayTruck();
+    },
+    render () {
+        const { data, list, msg } = this.state;
+        return (
+            <View style={styles.container}>
+                <ScrollView
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={false}
+                            onRefresh={this.onScroll}
+                            title='正在刷新...' />
+                }>
+                    {
+                    !msg ?
+                        <View>
+                            <View style={styles.top}>
+                                <Text style={styles.driverText}>司机:{app.personal.info.name}</Text>
+                                <Text style={styles.carNumber}>{data.plateNo}</Text>
+                                <Text style={styles.truckType}>{data.truckType}</Text>
+                                <Text style={styles.totalWeight}>总重量：{app.utils.N(data.totalWeight)}/吨</Text>
+                                <Text style={styles.totalNumbers}>总件数：{data.totalNumbers}/件</Text>
+                            </View>
+                            <ListView
+                                style={styles.listView}
+                                dataSource={this.state.ds.cloneWithRows(list)}
+                                renderRow={this.renderRow}
+                            />
+                        </View>
+                    :
+                        <View style={styles.msg}>
+                            <Image
+                                resizeMode='cover'
+                                defaultSource={app.img.personal_default_head}
+                                source={{ uri: app.personal.info.head }}
+                                style={styles.headStyle} />
+                            <Text style={styles.driverText}>司机:{app.personal.info.name}</Text>
+                            <Text style={styles.truckMsg}>{msg}</Text>
+                        </View>
+                }
+                </ScrollView>
+                {
+                !msg &&
+                <TouchableOpacity
+                    onPress={this.doConfirmDestination}
+                    style={styles.doConfirm}>
+                    <View style={styles.confirm}>
+                        <Image
+                            resizeMode='stretch'
+                            source={app.img.position_endpoint}
+                            style={styles.imageBtn} />
+                        <Text style={styles.confirmText}>确认目的地</Text>
+                    </View>
+                </TouchableOpacity>
+            }
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor:'#f4f4f4',
+    },
+    row:{
+        height:80,
+    },
+    item:{
+        flexDirection:'row',
+    },
+    top:{
+        height:135,
+        backgroundColor:'#FFFFFF',
+        alignItems:'center',
+        justifyContent:'center',
+    },
+    msg:{
+        height:175,
+        backgroundColor:'#FFFFFF',
+        alignItems:'center',
+        justifyContent:'center',
+    },
+    carNumber:{
+        fontSize:23,
+        marginTop:5,
+        color:'#f41729',
+    },
+    mid:{
+        flexDirection:'row',
+        marginTop:5,
+    },
+    driverText:{
+        fontSize:14,
+        fontWeight:'500',
+        marginTop:5,
+        color:'#333333',
+        letterSpacing:2,
+    },
+    truckMsg:{
+        fontSize:16,
+        marginTop:15,
+        color:'#c81622',
+    },
+    truckType:{
+        fontSize:12,
+        marginTop:3,
+        color:'#888888',
+    },
+    totalWeight:{
+        fontSize:12,
+        color:'#333333',
+        marginTop:5,
+    },
+    totalNumbers:{
+        fontSize:12,
+        color:'#333333',
+        marginTop:5,
+    },
+    listView:{
+        marginTop:25,
+        backgroundColor:'#FFFFFF',
+        paddingTop:30,
+    },
+    imagePoint:{
+        width:8,
+        height:80,
+        marginLeft:25,
+    },
+    itemRight:{
+        marginLeft:15,
+    },
+    address:{
+        fontSize:12,
+        color:'#888888',
+    },
+    time:{
+        fontSize:12,
+        color:'#888888',
+        marginTop:3,
+    },
+    addressGreen:{
+        fontSize:12,
+        color:'green',
+    },
+    timeGreen:{
+        fontSize:12,
+        color:'green',
+        marginTop:3,
+    },
+    doConfirm:{
+        width:140,
+        height:45,
+        backgroundColor:'#aaaaaa',
+        opacity:0.7,
+        marginLeft:(sr.w - 125) / 2,
+        position:'absolute',
+        bottom:0,
+        borderRadius:4,
+        flexDirection:'row',
+        alignItems:'center',
+        justifyContent:'center',
+    },
+    confirm:{
+        flexDirection:'row',
+        alignItems:'center',
+    },
+    imageBtn:{
+        height:20,
+        width:15.5,
+    },
+    confirmText:{
+        marginLeft:8,
+        fontSize:15,
+        fontWeight:'500',
+        color:'#FFFFFF',
+    },
+    headStyle: {
+        width: 87,
+        height: 87,
+        borderRadius: 43.5,
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/splash/index.js
+
+```js
+'use strict';
+
+const React = require('react');const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    Image,
+    TouchableOpacity,
+} = ReactNative;
+
+import Swiper from 'react-native-swiper';
+const TimerMixin = require('react-timer-mixin');
+const SplashScreen = require('@remobile/react-native-splashscreen');
+const Login = require('../login/Login');
+const Home = require('../home/index');
+
+module.exports = React.createClass({
+    mixins: [TimerMixin],
+    getInitialState () {
+        return {
+            renderSplashType: 0,
+        };
+    },
+    doGetPersonalInfo () {
+        const param = {
+            userId: app.personal.info.userId,
+        };
+        POST(app.route.ROUTE_GET_PERSONAL_INFO, param, this.getPersonalInfoSuccess, this.getInfoError);
+    },
+    getPersonalInfoSuccess (data) {
+        if (data.success) {
+            const context = data.context;
+            app.personal.set(context);
+            this.changeToHomePage();
+            app.personal.setNeedLogin(false);
+        } else {
+            this.getInfoError();
+        }
+    },
+    getInfoError () {
+        app.personal.setNeedLogin(true);
+        this.changeToLoginPage();
+    },
+    enterLoginPage (needHideSplashScreen) {
+        app.navigator.replace({
+            component: Login,
+        });
+        needHideSplashScreen && SplashScreen.hide();
+    },
+    changeToLoginPage () {
+        if (app.updateMgr.needShowSplash) {
+            this.setState({ renderSplashType: 0 }, () => {
+                SplashScreen.hide();
+            });
+        } else {
+            this.setState({ renderSplashType: 1 }, () => {
+                this.enterLoginPage(true);
+            });
+        }
+    },
+    enterHomePage (needHideSplashScreen) {
+        app.navigator.replace({
+            component: Home,
+        });
+        needHideSplashScreen && SplashScreen.hide();
+    },
+    changeToHomePage () {
+        if (app.updateMgr.needShowSplash) {
+            this.setState({ renderSplashType: 0 }, () => {
+                SplashScreen.hide();
+            });
+        } else {
+            this.setState({ renderSplashType: 2 }, () => {
+                this.enterHomePage(true);
+            });
+        }
+    },
+    enterNextPage () {
+        app.updateMgr.setNeedShowSplash(false);
+        if (this.state.renderSplashType === 0) {
+            app.personal.setNeedLogin(true);
+            this.setState({ renderSplashType: 1 }, () => {
+                this.enterLoginPage();
+            });
+        } else {
+            this.setState({ renderSplashType: 2 }, () => {
+                this.enterHomePage();
+            });
+        }
+    },
+    changeToNextPage () {
+        if (app.personal.needLogin) {
+            app.personal.setNeedLogin(true);
+            this.changeToLoginPage();
+        } else {
+            this.doGetPersonalInfo();
+        }
+    },
+    componentDidMount () {
+        app.utils.until(
+            () => app.personal.initialized && app.updateMgr.initialized && app.navigator,
+            (cb) => setTimeout(cb, 100),
+            () => this.changeToNextPage()
+        );
+    },
+    componentWillUnmount () {
+        app.updateMgr.checkUpdate();
+    },
+    onLayout (e) {
+        const { height } = e.nativeEvent.layout;
+        if (this.state.height !== height) {
+            this.heightHasChange = !!this.state.height;
+            this.setState({ height });
+        }
+    },
+    renderSwiperSplash () {
+        const { height } = this.state;
+        const marginBottom = (!this.heightHasChange || Math.floor(height) === Math.floor(sr.th)) ? 0 : 30;
+        return (
+            <View style={{ flex: 1 }} onLayout={this.onLayout}>
+                {
+                    height &&
+                    <Swiper
+                        paginationStyle={styles.paginationStyle}
+                        dot={<View style={{ backgroundColor:'#87E5D6', width: 8, height: 8, borderRadius: 4, marginLeft: 12, marginRight: 12, marginBottom }} />}
+                        activeDot={<View style={{ backgroundColor:'#1A7AE9', width: 18, height: 9, borderRadius: 6, marginLeft: 7, marginRight: 7, marginBottom }} />}
+                        height={height}
+                        loop={false}>
+                        {
+                            [1, 2, 3].map((i) => {
+                                return (
+                                    <Image
+                                        key={i}
+                                        resizeMode='stretch'
+                                        source={app.img['splash_splash' + i]}
+                                        style={[styles.bannerImage, { height }]}>
+                                        {
+                                            i === 3 &&
+                                            <TouchableOpacity
+                                                style={styles.enterButtonContainer}
+                                                onPress={this.enterNextPage}>
+                                                <Image resizeMode='stretch' style={styles.enterButton} source={app.img.splash_start} />
+                                            </TouchableOpacity>
+                                        }
+                                    </Image>
+                                );
+                            })
+                        }
+                    </Swiper>
+                }
+            </View>
+        );
+    },
+    render () {
+        return this.state.renderSplashType != 0 ? <Image style={{ width:sr.w, height:sr.h }} source={app.img.splash_splash1} /> : this.renderSwiperSplash();
+    },
+});
+
+const styles = StyleSheet.create({
+    paginationStyle: {
+        bottom: 30,
+    },
+    bannerImage: {
+        width: sr.w,
+    },
+    enterButtonContainer: {
+        position: 'absolute',
+        width: 165,
+        height: 40,
+        left: (sr.w - 165) / 2,
+        bottom: 80,
+        alignItems:'center',
+        justifyContent: 'center',
+    },
+    enterButton: {
+        width: 140,
+        height: 36,
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/qrcode/index.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    Text,
+} = ReactNative;
+
+import QRCode from 'react-native-qrcode';
+
+module.exports = React.createClass({
+    statics: {
+        title: '我的二维码',
+    },
+    render () {
+        const { info } = app.personal;
+        return (
+            <View style={styles.container}>
+                <View style={styles.card}>
+                    <Text style={styles.tip}>{info.name || info.phone}</Text>
+                    <View style={styles.qrcode} pointerEvents={'none'}>
+                        <QRCode
+                            value={app.utils.genQRString(2, info.userId)}
+                            size={230}
+                            bgColor='black'
+                            fgColor='white' />
+                    </View>
+                    <Text style={styles.tip}>扫一扫二维码过安检</Text>
+                </View>
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#f4f4f4',
+        alignItems: 'center',
+    },
+    card: {
+        backgroundColor: 'white',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop:30,
+        height:420,
+        width:330,
+        borderRadius:10,
+    },
+    qrcode: {
+        borderColor:'#d6ebfe',
+        borderWidth: 10,
+        borderRadius:20,
+        padding:20,
+    },
+    tip: {
+        fontSize:16,
+        color:'#888888',
+        paddingVertical:20,
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/test/index.js
+
+```js
+'use strict';
+
+const React = require('react');const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    Text,
+    FlatList,
+    Button,
+} = ReactNative;
+
+const SplashScreen = require('@remobile/react-native-splashscreen');
+
+module.exports = React.createClass({
+    getInitialState () {
+        return {
+            list: [1, 2, 3, 4, 5, 6, 7, 8],
+        };
+    },
+    componentWillMount () {
+        SplashScreen.hide();
+    },
+    renderItem ({ item, separators }) {
+        console.log('========', separators);
+        return (
+            <View style={styles.row}>
+                <Text>
+                    {item}
+                </Text>
+            </View>
+        );
+    },
+    onPress () {
+        this.setState({ list: [2, 3, 4, 5] });
+    },
+    render () {
+        return (
+            <View style={styles.container}>
+                <Button title='click' onPress={this.onPress} />
+                <FlatList
+                    data={this.state.list}
+                    extraData={this.state}
+                    renderItem={this.renderItem}
+                    refreshing={false}
+                    initialNumToRender={4}
+                    ListHeaderComponent={<Text>'这是头'</Text>}
+                    ListFooterComponent={<Text>'这是尾'</Text>}
+                    ListEmptyComponent={<Text>'没有数据'</Text>}
+                    ItemSeparatorComponent={() => <View style={styles.separator} />}
+                    onRefresh={() => { console.log('========'); }}
+                    />
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        paddingTop: 60,
+    },
+    row: {
+        height: 80,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    separator: {
+        backgroundColor: '#DDDDDD',
+        height: 1,
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/test/pageList.js
+
+```js
+'use strict';
+
+const React = require('react');const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    Text,
+} = ReactNative;
+
+const { PageList } = COMPONENTS;
+const SplashScreen = require('@remobile/react-native-splashscreen');
+
+module.exports = React.createClass({
+    getInitialState () {
+        return {
+            list: [1, 2, 3, 4, 5, 6, 7, 8],
+        };
+    },
+    componentWillMount () {
+        SplashScreen.hide();
+    },
+    renderRow (obj) {
+        return (
+            <View style={styles.row}>
+                <Text>
+                    {obj}
+                </Text>
+            </View>
+        );
+    },
+    onPress () {
+        this.setState({ list: [2, 3, 4, 5] });
+    },
+    render () {
+        return (
+            <View style={styles.container}>
+                <PageList
+                    ref={(ref) => { this.listView = ref; }}
+                    renderRow={this.renderRow}
+                    listName={'testList'}
+                    listUrl='http://localhost:4000/getList'
+                    refreshEnable
+                    />
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        paddingTop: 60,
+    },
+    row: {
+        height: 80,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    separator: {
+        backgroundColor: '#DDDDDD',
+        height: 1,
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/update/UpdateInfoBox.js
+
+```js
+'use strict';
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    Text,
+    TouchableOpacity,
+} = ReactNative;
+
+const Update = require('@remobile/react-native-update');
+
+const
+    STATUS_HAS_VEW_VERSION = 0,
+    STATUS_DOWNLOAD_APK_PROGESS = 1,
+    STATUS_DOWNLOAD_JS_PROGESS = 2,
+    STATUS_UNZIP_JS_PROGESS = 3,
+    STATUS_DOWNKOAD_APK_ERROR = 4,
+    STATUS_DOWNKOAD_JS_ERROR = 5,
+    STATUS_UNZIP_JS_ERROR = 6,
+    STATUS_FAILED_INSTALL_ERROR = 7,
+    STATUS_UPDATE_END = 8;
+
+const
+    ERROR_NULL = 0,
+    ERROR_DOWNKOAD_APK = 1,
+    ERROR_DOWNKOAD_JS = 2,
+    ERROR_FAILED_INSTALL = 3,
+    ERROR_UNZIP_JS = 4;
+
+const PROGRESS_WIDTH = sr.tw * 0.7;
+const { ProgressBar } = COMPONENTS;
+
+const ProgressInfo = React.createClass({
+    render () {
+        const { progress } = this.props;
+        if (progress < 1000) {
+            return (
+                <View style={[styles.functionContainer, { alignItems: 'center', paddingVertical: 30 }]}>
+                    <Text>{this.props.title} [{progress}%]</Text>
+                    <ProgressBar
+                        fillStyle={{}}
+                        backgroundStyle={{ backgroundColor: '#cccccc', borderRadius: 2 }}
+                        style={{ marginTop: 10, width:PROGRESS_WIDTH }}
+                        progress={progress / 100.0}
+                        />
+                    <View style={styles.progressText}>
+                        <Text>0</Text>
+                        <Text>100</Text>
+                    </View>
+                </View>
+            );
+        } else {
+            const size = progress / 1000 / 1024 / 1024;
+            return (
+                <View style={[styles.functionContainer, { alignItems: 'center', paddingVertical: 30 }]}>
+                    <Text>{this.props.title} [ {size.toFixed(2)} M ]</Text>
+                </View>
+            );
+        }
+    },
+});
+
+module.exports = React.createClass({
+    getInitialState () {
+        return {
+            status:STATUS_HAS_VEW_VERSION,
+            progress: 0,
+        };
+    },
+    onError (errCode) {
+        if (errCode == ERROR_DOWNKOAD_APK) {
+            this.setState({ status: STATUS_DOWNKOAD_APK_ERROR });
+        } else if (errCode == ERROR_DOWNKOAD_JS) {
+            this.setState({ status: STATUS_DOWNKOAD_JS_ERROR });
+        } else if (errCode == ERROR_FAILED_INSTALL) {
+            this.setState({ status: STATUS_FAILED_INSTALL_ERROR });
+        } else if (errCode == ERROR_UNZIP_JS) {
+            this.setState({ status: STATUS_UNZIP_JS_ERROR });
+        }
+    },
+    doUpdate () {
+        const { jsVersionCode, trackViewUrl } = this.props.options;
+        if (jsVersionCode !== undefined) {
+            Update.updateJS({
+                jsVersionCode,
+                jsbundleUrl: app.isandroid ? app.route.ROUTE_JS_ANDROID_URL : app.route.ROUTE_JS_IOS_URL,
+                onDownloadJSProgress:(progress) => { this.setState({ status: STATUS_DOWNLOAD_JS_PROGESS, progress }); },
+                onUnzipJSProgress:(progress) => { this.setState({ status: STATUS_UNZIP_JS_PROGESS, progress }); },
+                onUnzipJSEnd:() => { this.setState({ status: STATUS_UPDATE_END }); },
+                onError:(errCode) => { this.onError(errCode); },
+            });
+        } else {
+            Update.updateApp({
+                trackViewUrl,
+                androidApkUrl:app.route.ROUTE_APK_URL,
+                androidApkDownloadDestPath:'/sdcard/pddriver.apk',
+                onDownloadAPKProgress:(progress) => { this.setState({ status: STATUS_DOWNLOAD_APK_PROGESS, progress }); },
+                onError:(errCode) => { this.onError(errCode); },
+            });
+        }
+    },
+    render () {
+        const components = {};
+        const { newVersion, description } = this.props.options;
+        components[STATUS_HAS_VEW_VERSION] = (
+            <View style={styles.functionContainer}>
+                <Text style={styles.title}>{`发现新版本(${newVersion})`}</Text>
+                <Text style={styles.redLine} />
+                <Text style={styles.content}>
+                    {'更新内容：'}
+                </Text>
+                {
+                    description.map((item, i) => {
+                        return (
+                            <Text style={styles.contentItem} key={i}>{'- ' + item}</Text>
+                        );
+                    })
+                }
+                <View style={styles.buttonViewStyle}>
+                    <TouchableOpacity
+                        onPress={app.closeModal}
+                        style={styles.buttonStyleContainCannel}>
+                        <Text style={styles.buttonStyleCannel}>以后再说</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={this.doUpdate}
+                        style={styles.buttonStyleContain}>
+                        <Text style={styles.buttonStyle} >立即更新</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+        components[STATUS_DOWNKOAD_APK_ERROR] = (
+            <View style={[styles.functionContainer, { alignItems: 'center', paddingVertical: 30 }]}>
+                <Text style={styles.textInfo}>下载apk文件失败，请在设置里重新更新</Text>
+                <TouchableOpacity
+                    onPress={app.closeModal}
+                    style={styles.buttonStyleContainCannel}>
+                    <Text style={styles.buttonStyleCannel}>我知道了</Text>
+                </TouchableOpacity>
+            </View>
+        );
+        components[STATUS_DOWNKOAD_JS_ERROR] = (
+            <View style={[styles.functionContainer, { alignItems: 'center', paddingVertical: 30 }]}>
+                <Text style={styles.textInfo}>下载js bundle失败，请在设置里重新更新</Text>
+                <TouchableOpacity
+                    onPress={app.closeModal}
+                    style={styles.buttonStyleContainCannel}>
+                    <Text style={styles.buttonStyleCannel}>我知道了</Text>
+                </TouchableOpacity>
+            </View>
+        );
+        components[STATUS_UNZIP_JS_ERROR] = (
+            <View style={[styles.functionContainer, { alignItems: 'center', paddingVertical: 30 }]}>
+                <Text style={styles.textInfo}>解压js bundle失败，请在设置里重新更新</Text>
+                <TouchableOpacity
+                    onPress={app.closeModal}
+                    style={styles.buttonStyleContainCannel}>
+                    <Text style={styles.buttonStyleCannel}>我知道了</Text>
+                </TouchableOpacity>
+            </View>
+        );
+        components[STATUS_FAILED_INSTALL_ERROR] = (
+            <View style={[styles.functionContainer, { alignItems: 'center', paddingVertical: 30 }]}>
+                <Text style={styles.textInfo}>你放弃了安装</Text>
+                <TouchableOpacity
+                    onPress={app.closeModal}
+                    style={styles.buttonStyleContainCannel}>
+                    <Text style={styles.buttonStyleCannel}>我知道了</Text>
+                </TouchableOpacity>
+            </View>
+        );
+        components[STATUS_DOWNLOAD_APK_PROGESS] = (
+            <ProgressInfo
+                title='正在下载APK'
+                progress={this.state.progress} />
+        );
+        components[STATUS_DOWNLOAD_JS_PROGESS] = (
+            <ProgressInfo
+                title='正在下载Bundle文件'
+                progress={this.state.progress} />
+        );
+        components[STATUS_UNZIP_JS_PROGESS] = (
+            <ProgressInfo
+                title='正在解压Bundle文件'
+                progress={this.state.progress} />
+        );
+        components[STATUS_UPDATE_END] = (
+            <Text>即将重启...</Text>
+        );
+        return (
+            <View style={styles.container}>
+                {components[this.state.status]}
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    functionContainer: {
+        width:sr.w - 60,
+        backgroundColor:'#FFFFFF',
+    },
+    progressText: {
+        flexDirection:'row',
+        justifyContent:'space-between',
+        width: sr.w * 0.7,
+    },
+    textInfo: {
+        color: '#000000',
+        fontSize: 14,
+        marginBottom: 20,
+        textAlign: 'center',
+    },
+    buttonViewStyle: {
+        flexDirection: 'row',
+        width: sr.w - 40,
+        height: 60,
+        justifyContent: 'center',
+    },
+    redLine: {
+        marginTop: 15,
+        width: sr.w - 60,
+        height: 1,
+        backgroundColor: '#2F4F4F',
+    },
+    buttonStyleContain: {
+        width: 120,
+        height: 35,
+        marginLeft: 30,
+        justifyContent:'center',
+        alignItems:'center',
+        backgroundColor: '#2F4F4F',
+    },
+    buttonStyleContainCannel: {
+        width: 120,
+        height: 35,
+        justifyContent:'center',
+        alignItems:'center',
+        backgroundColor: 'white',
+        borderWidth: 1,
+        borderColor: '#2F4F4F',
+    },
+    buttonStyle: {
+        fontSize: 16,
+        color: 'white',
+        fontFamily: 'STHeitiSC-Medium',
+    },
+    buttonStyleCannel: {
+        fontSize: 16,
+        color: '#2F4F4F',
+        fontFamily: 'STHeitiSC-Medium',
+    },
+    title: {
+        color: '#2F4F4F',
+        fontSize: 18,
+        textAlign: 'center',
+        overflow: 'hidden',
+        marginTop: 15,
+        fontFamily: 'STHeitiSC-Medium',
+    },
+    content: {
+        color:'#000000',
+        marginTop: 10,
+        marginBottom: 10,
+        marginHorizontal: 20,
+        fontSize:16,
+        fontFamily: 'STHeitiSC-Medium',
+    },
+    contentItem: {
+        color:'#000000',
+        marginBottom: 10,
+        marginHorizontal: 20,
+        fontSize:12,
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/update/UpdatePage.js
+
+```js
+'use strict';
+const React = require('react');const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    Text,
+    Image,
+} = ReactNative;
+
+const Update = require('@remobile/react-native-update');
+
+const
+    STATUS_GET_VERSION = 0,
+    STATUS_HAS_VEW_VERSION = 1,
+    STATUS_HAS_NOT_VEW_VERSION = 2,
+    STATUS_DOWNLOAD_APK_PROGESS = 3,
+    STATUS_DOWNLOAD_JS_PROGESS = 4,
+    STATUS_UNZIP_JS_PROGESS = 5,
+    STATUS_GET_VERSION_ERROR = 6,
+    STATUS_DOWNKOAD_APK_ERROR = 7,
+    STATUS_DOWNKOAD_JS_ERROR = 8,
+    STATUS_UNZIP_JS_ERROR = 9,
+    STATUS_FAILED_INSTALL_ERROR = 10,
+    STATUS_UPDATE_END = 11;
+
+const
+    ERROR_NULL = 0,
+    ERROR_DOWNKOAD_APK = 1,
+    ERROR_DOWNKOAD_JS = 2,
+    ERROR_FAILED_INSTALL = 3,
+    ERROR_UNZIP_JS = 4;
+
+const PROGRESS_WIDTH = sr.tw * 0.7;
+const { Button, ProgressBar } = COMPONENTS;
+
+const ProgressInfo = React.createClass({
+    render () {
+        const { progress } = this.props;
+        if (progress < 1000) {
+            return (
+                <View>
+                    <Text>{this.props.title} [{progress}%]</Text>
+                    <ProgressBar
+                        fillStyle={{}}
+                        backgroundStyle={{ backgroundColor: '#cccccc', borderRadius: 2 }}
+                        style={{ marginTop: 10, width:PROGRESS_WIDTH }}
+                        progress={progress / 100.0}
+                        />
+                    <View style={styles.progressText}>
+                        <Text>0</Text>
+                        <Text>100</Text>
+                    </View>
+                </View>
+            );
+        } else {
+            const size = progress / 1000 / 1024 / 1024;
+            return (
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                    <Text>{this.props.title} [{size.toFixed(2)} M]</Text>
+                </View>
+            );
+        }
+    },
+});
+
+module.exports = React.createClass({
+    statics: {
+        title: '在线更新',
+    },
+    pageName: 'UpdatePage',
+    getInitialState () {
+        const { options } = this.props;
+        return {
+            options,
+            status: !options ? STATUS_GET_VERSION : options.newVersion ? STATUS_HAS_VEW_VERSION : STATUS_HAS_NOT_VEW_VERSION,
+            progress: 0,
+        };
+    },
+    componentWillMount () {
+        if (!this.state.options) {
+            Update.checkVersion({
+                versionUrl: app.route.ROUTE_VERSION_INFO_URL,
+                iosAppId: CONSTANTS.IOS_APPID,
+            }).then((options) => {
+                this.setState({ options, status: !options ? STATUS_GET_VERSION_ERROR : options.newVersion ? STATUS_HAS_VEW_VERSION : STATUS_HAS_NOT_VEW_VERSION });
+            });
+        }
+    },
+    onError (errCode) {
+        if (errCode == ERROR_DOWNKOAD_APK) {
+            this.setState({ status: STATUS_DOWNKOAD_APK_ERROR });
+        } else if (errCode == ERROR_DOWNKOAD_JS) {
+            this.setState({ status: STATUS_DOWNKOAD_JS_ERROR });
+        } else if (errCode == ERROR_FAILED_INSTALL) {
+            this.setState({ status: STATUS_FAILED_INSTALL_ERROR });
+        } else if (errCode == ERROR_UNZIP_JS) {
+            this.setState({ status: STATUS_UNZIP_JS_ERROR });
+        }
+    },
+    doUpdate () {
+        const { jsVersionCode, trackViewUrl } = this.state.options;
+        if (jsVersionCode !== undefined) {
+            Update.updateJS({
+                jsVersionCode,
+                jsbundleUrl: app.isandroid ? app.route.ROUTE_JS_ANDROID_URL : app.route.ROUTE_JS_IOS_URL,
+                onDownloadJSProgress:(progress) => { this.setState({ status: STATUS_DOWNLOAD_JS_PROGESS, progress }); },
+                onUnzipJSProgress:(progress) => { this.setState({ status: STATUS_UNZIP_JS_PROGESS, progress }); },
+                onUnzipJSEnd:() => { this.setState({ status: STATUS_UPDATE_END }); },
+                onError:(errCode) => { this.onError(errCode); },
+            });
+        } else {
+            Update.updateApp({
+                trackViewUrl,
+                androidApkUrl:app.route.ROUTE_APK_URL,
+                androidApkDownloadDestPath:'/sdcard/pddriver.apk',
+                onDownloadAPKProgress:(progress) => { this.setState({ status: STATUS_DOWNLOAD_APK_PROGESS, progress }); },
+                onError:(errCode) => { this.onError(errCode); },
+            });
+        }
+    },
+    render () {
+        const components = {};
+        const { APP_NAME } = CONSTANTS;
+        const { currentVersion, newVersion, description } = this.state.options || { currentVersion:Update.getVersion() };
+        components[STATUS_GET_VERSION] = (
+            <Text style={styles.textInfo}>正在获取版本号</Text>
+        );
+        components[STATUS_HAS_NOT_VEW_VERSION] = (
+            <Text style={styles.textInfo}>当前版本已经是最新版本</Text>
+        );
+        components[STATUS_GET_VERSION_ERROR] = (
+            <Text style={styles.textInfo}>获取版本信息失败，请稍后再试</Text>
+        );
+        components[STATUS_DOWNKOAD_APK_ERROR] = (
+            <Text style={styles.textInfo}>下载apk文件失败，请稍后再试</Text>
+        );
+        components[STATUS_DOWNKOAD_JS_ERROR] = (
+            <Text style={styles.textInfo}>下载js bundle失败，请稍后再试</Text>
+        );
+        components[STATUS_UNZIP_JS_ERROR] = (
+            <Text style={styles.textInfo}>解压js bundle失败，请稍后再试</Text>
+        );
+        components[STATUS_FAILED_INSTALL_ERROR] = (
+            <Text style={styles.textInfo}>你放弃了安装</Text>
+        );
+        components[STATUS_HAS_VEW_VERSION] = (
+            <View style={styles.textInfoContainer}>
+                <Text style={styles.textInfo}>发现新版本{newVersion}</Text>
+                <View style={styles.descriptionContainer}>
+                    {
+                        description && description.map((item, i) => {
+                            return (
+                                <Text style={styles.textInfo} key={i}>{(i + 1) + '. ' + item}</Text>
+                            );
+                        })
+                    }
+                </View>
+                <Button onPress={this.doUpdate} style={styles.button_layer} textStyle={styles.button_text}>立即更新</Button>
+            </View>
+        );
+        components[STATUS_DOWNLOAD_APK_PROGESS] = (
+            <ProgressInfo
+                title='正在下载APK'
+                progress={this.state.progress} />
+        );
+        components[STATUS_DOWNLOAD_JS_PROGESS] = (
+            <ProgressInfo
+                title='正在下载Bundle文件'
+                progress={this.state.progress} />
+        );
+        components[STATUS_UNZIP_JS_PROGESS] = (
+            <ProgressInfo
+                title='正在解压Bundle文件'
+                progress={this.state.progress} />
+        );
+        components[STATUS_UPDATE_END] = (
+            <Text>正在重启...</Text>
+        );
+        return (
+            <View style={styles.container}>
+                <View style={styles.logoContainer}>
+                    <Image
+                        resizeMode='stretch'
+                        source={app.img.personal_logo}
+                        style={styles.logo}
+                        />
+                    <Text style={styles.app_name}>{APP_NAME + 'V' + currentVersion}</Text>
+                </View>
+                <View style={styles.functionContainer}>
+                    {components[this.state.status]}
+                </View>
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container: {
+        flex:1,
+    },
+    logoContainer: {
+        alignItems:'center',
+        marginTop: 52,
+    },
+    logo: {
+        width: 83,
+        height: 83,
+    },
+    app_name: {
+        marginTop: 13,
+        fontSize: 16,
+        color: '#727272',
+    },
+    functionContainer: {
+        flex: 1,
+        width: sr.w,
+        marginTop: 51,
+        alignItems:'center',
+    },
+    button_layer: {
+        width:178,
+        height:49,
+        borderRadius: 4,
+        left: (sr.w - 178) / 2,
+        position: 'absolute',
+        bottom: 120,
+        backgroundColor: '#DE3031',
+    },
+    button_text: {
+        fontSize: 18,
+        fontWeight: '400',
+        color: '#FFFFFF',
+        alignSelf: 'center',
+        fontFamily: 'STHeitiSC-Medium',
+    },
+    progressText: {
+        flexDirection:'row',
+        justifyContent:'space-between',
+        width: sr.w * 0.7,
+    },
+    textInfoContainer: {
+        flex: 1,
+        width: sr.w,
+    },
+    textInfo: {
+        color: '#000000',
+        fontSize: 18,
+        marginBottom: 6,
+        textAlign: 'center',
+    },
+});
+
+```
+
+* PDDriver/project/App/utils/check/index.js
 
 ```js
 module.exports = {
@@ -4825,28 +9205,16 @@ module.exports = {
         }
     },
     /**
-     * 验证数字为正数且最多包含两位小数
-    */
-    checkInt2PointNum (str) {
-        let re = /^[0-9]+(.[0-9]{1,2})?$/;
-        if (re.test(str)) {
-            return true;
-        } else {
-            return false;
-        }
-    },
-    /**
-     * 验证车牌
+    * 验证车牌
     */
     checkPlate (code) {
         return /^[京津沪渝冀豫云辽黑湘皖鲁新苏浙赣鄂桂甘晋蒙陕吉闽贵粤青藏川宁琼使领A-Z]{1}[A-Z]{1}[A-Z0-9]{4}[A-Z0-9挂学警港澳]{1}$/.test(code);
     },
-
 };
 
 ```
 
-* PDClient/project/App/utils/common/index.js
+* PDDriver/project/App/utils/common/index.js
 
 ```js
 module.exports = {
@@ -4915,36 +9283,11 @@ module.exports = {
         }
         return text;
     },
-    getAddressTitleArray (list = [], lastCode) {
-        let options;
-        let value = [];
-        for (const item of list) {
-            const parent = _.find(item, o => o.code === lastCode) || {};
-            parent.children = options;
-            lastCode = parent.parentCode;
-            parent.name && (value.unshift(parent));
-            options = item;
-        }
-        return value;
-    },
-    getStartPointTitleArray (list = [], lastCode, id) { // 如果始发地是分店或者收货点，则传id，否则不传，一旦传了id，lastCode则无效
-        let options;
-        let value = [];
-        for (const item of list) {
-            const parent = _.find(item, o => !id ? o.code === lastCode : o.id === id) || {};
-            parent.children = options;
-            lastCode = parent.isLeaf ? parent.addressRegionLastCode : parent.parentCode;
-            parent && value.unshift(parent);
-            options = item;
-            id = undefined;
-        }
-        return value;
-    },
 };
 
 ```
 
-* PDClient/project/App/utils/date/index.js
+* PDDriver/project/App/utils/date/index.js
 
 ```js
 const moment = require('moment');
@@ -5029,7 +9372,7 @@ module.exports = {
 
 ```
 
-* PDClient/project/App/utils/net/Get.js
+* PDDriver/project/App/utils/net/Get.js
 
 ```js
 'use strict';
@@ -5062,7 +9405,7 @@ module.exports = GET;
 
 ```
 
-* PDClient/project/App/utils/net/Post.js
+* PDDriver/project/App/utils/net/Post.js
 
 ```js
 'use strict';
@@ -5105,7 +9448,7 @@ module.exports = (url, parameter, success, failed, wait) => {
 
 ```
 
-* PDClient/project/App/utils/net/Upload.js
+* PDDriver/project/App/utils/net/Upload.js
 
 ```js
 'use strict';
@@ -5152,7 +9495,7 @@ module.exports = UPLOAD;
 
 ```
 
-* PDClient/project/App/utils/net/index.js
+* PDDriver/project/App/utils/net/index.js
 
 ```js
 'use strict';
@@ -5165,7 +9508,7 @@ module.exports = {
 
 ```
 
-* PDClient/project/App/utils/qrcode/index.js
+* PDDriver/project/App/utils/qrcode/index.js
 
 ```js
 module.exports = {
@@ -5212,5 +9555,928 @@ module.exports = {
         }
     },
 };
+
+```
+
+* PDDriver/project/App/modules/common/CellPhoneBox.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    Text,
+    View,
+    Linking,
+    TouchableOpacity,
+} = ReactNative;
+
+module.exports = React.createClass({
+    openPhone () {
+        app.closeModal();
+        Linking.canOpenURL('tel:' + this.props.phoneNum).then(supported => {
+            if (!supported) {
+                console.log('Can\'t handle url: ' + this.props.phoneNum);
+            } else {
+                return Linking.openURL('tel:' + this.props.phoneNum);
+            }
+        }).catch(err => console.error('An error occurred', err));
+    },
+    render () {
+        return (
+            <View style={styles.overlayContainer}>
+                <TouchableOpacity
+                    activeOpacity={1}
+                    style={styles.container}>
+                    <View style={styles.topView}>
+                        <Text style={styles.titleText}>
+                            {'拨打电话'}
+                        </Text>
+                    </View>
+                    <TouchableOpacity
+                        onPress={this.openPhone}
+                        style={styles.btnView}>
+                        <Text style={styles.phoneText}>
+                            {this.props.phoneNum}
+                        </Text>
+                    </TouchableOpacity>
+                </TouchableOpacity>
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container: {
+        height: 114,
+        width: sr.w - 50,
+        borderRadius: 4,
+        backgroundColor: '#FFFFFF',
+        alignItems:'center',
+        justifyContent:'center',
+    },
+    overlayContainer: {
+        position:'absolute',
+        top: 0,
+        alignItems:'center',
+        justifyContent: 'center',
+        width:sr.w,
+        height:sr.h,
+    },
+    titleText: {
+        fontSize: 24,
+        color: '#444444',
+        backgroundColor: 'transparent',
+    },
+    topView: {
+        height: 47,
+        width: sr.w - 50,
+        alignItems:'center',
+        justifyContent:'center',
+    },
+    btnView: {
+        height: 57,
+        width: sr.w - 50,
+        alignItems:'center',
+        justifyContent:'center',
+    },
+    phoneText: {
+        fontSize: 18,
+        color: '#666666',
+        backgroundColor: 'transparent',
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/common/ImageCrop.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    ImageStore,
+    ImageEditor,
+} = ReactNative;
+
+const ImageCrop = require('@remobile/react-native-image-crop');
+
+module.exports = React.createClass({
+    mixins: [SceneMixin],
+    statics: {
+        title: '编辑图片',
+        rightButton: { title: '完成', handler: () => {
+            app.scene.cropImage&&app.scene.cropImage();
+        } },
+    },
+    goBack () {
+        app.pop();
+    },
+    cropImage () {
+        const { image } = this.props;
+        const cropData = this.imageCrop.getCropData();
+        ImageEditor.cropImage(
+            image.uri,
+            cropData,
+            (croppedImageURI) => {
+                this.uploadImage(croppedImageURI);
+            },
+            (error) => {
+                Toast('文件出错');
+                this.goBack();
+            }
+        );
+    },
+    uploadImage (filePath) {
+        if (app.isandroid) {
+            const options = {};
+            options.fileKey = 'file';
+            options.fileName = filePath.substr(filePath.lastIndexOf('/') + 1);
+            options.mimeType = 'image/png';
+            options.params = {
+                userId:app.personal.info.userId,
+            };
+            UPLOAD(filePath, app.route.ROUTE_UPDATE_FILE, options, (progress) => console.log(progress), this.uploadSuccessCallback, this.uploadErrorCallback, true);
+        } else {
+            ImageStore.getBase64ForTag(filePath, (data) => {
+                data = 'data:image/png;base64,' + data;
+                const options = {};
+                options.fileKey = 'file';
+                options.fileName = 'image.png';
+                options.mimeType = 'image/png';
+                options.params = {
+                    userId:app.personal.info.userId,
+                };
+                ImageStore.removeImageForTag(filePath);
+                UPLOAD(data, app.route.ROUTE_UPDATE_FILE, options, (progress) => console.log(progress), this.uploadSuccessCallback, this.uploadErrorCallback, true);
+            }, () => {
+                Toast('文件出错');
+                this.goBack();
+            });
+        }
+    },
+    uploadSuccessCallback (data) {
+        if (data.success) {
+            this.props.onCropImage(data.context.url);
+            this.goBack();
+        } else {
+            Toast('上传头像失败');
+            this.goBack();
+        }
+    },
+    uploadErrorCallback () {
+        Toast('上传头像失败');
+        this.goBack();
+    },
+    render () {
+        const { image } = this.props;
+        return (
+            <View style={styles.container}>
+                <ImageCrop
+                    imageWidth={image.width}
+                    imageHeight={image.height}
+                    editRectRadius={0}
+                    ref={(ref) => { this.imageCrop = ref; }}
+                    source={{ uri: image.uri }} />
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/common/ImagePicker.js
+
+```js
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    Image,
+} = ReactNative;
+
+const CameraRollPicker = require('@remobile/react-native-camera-roll-picker');
+const Camera = require('@remobile/react-native-camera');
+const ImageCrop = require('./ImageCrop');
+
+module.exports = React.createClass({
+    statics: {
+        title: '选择头像',
+    },
+    cropImage (image) {
+        app.navigator.replace({
+            component: ImageCrop,
+            passProps: {
+                image,
+                onCropImage: this.props.onCropImage,
+            },
+        });
+    },
+    onSelectedImages (images, image) {
+        this.cropImage(image);
+    },
+    openCamera () {
+        Camera.getPicture((filePath) => {
+            const uri = 'file://' + filePath;
+            Image.getSize(uri, (width, height) => {
+                this.cropImage({
+                    uri,
+                    width,
+                    height,
+                });
+            });
+        }, null, {
+            quality: 100,
+            allowEdit: false,
+            cameraDirection: Camera.Direction.FRONT,
+            destinationType: Camera.DestinationType.FILE_URI,
+        });
+    },
+    render () {
+        return (
+            <CameraRollPicker selected={[]} onSelectedImages={this.onSelectedImages} openCamera={this.openCamera} maximum={1} />
+        );
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/common/SelectClient.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    Text,
+    TextInput,
+    Image,
+    TouchableOpacity,
+} = ReactNative;
+
+const { PageList } = COMPONENTS;
+
+let searchText = '';
+const Title = React.createClass({
+    render () {
+        return (
+            <View style={styles.searchContainer}>
+                <Image
+                    resizeMode='cover'
+                    source={app.img.common_search_button}
+                    style={styles.iconSearch} />
+                <TextInput
+                    placeholder='输入关键字搜索用户'
+                    defaultValue={searchText}
+                    onChangeText={(text) => { searchText = text; }}
+                    onSubmitEditing={this.props.doStartSearch}
+                    style={styles.searchTextInput}
+                    />
+            </View>
+        );
+    },
+});
+
+module.exports = React.createClass({
+    statics: {
+        title: (<Title doStartSearch={() => { app.scene.doStartSearch&&app.scene.doStartSearch(); }} />),
+        rightButton: { title: '搜索', handler: () => { app.scene.refresh&&app.scene.refresh(); } },
+    },
+    getInitialState () {
+        return {
+            keyword: '',
+        };
+    },
+    refresh () {
+        this.setState({ keyword: searchText }, () => {
+            this.listView.refresh();
+        });
+    },
+    onRowSelect (obj) {
+        this.props.onSelect(obj);
+        app.pop();
+    },
+    renderRow (obj, sectionID, rowID) {
+        const { userId } = this.props;
+        const { name, head, email, address, phone, reservePhone } = obj;
+        return (
+            <TouchableOpacity style={styles.row} onPress={this.onRowSelect.bind(null, obj)}>
+                <View style={styles.leftContainer}>
+                    <View style={styles.nameContainer}>
+                        <Image
+                            resizeMode='stretch'
+                            source={head ? { uri: head } : app.img.personal_default_head}
+                            style={styles.head} />
+                        <Text style={styles.name}>{name ? `${name} ( ${phone} )` : phone }</Text>
+                    </View>
+                    <View style={styles.nameContainer}>
+                        <Text style={styles.label}>邮箱：</Text>
+                        <Text style={styles.name}>{ email || '无' }</Text>
+                    </View>
+                    <View style={styles.nameContainer}>
+                        <Text style={styles.label}>住址：</Text>
+                        <Text style={styles.name}>{ address || '无' }</Text>
+                    </View>
+                    <View style={styles.nameContainer}>
+                        <Text style={styles.label}>预留电话：</Text>
+                        <Text style={styles.name}>{ reservePhone ? reservePhone.join('; ') : '无' }</Text>
+                    </View>
+                </View>
+                {
+                    obj.userId === userId &&
+                    <Image resizeMode='stretch' source={app.img.common_radio} style={styles.icon} />
+                }
+            </TouchableOpacity>
+        );
+    },
+    render () {
+        const { keyword } = this.state;
+        return (
+            <View style={styles.container}>
+                <PageList
+                    ref={(ref) => { this.listView = ref; }}
+                    renderRow={this.renderRow}
+                    listParam={{ userId: app.personal.info.userId, keyword }}
+                    listName={'clientList'}
+                    listUrl={app.route.ROUTE_GET_CLIENT_LIST}
+                    refreshEnable
+                    />
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+    },
+    searchContainer: {
+        height: 30,
+        width: 250,
+        paddingVertical: 2,
+        borderRadius: 105,
+        backgroundColor: '#E5E5E5',
+        flexDirection: 'row',
+        overflow: 'hidden',
+        alignItems:'center',
+    },
+    searchTextInput: {
+        height: 25,
+        width: 220,
+        fontSize: 14,
+        marginLeft: 5,
+        overflow: 'hidden',
+        alignItems:'center',
+    },
+    iconSearch: {
+        height: 20,
+        width: 20,
+    },
+    row: {
+        paddingHorizontal: 8,
+        paddingVertical: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    leftContainer: {
+        flex: 1,
+    },
+    nameContainer: {
+        marginTop: 10,
+        flexDirection: 'row',
+        paddingHorizontal: 10,
+        alignItems: 'center',
+    },
+    head: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        marginRight: 5,
+    },
+    name: {
+        fontSize: 14,
+        color: 'gray',
+    },
+    label: {
+        fontSize: 14,
+        color: '#8B8B7A',
+        marginLeft: 34,
+    },
+    icon: {
+        width: 20,
+        height: 16,
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/common/SelectRoadmap.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    Text,
+    TextInput,
+    Image,
+    TouchableOpacity,
+} = ReactNative;
+
+const { PageList } = COMPONENTS;
+
+let searchText = '';
+const Title = React.createClass({
+    render () {
+        return (
+            <View style={styles.searchContainer}>
+                <Image
+                    resizeMode='cover'
+                    source={app.img.common_search_button}
+                    style={styles.iconSearch} />
+                <TextInput
+                    placeholder='输入关键字搜索路线'
+                    defaultValue={searchText}
+                    onChangeText={(text) => { searchText = text; }}
+                    onSubmitEditing={this.props.doStartSearch}
+                    style={styles.searchTextInput}
+                    />
+            </View>
+        );
+    },
+});
+
+module.exports = React.createClass({
+    statics: {
+        title: (<Title doStartSearch={() => { app.scene.doStartSearch&&app.scene.doStartSearch(); }} />),
+        rightButton: { title: '搜索', handler: () => { app.scene.refresh&&app.scene.refresh(); } },
+    },
+    getInitialState () {
+        return {
+            keyword: '',
+        };
+    },
+    refresh () {
+        this.setState({ keyword: searchText }, () => {
+            this.listView.refresh();
+        });
+    },
+    onRowSelect (obj) {
+        this.props.onSelect(obj);
+        app.pop();
+    },
+    renderRow (obj, sectionID, rowID) {
+        const { roadmapId } = this.props;
+        const { name, type, shipperName, shipperLogo, startPoint, endPoint, transitPoint, price, duration } = obj;
+        return (
+            <TouchableOpacity style={styles.row} onPress={this.onRowSelect.bind(null, obj)}>
+                <View style={styles.leftContainer}>
+                    <View style={styles.shipperNameContainer}>
+                        <Image
+                            resizeMode='stretch'
+                            source={{ uri: shipperLogo }}
+                            style={styles.shipperLogo} />
+                        <Text numberOfLines={1} style={styles.shipperName}>{shipperName}</Text>
+                    </View>
+                    <View style={styles.nameContainer}>
+                        <Text numberOfLines={1} style={styles.name}>{name}</Text>
+                        <Text numberOfLines={1} style={[styles.type, { color: type === 0 ? '#228B22' : '#FF4500' }]}>{type === 0 ? '整车' : '零担'}</Text>
+                    </View>
+                    <View style={styles.pointContainer}>
+                        <Text style={styles.name}>{startPoint.name}</Text>
+                        {!!transitPoint[0] && <Text style={styles.name}>→</Text>}
+                        {!!transitPoint[0] && <Text style={styles.name}>{transitPoint[0].name}</Text>}
+                        <Text style={styles.name}>→</Text>
+                        <Text style={styles.name}>{endPoint.name}</Text>
+                    </View>
+                    <View style={styles.priceContainer}>
+                        <Text style={styles.name}><Text style={{ color: '#DAA520' }}>{price}</Text>元/{type === 0 ? '车' : '吨'}</Text>
+                        <Text style={styles.name}>历时<Text style={{ color: '#FF4500' }}>{duration}</Text>小时</Text>
+                    </View>
+                </View>
+                {
+                    obj.id === roadmapId &&
+                    <Image resizeMode='stretch' source={app.img.common_radio} style={styles.icon} />
+                }
+            </TouchableOpacity>
+        );
+    },
+    render () {
+        const { keyword } = this.state;
+        return (
+            <View style={styles.container}>
+                <PageList
+                    ref={(ref) => { this.listView = ref; }}
+                    renderRow={this.renderRow}
+                    listParam={{ userId: app.personal.info.userId, keyword }}
+                    listName={'roadmapList'}
+                    listUrl={app.route.ROUTE_GET_ROADMAP_LIST}
+                    refreshEnable
+                    />
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+    },
+    searchContainer: {
+        height: 30,
+        width: 250,
+        paddingVertical: 2,
+        borderRadius: 105,
+        backgroundColor: '#E5E5E5',
+        flexDirection: 'row',
+        overflow: 'hidden',
+        alignItems:'center',
+    },
+    searchTextInput: {
+        height: 25,
+        width: 220,
+        fontSize: 14,
+        marginLeft: 5,
+        overflow: 'hidden',
+        alignItems:'center',
+    },
+    iconSearch: {
+        height: 20,
+        width: 20,
+    },
+    row: {
+        paddingHorizontal: 8,
+        paddingVertical: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    leftContainer: {
+        flex: 1,
+    },
+    shipperNameContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    shipperContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 20,
+        marginLeft: 10,
+    },
+    shipperLogo: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        marginRight: 5,
+    },
+    shipperName: {
+        fontSize: 14,
+        color: 'gray',
+    },
+    nameContainer: {
+        marginTop: 10,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        alignItems: 'center',
+    },
+    name: {
+        fontSize: 14,
+        color: 'gray',
+    },
+    type: {
+        fontSize: 14,
+    },
+    pointContainer: {
+        marginTop: 10,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+    },
+    priceContainer: {
+        marginTop: 10,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+    },
+    icon: {
+        width: 20,
+        height: 16,
+    },
+});
+
+```
+
+* PDDriver/project/App/modules/common/ShowBigImage.js
+
+```js
+'use strict';
+
+const React = require('react');
+const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    View,
+    Image,
+    TouchableOpacity,
+} = ReactNative;
+
+import Swiper from 'react-native-swiper';
+
+module.exports = React.createClass({
+    getInitialState () {
+        const list = [];
+        const list1 = [];
+        this.props.defaultImageArray.map((item, i) => {
+            if (i >= this.props.defaultIndex) {
+                list1.push(item);
+            } else {
+                list.push(item);
+            }
+        });
+        return {
+            imageList: list1.concat(list),
+        };
+    },
+    render () {
+        return (
+            <View style={styles.overlayContainer}>
+                <Swiper
+                    paginationStyle={styles.paginationStyle}
+                    height={sr.th}>
+                    {
+                           this.state.imageList.map((item, i) => {
+                               return (
+                                   <TouchableOpacity
+                                       key={i}
+                                       activeOpacity={1}
+                                       onPress={app.closeModal}
+                                       style={styles.imageContainer}>
+                                       <Image
+                                           resizeMode='contain'
+                                           defaultSource={app.img.common_default}
+                                           source={{ uri: item }}
+                                           style={styles.bannerImage}
+                                           />
+                                   </TouchableOpacity>
+                               );
+                           })
+                       }
+                </Swiper>
+            </View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    overlayContainer: {
+        flex: 1,
+        alignItems:'center',
+        justifyContent: 'center',
+    },
+    paginationStyle: {
+        bottom: 30,
+    },
+    imageContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    bannerImage: {
+        alignSelf: 'center',
+        width: sr.w,
+        flex: 1,
+    },
+});
+
+```
+
+* PDDriver/project/App/components/ActionSheet/button.js
+
+```js
+'use strict';
+
+const React = require('react');const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+} = ReactNative;
+
+module.exports = React.createClass({
+    render () {
+        return (
+            <TouchableOpacity
+                activeOpacity={0.5}
+                style={[styles.button, this.props.buttonStyle]}
+                onPress={this.props.onPress}>
+                <Text style={[styles.buttonText, this.props.textStyle]}>
+                    {this.props.children}
+                </Text>
+            </TouchableOpacity>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    buttonText: {
+        color: '#A1A2A3',
+        alignSelf: 'center',
+        fontSize: 18,
+    },
+    button: {
+        height: 50,
+        backgroundColor: '#FEFFFF',
+        borderColor: '#EDEEEF',
+        borderBottomWidth: 1,
+        alignSelf: 'stretch',
+        justifyContent: 'center',
+    },
+});
+
+```
+
+* PDDriver/project/App/components/ActionSheet/index.js
+
+```js
+'use strict';
+
+const React = require('react');const ReactNative = require('react-native');
+const {
+    StyleSheet,
+    TouchableOpacity,
+    View,
+} = ReactNative;
+
+const Button = require('./button');
+const Overlay = require('./overlay');
+const Sheet = require('./sheet');
+
+module.exports = React.createClass({
+    getDefaultProps () {
+        return {
+            cancelText: 'Cancel',
+        };
+    },
+    render () {
+        return (
+            <Overlay visible={this.props.visible}>
+                <View style={styles.actionSheetContainer}>
+                    <TouchableOpacity
+                        style={{ flex:1 }}
+                        onPress={this.props.onCancel} />
+                    <Sheet visible={this.props.visible}>
+                        <View style={styles.buttonContainer}>
+                            {this.props.children}
+                        </View>
+                        <Button
+                            buttonStyle={styles.cancelButton}
+                            textStyle={styles.cancelText}
+                            onPress={this.props.onCancel}>{this.props.cancelText}</Button>
+                    </Sheet>
+                </View>
+            </Overlay>
+        );
+    },
+});
+module.exports.Button = Button;
+
+const styles = StyleSheet.create({
+    actionSheetContainer: {
+        flex: 1,
+        padding: 10,
+        paddingBottom: 6,
+        justifyContent: 'flex-end',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    buttonContainer: {
+        borderRadius:6,
+        overflow: 'hidden',
+    },
+    cancelButton: {
+        marginTop:6,
+        marginBottom:6,
+        borderRadius:6,
+        backgroundColor: '#A0D26F',
+        borderBottomWidth: 0,
+    },
+    cancelText: {
+        color:'#FFFFFF',
+    },
+});
+
+```
+
+* PDDriver/project/App/components/ActionSheet/overlay.js
+
+```js
+'use strict';
+
+const React = require('react');const ReactNative = require('react-native');
+const {
+    Animated,
+    StyleSheet,
+} = ReactNative;
+
+const DEFAULT_ANIMATE_TIME = 300;
+
+module.exports = React.createClass({
+    getInitialState () {
+        return {
+            fadeAnim: new Animated.Value(0),
+            overlayStyle: styles.emptyOverlay, // on android opacity=0 also can cover screen, so use overlayStyle fix it
+        };
+    },
+    onAnimatedEnd () {
+        !this.props.visible && this.setState({ overlayStyle:styles.emptyOverlay });
+    },
+    componentWillReceiveProps (newProps) {
+        newProps.visible && this.setState({ overlayStyle: styles.fullOverlay });
+        return Animated.timing(this.state.fadeAnim, {
+            toValue: newProps.visible ? 1 : 0,
+            duration: DEFAULT_ANIMATE_TIME,
+        }).start(this.onAnimatedEnd);
+    },
+
+    render () {
+        return (
+            <Animated.View style={[this.state.overlayStyle, { opacity: this.state.fadeAnim }]}>
+                {this.props.children}
+            </Animated.View>
+        );
+    },
+});
+
+const styles = StyleSheet.create({
+    fullOverlay: {
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: 'transparent',
+        position: 'absolute',
+    },
+    emptyOverlay: {
+        backgroundColor: 'transparent',
+        position: 'absolute',
+        left: -sr.w,
+    },
+});
+
+```
+
+* PDDriver/project/App/components/ActionSheet/sheet.js
+
+```js
+'use strict';
+
+const React = require('react');const ReactNative = require('react-native');
+const {
+    Animated,
+} = ReactNative;
+
+const DEFAULT_BOTTOM = -300;
+const DEFAULT_ANIMATE_TIME = 300;
+
+module.exports = React.createClass({
+    getInitialState () {
+        return {
+            bottom: new Animated.Value(DEFAULT_BOTTOM),
+        };
+    },
+    componentWillReceiveProps (newProps) {
+        return Animated.timing(this.state.bottom, {
+            toValue: newProps.visible ? 0 : DEFAULT_BOTTOM,
+            duration: DEFAULT_ANIMATE_TIME,
+        }).start();
+    },
+
+    render () {
+        return (
+            <Animated.View style={{ bottom: this.state.bottom }}>
+                {this.props.children}
+            </Animated.View>
+        );
+    },
+});
 
 ```
