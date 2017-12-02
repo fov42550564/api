@@ -1,4 +1,4 @@
-* PDShop_Shop_PC/project/App/client/auth.js
+* PDShop_Client_PC/project/App/client/auth.js
 
 ```js
 import routes from 'routers/auth';
@@ -8,7 +8,19 @@ renderRoutes(routes);
 
 ```
 
-* PDShop_Shop_PC/project/App/client/public.js
+* PDShop_Client_PC/project/App/client/client.js
+
+```js
+import 'babel-polyfill';
+
+import routes from 'routers/client';
+import renderRoutes from './helpers/render-routes';
+
+renderRoutes(routes);
+
+```
+
+* PDShop_Client_PC/project/App/client/public.js
 
 ```js
 import routes from 'routers/public';
@@ -18,19 +30,7 @@ renderRoutes(routes);
 
 ```
 
-* PDShop_Shop_PC/project/App/client/shop.js
-
-```js
-import 'babel-polyfill';
-
-import routes from 'routers/shop';
-import renderRoutes from './helpers/render-routes';
-
-renderRoutes(routes);
-
-```
-
-* PDShop_Shop_PC/project/App/server/index.js
+* PDShop_Client_PC/project/App/server/index.js
 
 ```js
 import bodyParser from 'body-parser';
@@ -57,12 +57,12 @@ app.use(bodyParser.json({ limit: 100000000 }));
 // session
 const MongoStore = connectMongo(session);
 app.use(session({
-    secret: '88164657simiantong_shop', // session的密码
+    secret: '88164657simiantong_shipper', // session的密码
     resave: true,
     saveUninitialized: false,
     store: new MongoStore({
         url: config.dbServer,
-        collection: 'sessions_shop',
+        collection: 'sessions_shipper',
     }),
 }));
 
@@ -92,12 +92,12 @@ passport.deserializeUser((user, done) => { // 通过保存的 user 信息到 ses
 
 // Static files
 app.use(express.static(path.resolve('public')));
-app.use(['/shop/favicon.ico', '/shop/images*', '/shop/media*', '/shop/css*', '/shop/fonts*', '/shop/assets*'], (req, res) => {
+app.use(['/client/favicon.ico', '/client/images*', '/client/media*', '/client/css*', '/client/fonts*', '/client/assets*'], (req, res) => {
     res.status(404).end();
 });
 
 // GraphqQL server
-app.use('/shop/graphql', graphqlHTTP(req => ({
+app.use('/client/graphql', graphqlHTTP(req => ({
     schema: schema.getSchema(),
     rootValue: {
         isAuthenticated: req.isAuthenticated(),
@@ -111,7 +111,7 @@ app.use(async (req, res, next) => {
     res.locals.header = [
         {
             tag: 'title',
-            content: '四面通物流大超市行政端',
+            content: '四面通物流大超市客户端',
         },
     ];
 
@@ -131,20 +131,20 @@ app.use(async (req, res, next) => {
     res.locals.footer = [{
         tag: 'script',
         props: {
-            src: `${res.baseScriptsURL}/shop/assets/common.js`,
+            src: `${res.baseScriptsURL}/client/assets/common.js`,
         },
-    }, {
+    }, /* {
         tag: 'script',
         props: {
             src: `http://api.map.baidu.com/api?v=2.0&ak=${config.baiduMapSK}`,
         },
-    } ];
+    }*/];
 
     next();
 });
 
 app.use(routers.authRouter);
-app.use(routers.shopRouter);
+app.use(routers.clientRouter);
 app.use(routers.publicRouter);
 
 app.use((req, res) => {
@@ -166,10 +166,10 @@ export default app;
 
 ```
 
-* PDShop_Shop_PC/project/App/server/schema.js
+* PDShop_Client_PC/project/App/server/schema.js
 
 ```js
-import _ from 'lodash';
+import clone from 'lodash/clone';
 import {
     GraphQLObjectType,
     GraphQLSchema,
@@ -184,8 +184,8 @@ class SchemaManager {
     }
 
     async init () {
-        this.queryFields = _.clone(queries);
-        this.mutationFields = _.clone(mutations);
+        this.queryFields = clone(queries);
+        this.mutationFields = clone(mutations);
 
         this.rootQuery = new GraphQLObjectType({
             name: 'Query',
@@ -214,7 +214,7 @@ export default new SchemaManager();
 
 ```
 
-* PDShop_Shop_PC/project/App/client/helpers/render-routes.js
+* PDShop_Client_PC/project/App/client/helpers/render-routes.js
 
 ```js
 import configureStore from 'helpers/configure-store';
@@ -250,7 +250,220 @@ export default function renderRoutes (routes) {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/actions/accounts.js
+* PDShop_Client_PC/project/App/server/graphql/authorize.js
+
+```js
+export function authorize (root) {
+    if (!root.user) {
+        throw new Error('unauthorized');
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/server/routers/auth.js
+
+```js
+import getDefaultFavicon from 'helpers/default-favicon';
+import getMarkup from 'helpers/get-markup';
+import routeHandler from 'helpers/route-handler';
+import routes from 'routers/auth';
+import { Router } from 'express';
+
+const authRouter = new Router();
+
+function injectScript (req, res, next) {
+    if (process.env.NODE_ENV === 'production') {
+        res.locals.header.push({
+            tag: 'link',
+            props: {
+                rel: 'stylesheet',
+                type: 'text/css',
+                href: '/client/assets/auth.css',
+            },
+        });
+        // res.locals.header.push({
+        //     tag: 'link',
+        //     props: {
+        //         rel: 'stylesheet',
+        //         type: 'text/css',
+        //         href: '/client/assets/common.js.css',
+        //     },
+        // });
+    }
+    res.locals.header.push(getDefaultFavicon(res));
+    res.locals.footer.push({
+        tag: 'script',
+        props: {
+            src: `${res.baseScriptsURL}/client/assets/auth.js`,
+        },
+    });
+    next();
+}
+
+authRouter.get('/client/login', (req, res, next) => {
+    if (req.isAuthenticated()) {
+        res.redirect('/client');
+    } else {
+        routeHandler(routes, req, res, next);
+    }
+});
+
+authRouter.get('/client/logout', (req, res) => {
+    req.logout();
+    res.redirect('/client/login');
+});
+
+authRouter.get(/^\/client\/(register|forgotPwd)$/, (req, res, next) => {
+    routeHandler(routes, req, res, next);
+});
+
+// Register | ForgotPwd
+authRouter.get(/^\/client\/(register|forgotPwd)$/, injectScript, async (req, res, next) => {
+    res.status(200).send(getMarkup(req, res));
+});
+
+// Login
+authRouter.get('/client/login', injectScript, (req, res) => {
+    if (req.isAuthenticated()) {
+        res.redirect('/client');
+    } else {
+        res.status(200).send(getMarkup(req, res));
+    }
+});
+
+export default authRouter;
+
+```
+
+* PDShop_Client_PC/project/App/server/routers/client.js
+
+```js
+import getBaseComponent from 'helpers/get-base-component';
+import getDefaultFavicon from 'helpers/default-favicon';
+import renderHtml from 'helpers/render-html';
+import routeHandler from 'helpers/route-handler';
+import routes from 'routers/client';
+import { Router } from 'express';
+import { graphql } from 'graphql';
+import { getDataDependencies } from 'relatejs';
+
+import schema from '../schema';
+
+const clientRouter = new Router();
+
+clientRouter.get(/^\/client\/.+/, (req, res, next) => {
+    if (req.isAuthenticated()) {
+        res.redirect('/client');
+    } else {
+        next();
+    }
+});
+
+clientRouter.get('/client*', (req, res, next) => {
+    if (req.isAuthenticated()) {
+        if (process.env.NODE_ENV === 'production') {
+            res.locals.header.push(getDefaultFavicon(res));
+            res.locals.header.push({
+                tag: 'link',
+                props: {
+                    rel: 'stylesheet',
+                    type: 'text/css',
+                    href: '/client/assets/client.css',
+                },
+            });
+            // res.locals.header.push({
+            //     tag: 'link',
+            //     props: {
+            //         rel: 'stylesheet',
+            //         type: 'text/css',
+            //         href: '/client/assets/common.js.css',
+            //     },
+            // });
+        }
+        res.locals.footer.push({
+            tag: 'script',
+            props: {
+                src: `${res.baseScriptsURL}/client/assets/client.js`,
+            },
+        });
+        next();
+    } else {
+        res.redirect('/client/login');
+    }
+});
+
+clientRouter.get('/client*', (req, res, next) => {
+    if (req.isAuthenticated()) {
+        routeHandler(routes, req, res, next);
+    } else {
+        next();
+    }
+});
+
+clientRouter.get('/client*', async (req, res, next) => {
+    if (req.isAuthenticated() && req.routerState) {
+        // get component with redux provider and react router
+        const component = getBaseComponent(req);
+        // get relate js data dependencies
+        await getDataDependencies(component, async (request) => await graphql(
+            schema.getSchema(),
+            request.query,
+            {
+                isAuthenticated: true,
+                user: req.user,
+            },
+            request.variables
+        ));
+
+        // final render html
+        res.status(200).send(renderHtml({
+            component,
+            store: req.store,
+            locals: res.locals,
+        }));
+    } else {
+        next();
+    }
+});
+
+export default clientRouter;
+
+```
+
+* PDShop_Client_PC/project/App/server/routers/index.js
+
+```js
+import clientRouter from './client';
+import authRouter from './auth';
+import publicRouter from './public';
+
+export default {
+    clientRouter,
+    authRouter,
+    publicRouter,
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/routers/public.js
+
+```js
+import { Router } from 'express';
+import request from 'request';
+import { urls } from 'helpers/api';
+
+const publicRouter = new Router();
+
+publicRouter.post('/api/uploadFile', (req, res) => {
+    req.pipe(request(urls.uploadFile)).pipe(res);
+});
+
+export default publicRouter;
+
+```
+
+* PDShop_Client_PC/project/App/shared/actions/accounts.js
 
 ```js
 import { apiQuery } from 'relatejs';
@@ -296,226 +509,19 @@ export function weixinPayWithDraw (data, callback) {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/actions/agents.js
+* PDShop_Client_PC/project/App/shared/actions/agentOrders.js
 
 ```js
 import { mutation } from 'relatejs';
 
-export function checkAgentByChairManPhone (chairManPhone, context, callback) {
+export function placeClientOrder (data, context, callback) {
     return (dispatch, getState) => {
         return mutation({
             fragments: {
-                checkAgentByChairManPhone: { success: 1, msg: 1, context },
+                placeClientOrder: { success: 1, msg: 1, context },
             },
             variables: {
-                checkAgentByChairManPhone: {
-                    chairManPhone: {
-                        value: chairManPhone,
-                        type: 'String!',
-                    },
-                },
-            },
-        }, (result) => {
-            callback(result.checkAgentByChairManPhone);
-        })(dispatch, getState);
-    };
-}
-export function createAgent (data, context, callback) {
-    return (dispatch, getState) => {
-        return mutation({
-            fragments: {
-                createAgent: { success: 1, msg: 1, context },
-            },
-            variables: {
-                createAgent: {
-                    data: {
-                        value: data,
-                        type: 'agentInputType!',
-                    },
-                },
-            },
-        }, (result) => {
-            callback(result.createAgent);
-        })(dispatch, getState);
-    };
-}
-export function modifyAgent (data, context, callback) {
-    return (dispatch, getState) => {
-        return mutation({
-            fragments: {
-                modifyAgent: { success: 1, msg: 1, context },
-            },
-            variables: {
-                modifyAgent: {
-                    data: {
-                        value: data,
-                        type: 'agentInputType!',
-                    },
-                },
-            },
-        }, (result) => {
-            callback(result.modifyAgent);
-        })(dispatch, getState);
-    };
-}
-export function removeAgent (agentId, callback) {
-    return (dispatch, getState) => {
-        return mutation({
-            fragments: {
-                removeAgent: { success: 1, msg: 1 },
-            },
-            variables: {
-                removeAgent: {
-                    agentId: {
-                        value: agentId,
-                        type: 'ID!',
-                    },
-                },
-            },
-        }, (result) => {
-            callback(result.removeAgent);
-        })(dispatch, getState);
-    };
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/actions/clients.js
-
-```js
-import { apiQuery } from 'relatejs';
-
-export function getClientNameByPhone (phone, callback) {
-    return () => {
-        return apiQuery({
-            fragments: {
-                getClientNameByPhone: { success: 1, msg: 1, context: { name: 1 } },
-            },
-            variables: {
-                getClientNameByPhone: {
-                    phone: {
-                        value: phone,
-                        type: 'String!',
-                    },
-                },
-            },
-        }, (result) => {
-            callback(result.getClientNameByPhone);
-        })();
-    };
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/actions/members.js
-
-```js
-import { mutation } from 'relatejs';
-
-export function createMember (data, context, callback) {
-    return (dispatch, getState) => {
-        return mutation({
-            fragments: {
-                createMember: { success: 1, msg: 1, context },
-            },
-            variables: {
-                createMember: {
-                    data: {
-                        value: data,
-                        type: 'memberInputType!',
-                    },
-                },
-            },
-        }, (result) => {
-            callback(result.createMember);
-        })(dispatch, getState);
-    };
-}
-export function modifyMember (data, context, callback) {
-    return (dispatch, getState) => {
-        return mutation({
-            fragments: {
-                modifyMember: { success: 1, msg: 1, context },
-            },
-            variables: {
-                modifyMember: {
-                    data: {
-                        value: data,
-                        type: 'memberInputType!',
-                    },
-                },
-            },
-        }, (result) => {
-            callback(result.modifyMember);
-        })(dispatch, getState);
-    };
-}
-export function removeMember (memberId, password, callback) {
-    return (dispatch, getState) => {
-        return mutation({
-            fragments: {
-                removeMember: { success: 1, msg: 1 },
-            },
-            variables: {
-                removeMember: {
-                    memberId: {
-                        value: memberId,
-                        type: 'ID!',
-                    },
-                    password: {
-                        value: password,
-                        type: 'String!',
-                    },
-                },
-            },
-        }, (result) => {
-            callback(result.removeMember);
-        })(dispatch, getState);
-    };
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/actions/notifies.js
-
-```js
-import { mutation } from 'relatejs';
-
-export function sendNotify (data, context, callback) {
-    return (dispatch, getState) => {
-        return mutation({
-            fragments: {
-                sendNotify: { success: 1, msg: 1, context },
-            },
-            variables: {
-                sendNotify: {
-                    data: {
-                        value: data,
-                        type: 'notifyInputType!',
-                    },
-                },
-            },
-        }, (result) => {
-            callback(result.sendNotify);
-        })(dispatch, getState);
-    };
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/actions/orders.js
-
-```js
-import { mutation } from 'relatejs';
-
-export function placeOriginOrder (data, context, callback) {
-    return (dispatch, getState) => {
-        return mutation({
-            fragments: {
-                placeOriginOrder: { success: 1, msg: 1, context },
-            },
-            variables: {
-                placeOriginOrder: {
+                placeClientOrder: {
                     data: {
                         value: data,
                         type: 'orderInputType!',
@@ -523,18 +529,18 @@ export function placeOriginOrder (data, context, callback) {
                 },
             },
         }, (result) => {
-            callback(result.placeOriginOrder);
+            callback(result.placeClientOrder);
         })(dispatch, getState);
     };
 }
-export function placeOriginOrderWithPreOrder (data, context, callback) {
+export function placeClientOrderWithPreOrder (data, context, callback) {
     return (dispatch, getState) => {
         return mutation({
             fragments: {
-                placeOriginOrderWithPreOrder: { success: 1, msg: 1, context },
+                placeClientOrderWithPreOrder: { success: 1, msg: 1, context },
             },
             variables: {
-                placeOriginOrderWithPreOrder: {
+                placeClientOrderWithPreOrder: {
                     data: {
                         value: data,
                         type: 'orderInputType!',
@@ -542,18 +548,18 @@ export function placeOriginOrderWithPreOrder (data, context, callback) {
                 },
             },
         }, (result) => {
-            callback(result.placeOriginOrderWithPreOrder);
+            callback(result.placeClientOrderWithPreOrder);
         })(dispatch, getState);
     };
 }
-export function modifyOriginOrder (data, context, callback) {
+export function modifyClientOrder (data, context, callback) {
     return (dispatch, getState) => {
         return mutation({
             fragments: {
-                modifyOriginOrder: { success: 1, msg: 1, context },
+                modifyClientOrder: { success: 1, msg: 1, context },
             },
             variables: {
-                modifyOriginOrder: {
+                modifyClientOrder: {
                     data: {
                         value: data,
                         type: 'orderInputType!',
@@ -561,18 +567,18 @@ export function modifyOriginOrder (data, context, callback) {
                 },
             },
         }, (result) => {
-            callback(result.modifyOriginOrder);
+            callback(result.modifyClientOrder);
         })(dispatch, getState);
     };
 }
-export function removeOrder (orderId, callback) {
+export function removeClientOrder (orderId, callback) {
     return (dispatch, getState) => {
         return mutation({
             fragments: {
-                removeOrder: { success: 1, msg: 1 },
+                removeClientOrder: { success: 1, msg: 1 },
             },
             variables: {
-                removeOrder: {
+                removeClientOrder: {
                     orderId: {
                         value: orderId,
                         type: 'ID!',
@@ -580,57 +586,18 @@ export function removeOrder (orderId, callback) {
                 },
             },
         }, (result) => {
-            callback(result.removeOrder);
+            callback(result.removeClientOrder);
         })(dispatch, getState);
     };
 }
-
-export function selectRoadmap (data, context, callback) {
+export function confirmCachPayed (orderId, context, callback) {
     return (dispatch, getState) => {
         return mutation({
             fragments: {
-                selectRoadmap: { success: 1, msg: 1, context },
+                confirmCachPayed: { success: 1, msg: 1, context },
             },
             variables: {
-                selectRoadmap: {
-                    data: {
-                        value: data,
-                        type: 'orderInputType!',
-                    },
-                },
-            },
-        }, (result) => {
-            callback(result.selectRoadmap);
-        })(dispatch, getState);
-    };
-}
-export function selectRoadmapForOrderList (orderIdList, callback) {
-    return (dispatch, getState) => {
-        return mutation({
-            fragments: {
-                selectRoadmapForOrderList: { success: 1, msg: 1 },
-            },
-            variables: {
-                selectRoadmapForOrderList: {
-                    orderIdList: {
-                        value: orderIdList,
-                        type: '[ID]!',
-                    },
-                },
-            },
-        }, (result) => {
-            callback(result.selectRoadmapForOrderList);
-        })(dispatch, getState);
-    };
-}
-export function proxyPay (orderId, context, callback) {
-    return (dispatch, getState) => {
-        return mutation({
-            fragments: {
-                proxyPay: { success: 1, msg: 1, context },
-            },
-            variables: {
-                proxyPay: {
+                confirmCachPayed: {
                     orderId: {
                         value: orderId,
                         type: 'ID!',
@@ -638,18 +605,18 @@ export function proxyPay (orderId, context, callback) {
                 },
             },
         }, (result) => {
-            callback(result.proxyPay);
+            callback(result.confirmCachPayed);
         })(dispatch, getState);
     };
 }
-export function proxyPayForOrderList (orderIdList, callback) {
+export function confirmCachPayedForOrderList (orderIdList, callback) {
     return (dispatch, getState) => {
         return mutation({
             fragments: {
-                proxyPayForOrderList: { success: 1, msg: 1 },
+                confirmCachPayedForOrderList: { success: 1, msg: 1 },
             },
             variables: {
-                proxyPayForOrderList: {
+                confirmCachPayedForOrderList: {
                     orderIdList: {
                         value: orderIdList,
                         type: '[ID]!',
@@ -657,7 +624,7 @@ export function proxyPayForOrderList (orderIdList, callback) {
                 },
             },
         }, (result) => {
-            callback(result.proxyPayForOrderList);
+            callback(result.confirmCachPayedForOrderList);
         })(dispatch, getState);
     };
 }
@@ -721,95 +688,333 @@ export function printBarCode (orderId, context, callback) {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/actions/partments.js
+* PDShop_Client_PC/project/App/shared/actions/clients.js
 
 ```js
-import { mutation } from 'relatejs';
+import { apiQuery } from 'relatejs';
 
-export function createPartment (data, context, callback) {
-    return (dispatch, getState) => {
-        return mutation({
+export function getClientNameByPhone (phone, callback) {
+    return () => {
+        return apiQuery({
             fragments: {
-                createPartment: { success: 1, msg: 1, context },
+                getClientNameByPhone: { success: 1, msg: 1, context: { name: 1 } },
             },
             variables: {
-                createPartment: {
-                    data: {
-                        value: data,
-                        type: 'partmentInputType!',
-                    },
-                },
-            },
-        }, (result) => {
-            callback(result.createPartment);
-        })(dispatch, getState);
-    };
-}
-export function modifyPartment (data, context, callback) {
-    return (dispatch, getState) => {
-        return mutation({
-            fragments: {
-                modifyPartment: { success: 1, msg: 1, context },
-            },
-            variables: {
-                modifyPartment: {
-                    data: {
-                        value: data,
-                        type: 'partmentInputType!',
-                    },
-                },
-            },
-        }, (result) => {
-            callback(result.modifyPartment);
-        })(dispatch, getState);
-    };
-}
-export function removePartment (partmentId, password, callback) {
-    return (dispatch, getState) => {
-        return mutation({
-            fragments: {
-                removePartment: { success: 1, msg: 1 },
-            },
-            variables: {
-                removePartment: {
-                    partmentId: {
-                        value: partmentId,
-                        type: 'ID!',
-                    },
-                    password: {
-                        value: password,
+                getClientNameByPhone: {
+                    phone: {
+                        value: phone,
                         type: 'String!',
                     },
                 },
             },
         }, (result) => {
-            callback(result.removePartment);
-        })(dispatch, getState);
+            callback(result.getClientNameByPhone);
+        })();
     };
 }
-export function modifyOwnPartment (data, context, callback) {
+
+```
+
+* PDShop_Client_PC/project/App/shared/actions/members.js
+
+```js
+import { mutation, apiQuery } from 'relatejs';
+
+export function modifyShipperMemberAuthority (memberId, authority, context, callback) {
     return (dispatch, getState) => {
         return mutation({
             fragments: {
-                modifyOwnPartment: { success: 1, msg: 1, context },
+                modifyShipperMemberAuthority: { success: 1, msg: 1, context },
             },
             variables: {
-                modifyOwnPartment: {
-                    data: {
-                        value: data,
-                        type: 'partmentInputType!',
+                modifyShipperMemberAuthority: {
+                    memberId: {
+                        value: memberId,
+                        type: 'ID!',
+                    },
+                    authority: {
+                        value: authority,
+                        type: '[Int]!',
                     },
                 },
             },
         }, (result) => {
-            callback(result.modifyOwnPartment);
+            callback(result.modifyShipperMemberAuthority);
+        })(dispatch, getState);
+    };
+}
+
+export function getShipperMemberByPhone (memberPhone, context, callback) {
+    return () => {
+        return apiQuery({
+            fragments: {
+                getShipperMemberByPhone: { success: 1, msg: 1, context },
+            },
+            variables: {
+                getShipperMemberByPhone: {
+                    memberPhone: {
+                        value: memberPhone,
+                        type: 'String!',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.getShipperMemberByPhone);
+        })();
+    };
+}
+
+// 收货点
+export function modifyAgentMemberAuthority (memberId, authority, context, callback) {
+    return (dispatch, getState) => {
+        return mutation({
+            fragments: {
+                modifyAgentMemberAuthority: { success: 1, msg: 1, context },
+            },
+            variables: {
+                modifyAgentMemberAuthority: {
+                    memberId: {
+                        value: memberId,
+                        type: 'ID!',
+                    },
+                    authority: {
+                        value: authority,
+                        type: '[Int]!',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.modifyAgentMemberAuthority);
+        })(dispatch, getState);
+    };
+}
+
+export function getAgentMemberByPhone (memberPhone, context, callback) {
+    return () => {
+        return apiQuery({
+            fragments: {
+                getAgentMemberByPhone: { success: 1, msg: 1, context },
+            },
+            variables: {
+                getAgentMemberByPhone: {
+                    memberPhone: {
+                        value: memberPhone,
+                        type: 'String!',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.getAgentMemberByPhone);
+        })();
+    };
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/actions/orders.js
+
+```js
+import { mutation } from 'relatejs';
+
+export function placePreOrder (data, context, callback) {
+    return (dispatch, getState) => {
+        return mutation({
+            fragments: {
+                placePreOrder: { success: 1, msg: 1, context },
+            },
+            variables: {
+                placePreOrder: {
+                    data: {
+                        value: data,
+                        type: 'orderInputType!',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.placePreOrder);
+        })(dispatch, getState);
+    };
+}
+export function modifyPreOrder (data, context, callback) {
+    return (dispatch, getState) => {
+        return mutation({
+            fragments: {
+                modifyPreOrder: { success: 1, msg: 1, context },
+            },
+            variables: {
+                modifyPreOrder: {
+                    data: {
+                        value: data,
+                        type: 'orderInputType!',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.modifyPreOrder);
+        })(dispatch, getState);
+    };
+}
+export function removePreOrder (orderId, callback) {
+    return (dispatch, getState) => {
+        return mutation({
+            fragments: {
+                removePreOrder: { success: 1, msg: 1 },
+            },
+            variables: {
+                removePreOrder: {
+                    orderId: {
+                        value: orderId,
+                        type: 'ID!',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.removePreOrder);
+        })(dispatch, getState);
+    };
+}
+export function createPreOrderGroup (data, callback) {
+    return (dispatch, getState) => {
+        return mutation({
+            fragments: {
+                createPreOrderGroup: { success: 1, msg: 1 },
+            },
+            variables: {
+                createPreOrderGroup: {
+                    data: {
+                        value: data,
+                        type: 'orderGroupInputType!',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.createPreOrderGroup);
+        })(dispatch, getState);
+    };
+}
+export function modifyPreOrderGroup (data, callback) {
+    return (dispatch, getState) => {
+        return mutation({
+            fragments: {
+                modifyPreOrderGroup: { success: 1, msg: 1 },
+            },
+            variables: {
+                modifyPreOrderGroup: {
+                    data: {
+                        value: data,
+                        type: 'orderGroupInputType!',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.modifyPreOrderGroup);
+        })(dispatch, getState);
+    };
+}
+export function removePreOrderFromGroup (orderIdList, orderGroupId, callback) {
+    return (dispatch, getState) => {
+        return mutation({
+            fragments: {
+                removePreOrderFromGroup: { success: 1, msg: 1 },
+            },
+            variables: {
+                removePreOrderFromGroup: {
+                    orderIdList: {
+                        value: orderIdList,
+                        type: '[ID]!',
+                    },
+                    orderGroupId: {
+                        value: orderGroupId,
+                        type: 'ID!',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.removePreOrderFromGroup);
+        })(dispatch, getState);
+    };
+}
+export function payForOrderWhenSend (orderIdList, payPassword, callback) {
+    return (dispatch, getState) => {
+        return mutation({
+            fragments: {
+                payForOrderWhenSend: { success: 1, msg: 1 },
+            },
+            variables: {
+                payForOrderWhenSend: {
+                    orderIdList: {
+                        value: orderIdList,
+                        type: '[ID]!',
+                    },
+                    payPassword: {
+                        value: payPassword,
+                        type: 'String!',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.payForOrderWhenSend);
+        })(dispatch, getState);
+    };
+}
+export function finishOrder (orderId, verifyCode, callback) {
+    return (dispatch, getState) => {
+        return mutation({
+            fragments: {
+                finishOrder: { success: 1, msg: 1 },
+            },
+            variables: {
+                finishOrder: {
+                    orderId: {
+                        value: orderId,
+                        type: 'ID!',
+                    },
+                    verifyCode: {
+                        value: verifyCode,
+                        type: 'String',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.finishOrder);
+        })(dispatch, getState);
+    };
+}
+export function setClientPickOrderTransportFee ({ orderId, isTransport, endPoint, transportFee }, callback) {
+    return (dispatch, getState) => {
+        return mutation({
+            fragments: {
+                setClientPickOrderTransportFee: { success: 1, msg: 1 },
+            },
+            variables: {
+                setClientPickOrderTransportFee: {
+                    orderId: {
+                        value: orderId,
+                        type: 'ID!',
+                    },
+                    isTransport: {
+                        value: isTransport,
+                        type: 'Boolean!',
+                    },
+                    endPoint: {
+                        value: endPoint,
+                        type: 'String',
+                    },
+                    transportFee: {
+                        value: transportFee,
+                        type: 'Float',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.setClientPickOrderTransportFee);
         })(dispatch, getState);
     };
 }
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/actions/personals.js
+* PDShop_Client_PC/project/App/shared/actions/personals.js
 
 ```js
 import { apiQuery, apiMutation, mutation } from 'relatejs';
@@ -843,7 +1048,7 @@ export function register (data, callback) {
                 register: {
                     data: {
                         value: data,
-                        type: 'memberInputType!',
+                        type: 'personalInfoInputType!',
                     },
                 },
             },
@@ -885,7 +1090,7 @@ export function forgotPwd (data, callback) {
                 forgotPwd: {
                     data: {
                         value: data,
-                        type: 'memberInputType!',
+                        type: 'personalInfoInputType!',
                     },
                 },
             },
@@ -904,7 +1109,7 @@ export function setPaymentPassword (data, callback) {
                 setPaymentPassword: {
                     data: {
                         value: data,
-                        type: 'memberInputType!',
+                        type: 'personalInfoInputType!',
                     },
                 },
             },
@@ -946,7 +1151,7 @@ export function modifyPersonalInfo (data, context, callback) {
                 modifyPersonalInfo: {
                     data: {
                         value: data,
-                        type: 'memberInputType!',
+                        type: 'personalInfoInputType!',
                     },
                 },
             },
@@ -955,152 +1160,14 @@ export function modifyPersonalInfo (data, context, callback) {
         })(dispatch, getState);
     };
 }
-
-```
-
-* PDShop_Shop_PC/project/App/shared/actions/roadmaps.js
-
-```js
-import { mutation } from 'relatejs';
-
-export function setRoadmapProfit (data, callback) {
+export function modifyShipperInfo (data, context, callback) {
     return (dispatch, getState) => {
         return mutation({
             fragments: {
-                setRoadmapProfit: { success: 1, msg: 1 },
+                modifyShipperInfo: { success: 1, msg: 1, context },
             },
             variables: {
-                setRoadmapProfit: {
-                    data: {
-                        value: data,
-                        type: 'roadmapInputType!',
-                    },
-                },
-            },
-        }, (result) => {
-            callback(result.setRoadmapProfit);
-        })(dispatch, getState);
-    };
-}
-export function setRegionRateProfit (data, callback) {
-    return (dispatch, getState) => {
-        return mutation({
-            fragments: {
-                setRegionRateProfit: { success: 1, msg: 1 },
-            },
-            variables: {
-                setRegionRateProfit: {
-                    data: {
-                        value: data,
-                        type: 'regionRateInputType!',
-                    },
-                },
-            },
-        }, (result) => {
-            callback(result.setRegionRateProfit);
-        })(dispatch, getState);
-    };
-}
-export function addRoadmapRegionProfitRate (data, context, callback) {
-    return (dispatch, getState) => {
-        return mutation({
-            fragments: {
-                addRoadmapRegionProfitRate: { success: 1, msg: 1, context },
-            },
-            variables: {
-                addRoadmapRegionProfitRate: {
-                    data: {
-                        value: data,
-                        type: 'regionRateInputType!',
-                    },
-                },
-            },
-        }, (result) => {
-            callback(result.addRoadmapRegionProfitRate);
-        })(dispatch, getState);
-    };
-}
-export function modifyRoadmapRegionProfitRate (data, context, callback) {
-    return (dispatch, getState) => {
-        return mutation({
-            fragments: {
-                modifyRoadmapRegionProfitRate: { success: 1, msg: 1, context },
-            },
-            variables: {
-                modifyRoadmapRegionProfitRate: {
-                    data: {
-                        value: data,
-                        type: 'regionRateInputType!',
-                    },
-                },
-            },
-        }, (result) => {
-            callback(result.modifyRoadmapRegionProfitRate);
-        })(dispatch, getState);
-    };
-}
-export function removeRoadmapRegionProfitRate (regionRateId, callback) {
-    return (dispatch, getState) => {
-        return mutation({
-            fragments: {
-                removeRoadmapRegionProfitRate: { success: 1, msg: 1 },
-            },
-            variables: {
-                removeRoadmapRegionProfitRate: {
-                    regionRateId: {
-                        value: regionRateId,
-                        type: 'ID!',
-                    },
-                },
-            },
-        }, (result) => {
-            callback(result.removeRoadmapRegionProfitRate);
-        })(dispatch, getState);
-    };
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/actions/settings.js
-
-```js
-import { mutation } from 'relatejs';
-
-export function modifySetting (data, context, callback) {
-    return (dispatch, getState) => {
-        return mutation({
-            fragments: {
-                modifySetting: { success: 1, msg: 1, context },
-            },
-            variables: {
-                modifySetting: {
-                    data: {
-                        value: data,
-                        type: 'settingInputType!',
-                    },
-                },
-            },
-        }, (result) => {
-            callback(result.modifySetting);
-        })(dispatch, getState);
-    };
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/actions/shippers.js
-
-```js
-import { mutation, apiQuery } from 'relatejs';
-
-export function modifyShipper (data, context, callback) {
-    return (dispatch, getState) => {
-        return mutation({
-            fragments: {
-                modifyShipper: { success: 1, msg: 1, context },
-            },
-            variables: {
-                modifyShipper: {
+                modifyShipperInfo: {
                     data: {
                         value: data,
                         type: 'shipperInputType!',
@@ -1108,160 +1175,57 @@ export function modifyShipper (data, context, callback) {
                 },
             },
         }, (result) => {
-            callback(result.modifyShipper);
+            callback(result.modifyShipperInfo);
         })(dispatch, getState);
     };
 }
-export function createAndRegisterShipper (data, context, callback) {
+export function modifyAgentInfo (data, context, callback) {
     return (dispatch, getState) => {
         return mutation({
             fragments: {
-                createAndRegisterShipper: { success: 1, msg: 1, context },
+                modifyAgentInfo: { success: 1, msg: 1, context },
             },
             variables: {
-                createAndRegisterShipper: {
+                modifyAgentInfo: {
                     data: {
                         value: data,
-                        type: 'shipperInputType!',
+                        type: 'agentInputType!',
                     },
                 },
             },
         }, (result) => {
-            callback(result.createAndRegisterShipper);
+            callback(result.modifyAgentInfo);
         })(dispatch, getState);
     };
 }
-export function registerShipper (data, context, callback) {
-    return (dispatch, getState) => {
-        return mutation({
-            fragments: {
-                registerShipper: { success: 1, msg: 1, context },
-            },
-            variables: {
-                registerShipper: {
-                    data: {
-                        value: data,
-                        type: 'shipperInputType!',
-                    },
-                },
-            },
-        }, (result) => {
-            callback(result.registerShipper);
-        })(dispatch, getState);
-    };
-}
-export function getShipperByChairManPhone (chairManPhone, context, callback) {
+export function getUserNameByPhone (phone, callback) {
     return () => {
         return apiQuery({
             fragments: {
-                getShipperByChairManPhone: { success: 1, msg: 1, context },
+                getUserNameByPhone: { success: 1, msg: 1, context: { name: 1 } },
             },
             variables: {
-                getShipperByChairManPhone: {
-                    chairManPhone: {
-                        value: chairManPhone,
+                getUserNameByPhone: {
+                    phone: {
+                        value: phone,
                         type: 'String!',
                     },
                 },
             },
         }, (result) => {
-            callback(result.getShipperByChairManPhone);
+            callback(result.getUserNameByPhone);
         })();
     };
 }
-export function passExamineTruck (truckId, callback) {
+
+export function setReferShop (shopId, callback) {
     return (dispatch, getState) => {
         return mutation({
             fragments: {
-                passExamineTruck: { success: 1, msg: 1 },
+                setReferShop: { success: 1, msg: 1 },
             },
             variables: {
-                passExamineTruck: {
-                    truckId: {
-                        value: truckId,
-                        type: 'ID!',
-                    },
-                },
-            },
-        }, (result) => {
-            callback(result.passExamineTruck);
-        })(dispatch, getState);
-    };
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/actions/shops.js
-
-```js
-import { mutation } from 'relatejs';
-
-export function modifyOwnShop (data, context, callback) {
-    return (dispatch, getState) => {
-        return mutation({
-            fragments: {
-                modifyOwnShop: { success: 1, msg: 1, context },
-            },
-            variables: {
-                modifyOwnShop: {
-                    data: {
-                        value: data,
-                        type: 'shopInputType!',
-                    },
-                },
-            },
-        }, (result) => {
-            callback(result.modifyOwnShop);
-        })(dispatch, getState);
-    };
-}
-
-export function createBranchShop (data, context, callback) {
-    return (dispatch, getState) => {
-        return mutation({
-            fragments: {
-                createBranchShop: { success: 1, msg: 1, context },
-            },
-            variables: {
-                createBranchShop: {
-                    data: {
-                        value: data,
-                        type: 'shopInputType!',
-                    },
-                },
-            },
-        }, (result) => {
-            callback(result.createBranchShop);
-        })(dispatch, getState);
-    };
-}
-export function modifyBranchShop (data, context, callback) {
-    return (dispatch, getState) => {
-        return mutation({
-            fragments: {
-                modifyBranchShop: { success: 1, msg: 1, context },
-            },
-            variables: {
-                modifyBranchShop: {
-                    data: {
-                        value: data,
-                        type: 'shopInputType!',
-                    },
-                },
-            },
-        }, (result) => {
-            callback(result.modifyBranchShop);
-        })(dispatch, getState);
-    };
-}
-export function removeBranchShop (shopId, callback) {
-    return (dispatch, getState) => {
-        return mutation({
-            fragments: {
-                removeBranchShop: { success: 1, msg: 1 },
-            },
-            variables: {
-                removeBranchShop: {
+                setReferShop: {
                     shopId: {
                         value: shopId,
                         type: 'ID!',
@@ -1269,169 +1233,499 @@ export function removeBranchShop (shopId, callback) {
                 },
             },
         }, (result) => {
-            callback(result.removeBranchShop);
+            callback(result.setReferShop);
         })(dispatch, getState);
     };
 }
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/actions/warehouses.js
+* PDShop_Client_PC/project/App/shared/actions/roadmaps.js
 
 ```js
 import { mutation } from 'relatejs';
 
-export function createWarehouse (data, context, callback) {
+export function publishRoadmap (data, context, callback) {
     return (dispatch, getState) => {
         return mutation({
             fragments: {
-                createWarehouse: { success: 1, msg: 1, context },
+                publishRoadmap: { success: 1, msg: 1, context },
             },
             variables: {
-                createWarehouse: {
+                publishRoadmap: {
                     data: {
                         value: data,
-                        type: 'warehouseInputType!',
+                        type: 'roadmapInputType!',
                     },
                 },
             },
         }, (result) => {
-            callback(result.createWarehouse);
+            callback(result.publishRoadmap);
         })(dispatch, getState);
     };
 }
-export function modifyWarehouse (data, context, callback) {
+export function modifyRoadmap (data, context, callback) {
     return (dispatch, getState) => {
         return mutation({
             fragments: {
-                modifyWarehouse: { success: 1, msg: 1, context },
+                modifyRoadmap: { success: 1, msg: 1, context },
             },
             variables: {
-                modifyWarehouse: {
+                modifyRoadmap: {
                     data: {
                         value: data,
-                        type: 'warehouseInputType!',
+                        type: 'roadmapInputType!',
                     },
                 },
             },
         }, (result) => {
-            callback(result.modifyWarehouse);
+            callback(result.modifyRoadmap);
         })(dispatch, getState);
     };
 }
-export function removeWarehouse (regionRateId, password, callback) {
+export function removeRoadmap (roadmapId, callback) {
     return (dispatch, getState) => {
         return mutation({
             fragments: {
-                removeWarehouse: { success: 1, msg: 1 },
+                removeRoadmap: { success: 1, msg: 1 },
             },
             variables: {
-                removeWarehouse: {
-                    warehouseId: {
-                        value: regionRateId,
+                removeRoadmap: {
+                    roadmapId: {
+                        value: roadmapId,
                         type: 'ID!',
                     },
-                    password:{
-                        value: password,
-                        type:'String!',
+                },
+            },
+        }, (result) => {
+            callback(result.removeRoadmap);
+        })(dispatch, getState);
+    };
+}
+export function setRoadmapPrice (data, callback) {
+    return (dispatch, getState) => {
+        return mutation({
+            fragments: {
+                setRoadmapPrice: { success: 1, msg: 1 },
+            },
+            variables: {
+                setRoadmapPrice: {
+                    data: {
+                        value: data,
+                        type: 'setRoadmapPriceType!',
                     },
                 },
             },
         }, (result) => {
-            callback(result.removeWarehouse);
+            callback(result.setRoadmapPrice);
+        })(dispatch, getState);
+    };
+}
+export function setRoadmapSendDoorPrice (data, context, callback) {
+    return (dispatch, getState) => {
+        return mutation({
+            fragments: {
+                setRoadmapSendDoorPrice: { success: 1, msg: 1, context },
+            },
+            variables: {
+                setRoadmapSendDoorPrice: {
+                    data: {
+                        value: data,
+                        type: 'setRoadmapSendDoorPriceType!',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.setRoadmapSendDoorPrice);
+        })(dispatch, getState);
+    };
+}
+export function setRoadmapSendDoorBasePrice (data, context, callback) {
+    return (dispatch, getState) => {
+        return mutation({
+            fragments: {
+                setRoadmapSendDoorBasePrice: { success: 1, msg: 1, context },
+            },
+            variables: {
+                setRoadmapSendDoorBasePrice: {
+                    data: {
+                        value: data,
+                        type: 'setRoadmapSendDoorPriceType!',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.setRoadmapSendDoorBasePrice);
+        })(dispatch, getState);
+    };
+}
+export function setRoadmapEnable (roadmapIdList, enable, callback) {
+    return (dispatch, getState) => {
+        return mutation({
+            fragments: {
+                setRoadmapEnable: { success: 1, msg: 1 },
+            },
+            variables: {
+                setRoadmapEnable: {
+                    roadmapIdList: {
+                        value: roadmapIdList,
+                        type: '[ID]!',
+                    },
+                    enable: {
+                        value: enable,
+                        type: 'Boolean!',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.setRoadmapEnable);
+        })(dispatch, getState);
+    };
+}
+export function setRoadmapSendDoorEnable (roadmapId, lastCodeList, enable, callback) {
+    return (dispatch, getState) => {
+        return mutation({
+            fragments: {
+                setRoadmapSendDoorEnable: { success: 1, msg: 1 },
+            },
+            variables: {
+                setRoadmapSendDoorEnable: {
+                    roadmapId: {
+                        value: roadmapId,
+                        type: 'ID!',
+                    },
+                    lastCodeList: {
+                        value: lastCodeList,
+                        type: '[Int]!',
+                    },
+                    enable: {
+                        value: enable,
+                        type: 'Boolean!',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.setRoadmapSendDoorEnable);
+        })(dispatch, getState);
+    };
+}
+
+export function addRegionProfit (data, context, callback) {
+    return (dispatch, getState) => {
+        return mutation({
+            fragments: {
+                addRegionProfit: { success: 1, msg: 1, context },
+            },
+            variables: {
+                addRegionProfit: {
+                    data: {
+                        value: data,
+                        type: 'regionRateInputType',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.addRegionProfit);
+        })(dispatch, getState);
+    };
+}
+
+export function modifyRegionProfit (data, context, callback) {
+    return (dispatch, getState) => {
+        return mutation({
+            fragments: {
+                modifyRegionProfit: { success: 1, msg: 1, context },
+            },
+            variables: {
+                modifyRegionProfit: {
+                    data: {
+                        value: data,
+                        type: 'regionRateInputType',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.modifyRegionProfit);
+        })(dispatch, getState);
+    };
+}
+
+export function removeRegionProfit (regionId, callback) {
+    return (dispatch, getState) => {
+        return mutation({
+            fragments: {
+                removeRegionProfit: { success: 1, msg: 1 },
+            },
+            variables: {
+                removeRegionProfit: {
+                    regionId: {
+                        value: regionId,
+                        type: 'ID!',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.removeRegionProfit);
+        })(dispatch, getState);
+    };
+}
+
+export function setRegionProfitWithList (data, callback) {
+    return (dispatch, getState) => {
+        return mutation({
+            fragments: {
+                setRegionProfitWithList: { success: 1, msg: 1 },
+            },
+            variables: {
+                setRegionProfitWithList: {
+                    regionIdList: {
+                        value: data.regionIdList,
+                        type: '[ID]!',
+                    },
+                    profitRate: {
+                        value: data.profitRate,
+                        type: 'Float',
+                    },
+                    profitCount: {
+                        value: data.profitCount,
+                        type: 'Float',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.setRegionProfitWithList);
+        })(dispatch, getState);
+    };
+}
+
+
+```
+
+* PDShop_Client_PC/project/App/shared/actions/trucks.js
+
+```js
+import { mutation, apiQuery, apiMutation } from 'relatejs';
+
+export function createTruck (data, context, callback) {
+    return (dispatch, getState) => {
+        return mutation({
+            fragments: {
+                createTruck: { success: 1, msg: 1, context },
+            },
+            variables: {
+                createTruck: {
+                    data: {
+                        value: data,
+                        type: 'truckInputType!',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.createTruck);
+        })(dispatch, getState);
+    };
+}
+export function modifyTruck (data, context, callback) {
+    return (dispatch, getState) => {
+        return mutation({
+            fragments: {
+                modifyTruck: { success: 1, msg: 1, context },
+            },
+            variables: {
+                modifyTruck: {
+                    data: {
+                        value: data,
+                        type: 'truckInputType!',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.modifyTruck);
+        })(dispatch, getState);
+    };
+}
+export function removeTruck (truckId, callback) {
+    return (dispatch, getState) => {
+        return mutation({
+            fragments: {
+                removeTruck: { success: 1, msg: 1 },
+            },
+            variables: {
+                removeTruck: {
+                    truckId: {
+                        value: truckId,
+                        type: 'ID!',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.removeTruck);
+        })(dispatch, getState);
+    };
+}
+export function getDriverNameByPhone (phone, callback) {
+    return () => {
+        return apiQuery({
+            fragments: {
+                getDriverNameByPhone: { id: 1, name: 1, phone: 1 },
+            },
+            variables: {
+                getDriverNameByPhone: {
+                    phone: {
+                        value: phone,
+                        type: 'String!',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.getDriverNameByPhone);
+        })();
+    };
+}
+export function selectCarryPartment (truckId, carryPartmentId, callback) {
+    return () => {
+        return apiMutation({
+            fragments: {
+                selectCarryPartment: { success: 1, msg: 1 },
+            },
+            variables: {
+                selectCarryPartment: {
+                    truckId: {
+                        value: truckId,
+                        type: 'ID!',
+                    },
+                    carryPartmentId: {
+                        value: carryPartmentId,
+                        type: 'ID!',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.selectCarryPartment);
+        })();
+    };
+}
+export function payforCarryPartment (truckId, callback) {
+    return () => {
+        return apiMutation({
+            fragments: {
+                payforCarryPartment: { success: 1, msg: 1 },
+            },
+            variables: {
+                payforCarryPartment: {
+                    truckId: {
+                        value: truckId,
+                        type: 'ID!',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.payforCarryPartment);
+        })();
+    };
+}
+export function setCityTruck (data, callback) {
+    return (dispatch, getState) => {
+        return mutation({
+            fragments: {
+                setCityTruck: { success: 1, msg: 1 },
+            },
+            variables: {
+                setCityTruck: {
+                    plateNo: {
+                        value: data,
+                        type: 'String!',
+                    },
+                },
+            },
+        }, (result) => {
+            callback(result.setCityTruck);
         })(dispatch, getState);
     };
 }
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/config/menu.js
+* PDShop_Client_PC/project/App/shared/config/menu.js
 
 ```js
 import AH from '../constants/authority';
+import CO from '../constants/common';
 import _ from 'lodash';
 
 export default [
     {
-        label: '部门',
-        link: '/shop/partments',
-        auth: [AH.AH_LOOK_PARTMENT, AH.AH_CREATE_PARTMENT, AH.AH_MODIFY_PARTMENT, AH.AH_REMOVE_PARTMENT],
+        label: '下单',
+        link: '/client/placeOrder',
+        auth: [AH.AH_PLACE_ORDER],
     },
     {
-        label: '分店',
-        link: '/shop/branchShops',
-        auth: [AH.AH_LOOK_BRANCH_SHOP, AH.AH_CREATE_BRANCH_SHOP, AH.AH_MODIFY_BRANCH_SHOP, AH.AH_REMOVE_BRANCH_SHOP],
+        label: '货单列表',
+        link: '/client/rcorders',
+        auth: [AH.AH_PLACE_ORDER],
     },
     {
-        label: '收货点',
-        link: '/shop/agents',
-        auth: [AH.AH_LOOK_AGENT, AH.AH_CREATE_AGENT, AH.AH_MODIFY_AGENT, AH.AH_REMOVE_AGENT],
+        label: '路线设置',
+        link: '/client/roadmaps',
+        auth: [AH.AH_LOOK_ROADMAP, AH.AH_CREATE_ROADMAP, AH.AH_MODIFY_ROADMAP, AH.AH_REMOVE_ROADMAP],
     },
     {
-        label: '参数设置',
-        link: '/shop/setting',
-        auth: [AH.AH_MODIFY_SETTING],
+        label: '路线设置',
+        link: '/client/sendDoorRoadmaps',
+        auth: [AH.AH_LOOK_SEND_DOOR_ROADMAP, AH.AH_CREATE_SEND_DOOR_ROADMAP, AH.AH_MODIFY_SEND_DOOR_ROADMAP, AH.AH_REMOVE_SEND_DOOR_ROADMAP],
     },
     {
-        label: '物流公司',
-        link: '/shop/shippers',
-        auth: [AH.AH_LOOK_SHIPPER, AH.AH_CREATE_SHIPPER, AH.AH_MODIFY_SHIPPER, AH.AH_REMOVE_SHIPPER],
+        label: '竞得货物',
+        link: '/client/needSendOrders',
+        auth: [AH.AH_LOOK_TRUCK, AH.AH_CREATE_TRUCK, AH.AH_MODIFY_TRUCK, AH.AH_REMOVE_TRUCK],
     },
     {
-        label: '路线提成',
-        link: '/shop/roadmaps',
-        auth: [AH.AH_MODIFY_ROADMAP_PROFIT, AH.AH_LOOK_ROADMAP],
+        label: '我的货车',
+        link: '/client/trucks',
+        auth: [AH.AH_LOOK_TRUCK, AH.AH_CREATE_TRUCK, AH.AH_MODIFY_TRUCK, AH.AH_REMOVE_TRUCK],
     },
     {
         label: '方向提成',
-        link: '/shop/regionRates',
+        link: '/client/regionRates',
         auth: [AH.AH_MODIFY_ROADMAP_PROFIT],
     },
     {
-        label: '货车审核',
-        link: '/shop/trucks',
-        auth: [AH.AH_TO_EXAMINE_TRUCK],
+        label: '承运货单',
+        link: '/client/scorders',
+        auth: (user) => user.shipper && user.shipper.shipperType === CO.ST_CITY && _.includes(user.authority, AH.AH_LOOK_ORDERS),
     },
     {
-        label: '仓库管理',
-        link: '/shop/warehouses',
-        auth: [AH.AH_CREATE_WAREHOUSE, AH.AH_MODIFY_WAREHOUSE, AH.AH_REMOVE_WAREHOUSE, AH.AH_LOOK_WAREHOUSE],
+        label: '承运货单',
+        link: '/client/sporders',
+        auth: (user) => user.shipper && user.shipper.shipperType === CO.ST_LONG && _.includes(user.authority, AH.AH_LOOK_ORDERS),
     },
-    {
-        label: '货单',
-        link: '/shop/orders',
-        auth: member => !member.partment && _.includes(member.authority, AH.AH_LOOK_ORDERS),
-    },
-    {
-        label: '下单',
-        link: '/shop/placeOrder',
-        auth: [AH.AH_RECEIVE_PARTMENT],
-    },
-    {
-        label: '货单',
-        link: '/shop/rporders',
-        auth: [AH.AH_RECEIVE_PARTMENT],
-    },
-    {
-        label: '货单',
-        link: '/shop/whorders',
-        auth: [AH.AH_WARE_HOUSE_PARTMENT],
-    },
-    {
-        label: '客户',
-        link: '/shop/clients',
-        auth: false,
-    },
+
     {
         label: '业务统计',
-        link: '/shop/statistics',
-        auth: member => !member.partment && _.includes(member.authority, AH.AH_LOOK_STATISTICS),
+        link: '/client/statistics',
+        auth: [AH.AH_LOOK_STATISTICS],
+    },
+    {
+        label: '我要发货',
+        link: '/client/preOrders',
+    },
+    {
+        label: '查看行情',
+        link: '/client/quotations',
+    },
+    {
+        label: '发货货单',
+        link: '/client/sendOrders',
+    },
+    {
+        label: '收货货单',
+        link: '/client/receiveOrders',
     },
 ];
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/config/topmenu.js
+* PDShop_Client_PC/project/App/shared/config/topmenu.js
 
 ```js
 import AH from '../constants/authority';
@@ -1439,26 +1733,31 @@ import AH from '../constants/authority';
 export default [
     {
         label: '人员管理',
-        link: '/shop/members',
-        auth: [AH.AH_LOOK_MEMBER, AH.AH_CREATE_MEMBER, AH.AH_MODIFY_MEMBER, AH.AH_REMOVE_MEMBER],
+        link: '/client/shipperMembers',
+        auth: [AH.AH_MODIFY_SHIPPER_MEMBER_AUTHORITY],
+    },
+    {
+        label: '人员管理',
+        link: '/client/agentMembers',
+        auth: [AH.AH_MODIFY_AGENT_MEMBER_AUTHORITY],
     },
     {
         label: '个人中心',
-        link: '/shop/personal',
+        link: '/client/personal',
     },
     {
         label: '意见反馈',
-        link: '/shop/feedback',
+        link: '/client/feedback',
     },
     {
         label: '退出',
-        link: '/shop/logout',
+        link: '/client/logout',
     },
 ];
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/constants/authority.js
+* PDShop_Client_PC/project/App/shared/constants/authority.js
 
 ```js
 // 注意：常量部分必须和服务器保持一致
@@ -1502,10 +1801,6 @@ const AH_CARRY_PARTMENT = 20011; // 搬货的权限（搬运部人员）
 const AH_SECURITY_CHECK_PARTMENT = 20012; // 安检的权限（保安部人员）
 const AH_DISTRIBUTION_PARTMENT = 20013; // 配送的权限（配送部人员）
 const AH_TO_EXAMINE_TRUCK = 20014; // 审核货车的权限
-const AH_CREATE_WAREHOUSE = 20015; // 创建仓库的权限
-const AH_MODIFY_WAREHOUSE = 20016; // 修改仓库信息的权限
-const AH_REMOVE_WAREHOUSE = 20017; // 删除仓库的权限
-const AH_LOOK_WAREHOUSE = 20018; // 查看仓库的权限
 
 // 物流公司
 const AH_MODIFY_SHIPPER_INFO = 30000; // 修改物流公司信息的权限
@@ -1524,6 +1819,7 @@ const AH_REMOVE_TRUCK = 30012; // 删除货车的权限
 const AH_LOOK_TRUCK = 30013; // 查看货车的权限
 const SELECT_CARRY_PARTMENT = 30014; // 选择搬运队的权限
 const AH_SCAN_LOAD_TRUCK = 30015; // 扫描装车的权限
+export const AH_CITY_DISTRIBUTE = 30016; // 同城配送的权限
 
 // 收货点
 const AH_MODIFY_AGENT_INFO = 40000; // 修改收货点信息的权限
@@ -1571,10 +1867,6 @@ export default {
     AH_SECURITY_CHECK_PARTMENT,
     AH_DISTRIBUTION_PARTMENT,
     AH_TO_EXAMINE_TRUCK,
-    AH_CREATE_WAREHOUSE,
-    AH_MODIFY_WAREHOUSE,
-    AH_REMOVE_WAREHOUSE,
-    AH_LOOK_WAREHOUSE,
 
     // 物流公司
     AH_MODIFY_SHIPPER_INFO,
@@ -1593,6 +1885,7 @@ export default {
     AH_LOOK_TRUCK,
     SELECT_CARRY_PARTMENT,
     AH_SCAN_LOAD_TRUCK,
+    AH_CITY_DISTRIBUTE,
 
     // 收货点
     AH_MODIFY_AGENT_INFO,
@@ -1641,10 +1934,6 @@ export default {
         [AH_SECURITY_CHECK_PARTMENT]: '安检的权限',
         [AH_DISTRIBUTION_PARTMENT]: '配送的权限',
         [AH_TO_EXAMINE_TRUCK]: '审核货车的权限',
-        [AH_CREATE_WAREHOUSE]: '创建仓库的权限',
-        [AH_MODIFY_WAREHOUSE]: '修改仓库信息的权限',
-        [AH_REMOVE_WAREHOUSE]: '删除仓库的权限',
-        [AH_LOOK_WAREHOUSE]: '查看仓库的权限',
 
         // 物流公司
         [AH_MODIFY_SHIPPER_INFO]: '修改物流公司信息的权限',
@@ -1663,6 +1952,7 @@ export default {
         [AH_LOOK_TRUCK]: '查看货车的权限',
         [SELECT_CARRY_PARTMENT]: '选择搬运队的权限',
         [AH_SCAN_LOAD_TRUCK]: '扫描装车的权限',
+        [AH_CITY_DISTRIBUTE]: '同城配送的权限',
 
         // 收货点
         [AH_MODIFY_AGENT_INFO]: '修改收货点信息的权限',
@@ -1673,7 +1963,7 @@ export default {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/constants/common.js
+* PDShop_Client_PC/project/App/shared/constants/common.js
 
 ```js
 // 注意：常量部分必须和服务器保持一致
@@ -1699,7 +1989,6 @@ export default {
         [ST_LONG]: '长途运输',
         [ST_CITY]: ' 同城配送',
     },
-
     RRT_MAP: {
         [RRT_ALL]: '长途 & 同城',
         [RRT_LONG]: ' 长途运输',
@@ -1709,18 +1998,17 @@ export default {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/constants/index.js
+* PDShop_Client_PC/project/App/shared/constants/index.js
 
 ```js
 export AH from './authority';
-export PO from './post';
-export SP from './partment';
 export OS from './orderState';
+export TS from './truckState';
 export CO from './common';
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/constants/orderState.js
+* PDShop_Client_PC/project/App/shared/constants/orderState.js
 
 ```js
 // 注意：常量部分必须和服务器保持一致
@@ -1808,69 +2096,49 @@ export default {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/constants/partment.js
+* PDShop_Client_PC/project/App/shared/constants/truckState.js
 
 ```js
 // 注意：常量部分必须和服务器保持一致
-const SP_RECEIVE_PARTMENT = 0; // 收货部
-const SP_WARE_HOUSE_PARTMENT = 1; // 库管部
-const SP_CARRY_PARTMENT = 2; // 搬运部
-const SP_SECURITY_CHECK_PARTMENT = 3; // 保安部
+
+const TS_READY_EXAMINE = 0; // 待审核
+const TS_READY_ENTER_WAREHOUSE = 1; // 待入库
+const TS_READY_SEARCH_CARRY_PARTMENT = 2; // 待找搬运队
+const TS_READY_SCAN_LOAD = 3; // 待扫描装车
+const TS_SCAN_LOADING = 4; // 装车中
+const TS_READY_PAY_FOR_CARRY_PARTMENT = 5; // 待付搬运部的款
+const TS_READY_EXIT_WAREHOUSE = 6; // 待出库
+const TS_ON_THE_WAY = 7; // 运输中
+const TS_RECEIVE_SUCCESS = 8; // 交货成功
 
 export default {
-    SP_RECEIVE_PARTMENT,
-    SP_WARE_HOUSE_PARTMENT,
-    SP_CARRY_PARTMENT,
-    SP_SECURITY_CHECK_PARTMENT,
+    TS_READY_EXAMINE,
+    TS_READY_ENTER_WAREHOUSE,
+    TS_READY_SEARCH_CARRY_PARTMENT,
+    TS_READY_SCAN_LOAD,
+    TS_SCAN_LOADING,
+    TS_READY_PAY_FOR_CARRY_PARTMENT,
+    TS_READY_EXIT_WAREHOUSE,
+    TS_ON_THE_WAY,
+    TS_RECEIVE_SUCCESS,
 
     // mapper
     MAP: {
-        [SP_RECEIVE_PARTMENT]: '收货部',
-        [SP_WARE_HOUSE_PARTMENT]: '库管部',
-        [SP_CARRY_PARTMENT]: '搬运部',
-        [SP_SECURITY_CHECK_PARTMENT]: '保安部',
+        [TS_READY_EXAMINE]: '待审核',
+        [TS_READY_ENTER_WAREHOUSE]: '待入库',
+        [TS_READY_SEARCH_CARRY_PARTMENT]: '待找搬运队',
+        [TS_READY_SCAN_LOAD]: '待扫描装车',
+        [TS_SCAN_LOADING]: '装车中',
+        [TS_READY_PAY_FOR_CARRY_PARTMENT]: '待付搬运部的款',
+        [TS_READY_EXIT_WAREHOUSE]: '待出库',
+        [TS_ON_THE_WAY]: '运输中',
+        [TS_RECEIVE_SUCCESS]: '交货成功',
     },
 };
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/constants/post.js
-
-```js
-const PO_CHAIR_MAN = '董事长';
-const PO_PARTMENT_CHARGE_MAN = '部门经理';
-const PO_CEO = '总经理';
-const PO_PARTMENT_LEADER = '部门主管';
-const PO_STAFF = '员工';
-
-export default {
-    PO_CHAIR_MAN,
-    PO_PARTMENT_CHARGE_MAN,
-    PO_CEO,
-    PO_PARTMENT_LEADER,
-    PO_STAFF,
-
-    // 公司职位
-    SHOP_MAP: [PO_STAFF, PO_CEO, PO_PARTMENT_LEADER],
-    // 部门职位
-    PARTMENT_MAP: [PO_STAFF],
-};
-
-```
-
-* PDShop_Shop_PC/project/App/shared/decorators/antd_form_create.js
-
-```js
-import { Form } from 'antd';
-export default (target) => {
-    const Component = Form.create()(target);
-    Component.fragments = target.fragments;
-    return Component;
-};
-
-```
-
-* PDShop_Shop_PC/project/App/shared/helpers/configure-store.js
+* PDShop_Client_PC/project/App/shared/helpers/configure-store.js
 
 ```js
 import combineActionsMiddleware from 'redux-combine-actions';
@@ -1909,7 +2177,7 @@ export default function configureStore (routerMiddleware, initialState) {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/helpers/ga-send.js
+* PDShop_Client_PC/project/App/shared/helpers/ga-send.js
 
 ```js
 export default function gaSend () {
@@ -1920,7 +2188,19 @@ export default function gaSend () {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/reducers/index.js
+* PDShop_Client_PC/project/App/shared/decorators/antd_form_create.js
+
+```js
+import { Form } from 'antd';
+export default (target) => {
+    const Component = Form.create()(target);
+    Component.fragments = target.fragments;
+    return Component;
+};
+
+```
+
+* PDShop_Client_PC/project/App/shared/reducers/index.js
 
 ```js
 import { combineReducers } from 'redux';
@@ -1937,7 +2217,7 @@ export default rootReducer;
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/relatejs/index.js
+* PDShop_Client_PC/project/App/shared/relatejs/index.js
 
 ```js
 import { mergeFragments } from './helpers/fragments';
@@ -1998,88 +2278,89 @@ export default {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/routers/auth.js
+* PDShop_Client_PC/project/App/shared/routers/auth.js
 
 ```js
 import React from 'react';
 import { Route } from 'react-router';
 import gaSend from 'helpers/ga-send';
 import Auth from 'pages/auth';
+import Register from 'pages/auth/pages/register';
 import Login from 'pages/auth/pages/login';
 import ForgotPwd from 'pages/auth/pages/forgotPwd';
 
 export default [
     <Route component={Auth}>
-        <Route path='/shop/login' component={Login} onEnter={gaSend} />
-        <Route path='/shop/forgotPwd' component={ForgotPwd} onEnter={gaSend} />
+        <Route path='/client/register' component={Register} onEnter={gaSend} />
+        <Route path='/client/login' component={Login} onEnter={gaSend} />
+        <Route path='/client/forgotPwd' component={ForgotPwd} onEnter={gaSend} />
     </Route>,
 ];
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/routers/public.js
-
-```js
-// import React from 'react';
-// import {Route} from 'react-router';
-
-export default [];
-
-```
-
-* PDShop_Shop_PC/project/App/shared/routers/shop.js
+* PDShop_Client_PC/project/App/shared/routers/client.js
 
 ```js
 import React from 'react';
 import { Route, IndexRoute } from 'react-router';
 import request from 'superagent';
-import Shop from 'pages/shop';
-import Home from 'pages/shop/pages/home';
-import Personal from 'pages/shop/pages/personal';
-import PaymentPwd from 'pages/shop/pages/personal/pages/paymentPwd';
-import OwnShop from 'pages/shop/pages/ownShop';
-import Partment from 'pages/shop/pages/partment';
-import Partments from 'pages/shop/pages/partments';
-import PartmentDetail from 'pages/shop/pages/partments/pages/detail';
-import Members from 'pages/shop/pages/members';
-import MemberDetail from 'pages/shop/pages/members/pages/detail';
-import BranchShops from 'pages/shop/pages/branchShops';
-import BranchShopDetail from 'pages/shop/pages/branchShops/pages/detail';
-import Agents from 'pages/shop/pages/agents';
-import AgentDetail from 'pages/shop/pages/agents/pages/detail';
-import AgentRegister from 'pages/shop/pages/agents/pages/register';
-import Shippers from 'pages/shop/pages/shippers';
-import ShipperDetail from 'pages/shop/pages/shippers/pages/detail';
-import ShipperRegister from 'pages/shop/pages/shippers/pages/register';
-import Clients from 'pages/shop/pages/clients';
-import ClientDetail from 'pages/shop/pages/clients/pages/detail';
-import Roadmaps from 'pages/shop/pages/roadmaps';
-import RoadmapDetail from 'pages/shop/pages/roadmaps/pages/detail';
-import RegionRates from 'pages/shop/pages/regionRates';
-import RegionRateDetail from 'pages/shop/pages/regionRates/pages/detail';
-import PlaceOrder from 'pages/shop/pages/placeOrder';
-import BROrders from 'pages/shop/pages/orders';
-import BROrderDetail from 'pages/shop/pages/orders/pages/detail';
-import RPOrders from 'pages/shop/pages/rporders';
-import RPOrderDetail from 'pages/shop/pages/rporders/pages/detail';
-import WHOrders from 'pages/shop/pages/whorders';
-import WHOrderDetail from 'pages/shop/pages/whorders/pages/detail';
-import Trucks from 'pages/shop/pages/trucks';
-import Bills from 'pages/shop/pages/bills';
-import Feedback from 'pages/shop/pages/feedback';
-import Setting from 'pages/shop/pages/setting';
-import Notify from 'pages/shop/pages/notifies';
-import Statistics from 'pages/shop/pages/statistics';
-import SendNotify from 'pages/shop/pages/notifies/pages/sendNotify';
-import Warehouses from 'pages/shop/pages/warehouse';
-import WarehouseDetail from 'pages/shop/pages/warehouse/pages/detail';
+import Client from 'pages/client';
+import Home from 'pages/client/pages/home';
+import Personal from 'pages/client/pages/personal';
+import PaymentPwd from 'pages/client/pages/personal/pages/paymentPwd';
+import Shipper from 'pages/client/pages/personal/pages/shipper';
+import Agent from 'pages/client/pages/personal/pages/agent';
+import ShipperMembers from 'pages/client/pages/shipperMembers';
+import ShipperMemberDetail from 'pages/client/pages/shipperMembers/pages/detail';
+import ShipperMemberRegister from 'pages/client/pages/shipperMembers/pages/register';
+import Roadmaps from 'pages/client/pages/roadmaps';
+import RoadmapDetail from 'pages/client/pages/roadmaps/pages/detail';
+import RoadmapSendDoorList from 'pages/client/pages/roadmaps/pages/sendDoorList';
+import SendDoorRoadmaps from 'pages/client/pages/sendDoorRoadmaps';
+import SendDoorRoadmapDetail from 'pages/client/pages/sendDoorRoadmaps/pages/detail';
+import Trucks from 'pages/client/pages/trucks';
+import TruckDetail from 'pages/client/pages/trucks/pages/detail';
+import PayForCarryPartment from 'pages/client/pages/trucks/pages/payForCarryPartment';
+import SelectCarryPartment from 'pages/client/pages/trucks/pages/selectCarryPartment';
+import TruckShowDetail from 'pages/client/pages/trucks/pages/showDetail';
+import OrderListInTruck from 'pages/client/pages/trucks/pages/orderList';
+import LookTruckFee from 'pages/client/pages/trucks/pages/lookTruckFee';
+import PreOrders from 'pages/client/pages/preOrders';
+import PreOrderDetail from 'pages/client/pages/preOrders/pages/detail';
+import PreOrderGroupDetail from 'pages/client/pages/preOrders/pages/groupDetail';
+import LookPreOrderFee from 'pages/client/pages/preOrders/pages/lookPreOrderFee';
+import LookOrderFee from 'pages/client/pages/preOrders/pages/lookOrderFee';
+import PreOrderLookGroupFee from 'pages/client/pages/preOrders/pages/lookGroupFee';
+import Quotations from 'pages/client/pages/quotations';
+import NeedSendOrders from 'pages/client/pages/needSendOrders';
+import OrderListByEndPoint from 'pages/client/pages/needSendOrders/pages/orderListByEndPoint';
+import OrderDetail from 'pages/client/pages/orderDetail';
+import SPOrders from 'pages/client/pages/sporders';
+import SCOrders from 'pages/client/pages/scorders';
+import Bills from 'pages/client/pages/bills';
+import Statistics from 'pages/client/pages/statistics';
+import Feedback from 'pages/client/pages/feedback';
+import Notify from 'pages/client/pages/notify';
+import AgentMembers from 'pages/client/pages/agentMembers';
+import AgentMemberDetail from 'pages/client/pages/agentMembers/pages/detail';
+import AgentMemberRegister from 'pages/client/pages/agentMembers/pages/register';
+import RegionRates from 'pages/client/pages/regionRates';
+import RegionRate from 'pages/client/pages/regionRates/pages/detail';
+import PlaceOrder from 'pages/client/pages/placeOrder';
+import RCOrders from 'pages/client/pages/rcorders';
+import RCOrderDetail from 'pages/client/pages/rcorders/pages/detail';
+import SendOrders from 'pages/client/pages/sendOrders';
+import SendOrderDetail from 'pages/client/pages/sendOrders/pages/detail';
+import ReceiveOrders from 'pages/client/pages/receiveOrders';
+import ReceiveOrderDetail from 'pages/client/pages/receiveOrders/pages/detail';
 
 let firstEntry = true;
 
 function authenticate (nextState, replaceState, callback) {
     if (typeof window !== 'undefined' && !firstEntry) {
         request
-        .post('/shop/graphql')
+        .post('/client/graphql')
         .set('Content-Type', 'application/json')
         .set('Accept', 'application/json')
         .send({
@@ -2087,7 +2368,7 @@ function authenticate (nextState, replaceState, callback) {
         })
         .end((error, result) => {
             if (error || !result.body.data.session) {
-                window.location.href = '/shop/login';
+                window.location.href = '/client/login';
             } else {
                 callback();
             }
@@ -2099,312 +2380,1303 @@ function authenticate (nextState, replaceState, callback) {
 }
 
 export default [
-    <Route name='shop' path='/shop' component={Shop}>
+    <Route name='client' path='/client' component={Client}>
         <IndexRoute component={Home} onEnter={authenticate} />
-        <Route name='shopPersonal' path='personal'>
+        <Route name='clientPersonal' path='personal'>
             <IndexRoute component={Personal} onEnter={authenticate} />
-            <Route name='shopPaymentPwd' path='paymentPwd' component={PaymentPwd} onEnter={authenticate} />
+            <Route name='clientPaymentPwd' path='paymentPwd' component={PaymentPwd} onEnter={authenticate} />
+            <Route name='clientShipper' path='shipper' component={Shipper} onEnter={authenticate} />
+            <Route name='clientAgent' path='agent' component={Agent} onEnter={authenticate} />
         </Route>
-        <Route name='shopOwnShop' path='ownShop' component={OwnShop} onEnter={authenticate} />
-        <Route name='shopPartment' path='partment' component={Partment} onEnter={authenticate} />
-        <Route name='shopPartments' path='partments'>
-            <IndexRoute component={Partments} onEnter={authenticate} />
-            <Route name='shopPartmentDetail' path='detail' component={PartmentDetail} onEnter={authenticate} />
+        <Route name='shipperMembers' path='shipperMembers'>
+            <IndexRoute component={ShipperMembers} onEnter={authenticate} />
+            <Route name='shipperMemberDetail' path='detail' component={ShipperMemberDetail} onEnter={authenticate} />
+            <Route name='shipperMemberRegister' path='register' component={ShipperMemberRegister} onEnter={authenticate} />
         </Route>
-        <Route name='shopMembers' path='members'>
-            <IndexRoute component={Members} onEnter={authenticate} />
-            <Route name='shopMemberDetail' path='detail' component={MemberDetail} onEnter={authenticate} />
-        </Route>
-        <Route name='shopBranchShops' path='branchShops'>
-            <IndexRoute component={BranchShops} onEnter={authenticate} />
-            <Route name='shopBranchShopDetail' path='detail' component={BranchShopDetail} onEnter={authenticate} />
-        </Route>
-        <Route name='shopAgents' path='agents'>
-            <IndexRoute component={Agents} onEnter={authenticate} />
-            <Route name='shopAgentDetail' path='detail' component={AgentDetail} onEnter={authenticate} />
-            <Route name='shopAgentRegister' path='register' component={AgentRegister} onEnter={authenticate} />
-        </Route>
-        <Route name='shopShippers' path='shippers'>
-            <IndexRoute component={Shippers} onEnter={authenticate} />
-            <Route name='shopShipperDetail' path='detail' component={ShipperDetail} onEnter={authenticate} />
-            <Route name='shopShipperRegister' path='register' component={ShipperRegister} onEnter={authenticate} />
-        </Route>
-        <Route name='shopClients' path='clients'>
-            <IndexRoute component={Clients} onEnter={authenticate} />
-            <Route name='shopClientDetail' path='detail' component={ClientDetail} onEnter={authenticate} />
-        </Route>
-        <Route name='shopRoadmaps' path='roadmaps'>
+        <Route name='clientRoadmaps' path='roadmaps'>
             <IndexRoute component={Roadmaps} onEnter={authenticate} />
-            <Route name='shopRoadmapDetail' path='detail' component={RoadmapDetail} onEnter={authenticate} />
+            <Route name='clientRoadmapDetail' path='detail' component={RoadmapDetail} onEnter={authenticate} />
+            <Route name='clientRoadmapSendDoorList' path='sendDoorList' component={RoadmapSendDoorList} onEnter={authenticate} />
         </Route>
-        <Route name='shopRegionRates' path='regionRates'>
+        <Route name='clientSendDoorRoadmaps' path='sendDoorRoadmaps'>
+            <IndexRoute component={SendDoorRoadmaps} onEnter={authenticate} />
+            <Route name='clientSendDoorRoadmapDetail' path='detail' component={SendDoorRoadmapDetail} onEnter={authenticate} />
+        </Route>
+        <Route name='clientTrucks' path='trucks'>
+            <IndexRoute component={Trucks} onEnter={authenticate} />
+            <Route name='clientTruckDetail' path='detail' component={TruckDetail} onEnter={authenticate} />
+            <Route name='clientPayForCarryPartment' path='payForCarryPartment' component={PayForCarryPartment} onEnter={authenticate} />
+            <Route name='clientSelectCarryPartment' path='selectCarryPartment' component={SelectCarryPartment} onEnter={authenticate} />
+            <Route name='clientTruckShowDetail' path='showDetail' component={TruckShowDetail} onEnter={authenticate} />
+            <Route name='clientOrderListInTruck' path='orderList' component={OrderListInTruck} onEnter={authenticate} />
+            <Route name='clientLookTruckFee' path='lookTruckFee' component={LookTruckFee} onEnter={authenticate} />
+        </Route>
+        <Route name='clientPreOrders' path='preOrders'>
+            <IndexRoute component={PreOrders} onEnter={authenticate} />
+            <Route name='clientPreOrderDetail' path='detail' component={PreOrderDetail} onEnter={authenticate} />
+            <Route name='clientPreOrderGroupDetail' path='groupDetail' component={PreOrderGroupDetail} onEnter={authenticate} />
+            <Route name='clientLookPreOrderFee' path='lookPreOrderFee' component={LookPreOrderFee} onEnter={authenticate} />
+            <Route name='clientLookOrderFee' path='lookOrderFee' component={LookOrderFee} onEnter={authenticate} />
+            <Route name='clientPreOrderLookGroupFee' path='lookGroupFee' component={PreOrderLookGroupFee} onEnter={authenticate} />
+        </Route>
+        <Route name='clientQuotations' path='quotations' component={Quotations} onEnter={authenticate} />
+        <Route name='clientNeedSendOrders' path='needSendOrders' >
+            <IndexRoute component={NeedSendOrders} onEnter={authenticate} />
+            <Route name='clientOrderListByEndPoint' path='orderListByEndPoint' component={OrderListByEndPoint} onEnter={authenticate} />
+        </Route>
+        <Route name='clientOrderDetail' path='orderDetail' component={OrderDetail} onEnter={authenticate} />
+        <Route name='clientBills' path='bills' component={Bills} onEnter={authenticate} />
+        <Route name='clientSPOrders' path='sporders' component={SPOrders} onEnter={authenticate} />
+        <Route name='clientSCOrders' path='scorders' component={SCOrders} onEnter={authenticate} />
+        <Route name='clientStatistics' path='statistics' component={Statistics} onEnter={authenticate} />
+        <Route name='clientFeedback' path='feedback' component={Feedback} onEnter={authenticate} />
+        <Route name='clientNotify' path='notify' component={Notify} onEnter={authenticate} />
+        <Route name='agentMembers' path='agentMembers'>
+            <IndexRoute component={AgentMembers} onEnter={authenticate} />
+            <Route name='agentMemberDetail' path='detail' component={AgentMemberDetail} onEnter={authenticate} />
+            <Route name='agentMemberRegister' path='register' component={AgentMemberRegister} onEnter={authenticate} />
+        </Route>
+        <Route name='agentRegionRates' path='regionRates'>
             <IndexRoute component={RegionRates} onEnter={authenticate} />
-            <Route name='shopRegionRateDetail' path='detail' component={RegionRateDetail} onEnter={authenticate} />
+            <Route name={'regionRateDetail'} path={'detail'} component={RegionRate} onEnter={authenticate} />
         </Route>
-        <Route name='shopPlaceOrder' path='placeOrder' component={PlaceOrder} onEnter={authenticate} />
-        <Route name='shopBROrders' path='orders'>
-            <IndexRoute component={BROrders} onEnter={authenticate} />
-            <Route name='shopBROrderDetail' path='detail' component={BROrderDetail} onEnter={authenticate} />
+        <Route name='clientPlaceOrder' path='placeOrder' component={PlaceOrder} onEnter={authenticate} />
+        <Route name='clientRCOrders' path='rcorders'>
+            <IndexRoute component={RCOrders} onEnter={authenticate} />
+            <Route name='clientRCOrderDetail' path='detail' component={RCOrderDetail} onEnter={authenticate} />
         </Route>
-        <Route name='shopRPOrders' path='rporders'>
-            <IndexRoute component={RPOrders} onEnter={authenticate} />
-            <Route name='shopRPOrderDetail' path='detail' component={RPOrderDetail} onEnter={authenticate} />
+        <Route name='clientSendOrders' path='sendOrders'>
+            <IndexRoute component={SendOrders} onEnter={authenticate} />
+            <Route name='clientSendOrderDetail' path='detail' component={SendOrderDetail} onEnter={authenticate} />
         </Route>
-        <Route name='shopWHOrders' path='whorders'>
-            <IndexRoute component={WHOrders} onEnter={authenticate} />
-            <Route name='shopWHOrderDetail' path='detail' component={WHOrderDetail} onEnter={authenticate} />
-        </Route>
-        <Route name='shopTrucks' path='trucks' component={Trucks} onEnter={authenticate} />
-        <Route name='shopBills' path='bills' component={Bills} onEnter={authenticate} />
-        <Route name='shopSetting' path='setting' component={Setting} onEnter={authenticate} />
-        <Route name='shopStatistics' path='statistics' component={Statistics} onEnter={authenticate} />
-        <Route name='shopFeedback' path='feedback' component={Feedback} onEnter={authenticate} />
-        <Route name='shopNotify' path='notifies'>
-            <IndexRoute component={Notify} onEnter={authenticate} />
-            <Route name='shopSendNotify' path='sendNotify' component={SendNotify} onEnter={authenticate} />
-        </Route>
-        <Route name='warehouse' path='warehouses' onEnter={authenticate} >
-            <IndexRoute component={Warehouses} onEnter={authenticate} />
-            <Route name='warehouseDetail' path='detail' component={WarehouseDetail} onEnter={authenticate} />
+        <Route name='clientReceiveOrders' path='receiveOrders'>
+            <IndexRoute component={ReceiveOrders} onEnter={authenticate} />
+            <Route name='clientReceiveOrderDetail' path='detail' component={ReceiveOrderDetail} onEnter={authenticate} />
         </Route>
     </Route>,
 ];
 
 ```
 
-* PDShop_Shop_PC/project/App/server/graphql/authorize.js
+* PDShop_Client_PC/project/App/shared/routers/public.js
 
 ```js
-export function authorize (root) {
-    if (!root.user) {
-        throw new Error('unauthorized');
-    }
-}
+// import React from 'react';
+// import {Route} from 'react-router';
+
+export default [];
 
 ```
 
-* PDShop_Shop_PC/project/App/server/routers/auth.js
+* PDShop_Client_PC/project/App/server/graphql/mutations/index.js
 
 ```js
-import getDefaultFavicon from 'helpers/default-favicon';
-import getMarkup from 'helpers/get-markup';
-import routeHandler from 'helpers/route-handler';
-import routes from 'routers/auth';
-import { Router } from 'express';
-
-const authRouter = new Router();
-
-function injectScript (req, res, next) {
-    if (process.env.NODE_ENV === 'production') {
-        res.locals.header.push({
-            tag: 'link',
-            props: {
-                rel: 'stylesheet',
-                type: 'text/css',
-                href: '/shop/assets/auth.css',
-            },
-        });
-        // res.locals.header.push({
-        //     tag: 'link',
-        //     props: {
-        //         rel: 'stylesheet',
-        //         type: 'text/css',
-        //         href: '/shop/assets/common.js.css',
-        //     },
-        // });
-    }
-    res.locals.header.push(getDefaultFavicon(res));
-    res.locals.footer.push({
-        tag: 'script',
-        props: {
-            src: `${res.baseScriptsURL}/shop/assets/auth.js`,
-        },
-    });
-    next();
-}
-
-authRouter.get('/shop/login', (req, res, next) => {
-    if (req.isAuthenticated()) {
-        res.redirect('/shop');
-    } else {
-        routeHandler(routes, req, res, next);
-    }
-});
-
-authRouter.get('/shop/logout', (req, res) => {
-    req.logout();
-    res.redirect('/shop/login');
-});
-
-authRouter.get(/^\/shop\/(register|forgotPwd)$/, (req, res, next) => {
-    routeHandler(routes, req, res, next);
-});
-
-// Register | ForgotPwd
-authRouter.get(/^\/shop\/(register|forgotPwd)$/, injectScript, async (req, res, next) => {
-    res.status(200).send(getMarkup(req, res));
-});
-
-// Login
-authRouter.get('/shop/login', injectScript, (req, res) => {
-    if (req.isAuthenticated()) {
-        res.redirect('/shop');
-    } else {
-        res.status(200).send(getMarkup(req, res));
-    }
-});
-
-export default authRouter;
-
-```
-
-* PDShop_Shop_PC/project/App/server/routers/index.js
-
-```js
-import shopRouter from './shop';
-import authRouter from './auth';
-import publicRouter from './public';
+import * as personal from './personal';
+import * as member from './member';
+import * as roadmap from './roadmap';
+import * as truck from './truck';
+import * as order from './order';
+import * as agentOrder from './agentOrder';
+import * as regionRate from './regionRate';
 
 export default {
-    shopRouter,
-    authRouter,
-    publicRouter,
+    ...personal,
+    ...member,
+    ...truck,
+    ...roadmap,
+    ...order,
+    ...agentOrder,
+    ...regionRate,
 };
 
 ```
 
-* PDShop_Shop_PC/project/App/server/routers/public.js
+* PDShop_Client_PC/project/App/server/graphql/queries/index.js
 
 ```js
-import { Router } from 'express';
-import request from 'request';
-import { urls } from 'helpers/api';
+import * as common from './common';
+import * as personal from './personal';
+import * as account from './account';
+import * as member from './member';
+import * as roadmap from './roadmap';
+import * as order from './order';
+import * as agentOrder from './agentOrder';
+import * as quotation from './quotation';
+import * as truck from './truck';
+import * as statistic from './statistic';
+import * as client from './client';
+import * as regionRate from './regionRate';
 
-const publicRouter = new Router();
-
-publicRouter.post('/api/uploadFile', (req, res) => {
-    req.pipe(request(urls.uploadFile)).pipe(res);
-});
-
-export default publicRouter;
+export default {
+    ...common,
+    ...personal,
+    ...account,
+    ...member,
+    ...roadmap,
+    ...order,
+    ...agentOrder,
+    ...quotation,
+    ...truck,
+    ...statistic,
+    ...client,
+    ...regionRate,
+};
 
 ```
 
-* PDShop_Shop_PC/project/App/server/routers/shop.js
+* PDShop_Client_PC/project/App/server/graphql/types/account.js
 
 ```js
-import getBaseComponent from 'helpers/get-base-component';
-import getDefaultFavicon from 'helpers/default-favicon';
-import renderHtml from 'helpers/render-html';
-import routeHandler from 'helpers/route-handler';
-import routes from 'routers/shop';
-import { Router } from 'express';
-import { graphql } from 'graphql';
-import { getDataDependencies } from 'relatejs';
+import {
+    GraphQLInputObjectType,
+    GraphQLObjectType,
+    GraphQLString,
+    GraphQLFloat,
+} from 'graphql';
+import { makeResultType } from './common';
 
-import schema from '../schema';
+export const accountType = new GraphQLObjectType({
+    name: 'accountType',
+    fields: {
+        amount: { type: GraphQLFloat },
+        qrcode: { type: GraphQLString },
+    },
+});
+export const accountResultType = makeResultType('accountResultType', accountType);
 
-const shopRouter = new Router();
-
-shopRouter.get(/^\/shop\/.+/, (req, res, next) => {
-    if (req.isAuthenticated()) {
-        res.redirect('/shop');
-    } else {
-        next();
-    }
+export const accountInputType = new GraphQLInputObjectType({
+    name: 'accountInputType',
+    fields: {
+        amount: { type: GraphQLFloat },
+        body: { type: GraphQLString },
+        payPassword: { type: GraphQLString },
+    },
 });
 
-shopRouter.get('/shop*', (req, res, next) => {
-    if (req.isAuthenticated()) {
-        if (process.env.NODE_ENV === 'production') {
-            res.locals.header.push(getDefaultFavicon(res));
-            res.locals.header.push({
-                tag: 'link',
-                props: {
-                    rel: 'stylesheet',
-                    type: 'text/css',
-                    href: '/shop/assets/shop.css',
-                },
-            });
-            // res.locals.header.push({
-            //     tag: 'link',
-            //     props: {
-            //         rel: 'stylesheet',
-            //         type: 'text/css',
-            //         href: '/shop/assets/common.js.css',
-            //     },
-            // });
+```
+
+* PDShop_Client_PC/project/App/server/graphql/types/agent.js
+
+```js
+import {
+    GraphQLInputObjectType,
+    GraphQLObjectType,
+    GraphQLString,
+    GraphQLFloat,
+    GraphQLInt,
+    GraphQLID,
+    GraphQLList,
+} from 'graphql';
+
+import { makeResultType, descriptType, descriptInputType } from './common';
+import { clientType } from './client';
+import { shopType } from './shop';
+
+export const agentType = new GraphQLObjectType({
+    name: 'agentType',
+    fields: {
+        // 列表的字段
+        id: { type: GraphQLID },
+        logo: { type: GraphQLString },
+        image: { type: GraphQLString },
+        addressRegion: { type: GraphQLString },
+        addressRegionLastCode: { type: GraphQLInt },
+        address: { type: GraphQLString },
+        location: { type: new GraphQLList(GraphQLFloat) },
+        phoneList:  { type: GraphQLString },
+        name: { type: GraphQLString },
+        chairMan: { type: clientType },
+        // 基本信息
+        sign: { type: GraphQLString },
+        descriptList:  { type: new GraphQLList(descriptType) },
+        registerTime: { type: GraphQLString },
+        // 法人
+        legalName: { type: GraphQLString },
+        legalPhone: { type: GraphQLString },
+        legalIDCard: { type: new GraphQLList(GraphQLString) },
+        // 分店
+        referShop: { type: shopType },
+    },
+});
+export const agentResultType = makeResultType('agentResultType', agentType);
+
+export const agentInputType = new GraphQLInputObjectType({
+    name: 'agentInputType',
+    fields: {
+        logo: { type: GraphQLString },
+        image: { type: GraphQLString },
+        sign: { type: GraphQLString },
+        addressRegion: { type: GraphQLString },
+        addressRegionLastCode: { type: GraphQLInt },
+        address: { type: GraphQLString },
+        location: { type: new GraphQLList(GraphQLFloat) },
+        phoneList:  { type: GraphQLString },
+        descriptList:  { type: new GraphQLList(descriptInputType) },
+
+    },
+});
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/types/bill.js
+
+```js
+import {
+    GraphQLObjectType,
+    GraphQLString,
+    GraphQLFloat,
+} from 'graphql';
+
+import { makeListType } from './common';
+
+export const billType = new GraphQLObjectType({
+    name: 'billType',
+    fields: {
+        tradeAmountYuan: { type: GraphQLFloat },
+        tradeTime: { type: GraphQLString },
+        thirdpartyAccount: { type: GraphQLString },
+        remark: { type: GraphQLString },
+    },
+});
+export const billItemListType = makeListType('billItemListType', billType, 'list');
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/types/client.js
+
+```js
+import {
+    GraphQLObjectType,
+    GraphQLString,
+    GraphQLInt,
+    GraphQLID,
+    GraphQLList,
+} from 'graphql';
+
+import { makeResultType, makeListType } from './common';
+
+export const clientType = new GraphQLObjectType({
+    name: 'clientType',
+    fields: {
+        id: { type: GraphQLID },
+        name: { type: GraphQLString },
+        phone: { type: GraphQLString },
+        email: { type: GraphQLString },
+        address: { type: GraphQLString },
+        phoneList: { type: GraphQLString },
+        authority: { type: new GraphQLList(GraphQLInt) },
+    },
+});
+export const memberResultType = makeResultType('memberResultType', clientType);
+export const memberListType = makeListType('memberListType', clientType);
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/types/common.js
+
+```js
+import {
+    GraphQLInputObjectType,
+    GraphQLObjectType,
+    GraphQLString,
+    GraphQLFloat,
+    GraphQLBoolean,
+    GraphQLInt,
+    GraphQLID,
+    GraphQLList,
+} from 'graphql';
+
+export function makeResultType (name, type) {
+    const base = {
+        success: { type: GraphQLBoolean },
+        msg: { type: GraphQLString },
+    };
+    const fields = type ? { ...base, context: { type: type } } : base;
+    return new GraphQLObjectType({ name, fields });
+}
+
+export function makeListType (name, type, listName) {
+    return new GraphQLObjectType({
+        name,
+        fields: {
+            count: { type: GraphQLInt },
+            [listName || name.replace(/Type$/, '')]: { type: new GraphQLList(type) },
+        },
+    });
+}
+
+export const successType = new GraphQLObjectType({
+    name: 'successType',
+    fields: {
+        success: { type: GraphQLBoolean },
+        msg: { type: GraphQLString },
+    },
+});
+
+export const descriptType = new GraphQLObjectType({
+    name: 'descriptType',
+    fields: {
+        img: { type: GraphQLString }, // 图片
+        text: { type: GraphQLString }, // 描述
+    },
+});
+
+export const descriptInputType = new GraphQLInputObjectType({
+    name: 'descriptInputType',
+    fields: {
+        img: { type: GraphQLString }, // 图片
+        text: { type: GraphQLString }, // 描述
+    },
+});
+
+export const pointType = new GraphQLObjectType({
+    name: 'pointType',
+    fields: {
+        name: { type: GraphQLString }, // 地名
+        longitude: { type: GraphQLFloat }, // 经度
+        latitude: { type: GraphQLFloat }, // 纬度
+        locateTime: { type: GraphQLString }, // 定位时间
+    },
+});
+
+export const pointInputType = new GraphQLInputObjectType({
+    name: 'pointInputType',
+    fields: {
+        name: { type: GraphQLString }, // 地名
+        longitude: { type: GraphQLFloat }, // 经度
+        latitude: { type: GraphQLFloat }, // 纬度
+    },
+});
+
+export const driverType = new GraphQLObjectType({
+    name: 'driverType',
+    fields: {
+        name: { type: GraphQLString }, // 司机名字
+        phone: { type: GraphQLString }, // 司机电话
+    },
+});
+
+export const driverInputType = new GraphQLInputObjectType({
+    name: 'driverInputType',
+    fields: {
+        name: { type: GraphQLString }, // 司机名字
+        phone: { type: GraphQLString }, // 司机电话
+    },
+});
+
+export const sizeType = new GraphQLObjectType({
+    name: 'sizeType',
+    fields: {
+        length: { type: GraphQLFloat }, // 长度
+        width: { type: GraphQLFloat }, // 宽度
+        height: { type: GraphQLFloat }, // 高度
+    },
+});
+
+export const sizeInputType = new GraphQLInputObjectType({
+    name: 'sizeInputType',
+    fields: {
+        length: { type: GraphQLFloat }, // 长度
+        width: { type: GraphQLFloat }, // 宽度
+        height: { type: GraphQLFloat }, // 高度
+    },
+});
+
+export const addressType = new GraphQLObjectType({
+    name: 'addressType',
+    fields: {
+        parentCode: { type: GraphQLInt },
+        code: { type: GraphQLInt },
+        name: { type: GraphQLString },
+        level: { type: GraphQLInt },
+        isLeaf: { type: GraphQLBoolean },
+    },
+});
+
+export const startPointType = new GraphQLObjectType({
+    name: 'startPointType',
+    fields: {
+        parentCode: { type: GraphQLInt },
+        code: { type: GraphQLInt },
+        level: { type: GraphQLInt },
+        name: { type: GraphQLString },
+        id: { type: GraphQLID },
+        isShop: { type: GraphQLBoolean },
+        isAgent: { type: GraphQLBoolean },
+        addressRegionLastCode: { type: GraphQLInt },
+        isLeaf: { type: GraphQLBoolean },
+    },
+});
+
+export const orderAddressType = new GraphQLObjectType({
+    name: 'orderAddressType',
+    fields: {
+        addressList: { type: new GraphQLList(new GraphQLList(addressType)) },
+        cityAddressList: { type: new GraphQLList(new GraphQLList(addressType)) },
+    },
+});
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/types/order.js
+
+```js
+import {
+    GraphQLInputObjectType,
+    GraphQLObjectType,
+    GraphQLString,
+    GraphQLFloat,
+    GraphQLBoolean,
+    GraphQLInt,
+    GraphQLID,
+    GraphQLList,
+} from 'graphql';
+
+import { makeResultType, makeListType } from './common';
+import { clientType } from './client';
+import { shopType } from './shop';
+import { agentType } from './agent';
+import { shipperType } from './shipper';
+
+const stateListType = new GraphQLObjectType({
+    name: 'stateListType',
+    fields: {
+        state: { type: GraphQLInt },
+        count: { type: GraphQLInt },
+    },
+});
+export const orderType = new GraphQLObjectType({
+    name: 'orderType',
+    fields: {
+        id: { type: GraphQLID },
+        senderPhone: { type: GraphQLString },
+        senderName: { type: GraphQLString },
+        receiverPhone: { type: GraphQLString },
+        receiverName: { type: GraphQLString },
+        name: { type: GraphQLString },
+        startPoint: { type: GraphQLString },
+        startPointLastCode: { type: GraphQLInt },
+        shop: { type: shopType },
+        shipper: { type: shipperType },
+        agent: { type: agentType },
+        endPoint: { type: GraphQLString },
+        endPointLastCode: { type: GraphQLInt },
+        sendDoorEndPoint: { type: GraphQLString },
+        sendDoorEndPointLastCode: { type: GraphQLInt },
+        totalNumbers: { type: GraphQLInt },
+        weight: { type: GraphQLFloat },
+        size: { type: GraphQLFloat },
+        proxyCharge: { type: GraphQLFloat },
+        proxyChargeProfit: { type: GraphQLFloat },
+        totalDesignatedFee: { type: GraphQLFloat },
+        isReachPay: { type: GraphQLBoolean },
+        isSendDoor: { type: GraphQLBoolean },
+        isInsuance: { type: GraphQLBoolean },
+        state: { type: GraphQLInt },
+        placeOrderTime: { type: GraphQLString },
+        // 价格
+        fee: { type: GraphQLFloat }, // 物流公司的运费
+        realFee: { type: GraphQLFloat }, // 实际运费
+        designatedFee: { type: GraphQLFloat }, // 指定收款
+        needPayTransportFee: { type: GraphQLFloat }, // 应该付的运费
+        needPayInsuanceFee: { type: GraphQLFloat }, // 应该付的保险金额
+        photo: { type: GraphQLString }, // 图片
+        // 提成
+        profit: { type: GraphQLFloat },
+        // 其他
+        isCityDistribute: { type: GraphQLBoolean }, // 是否是同城配送
+        payMode: { type: GraphQLInt }, // 支付方式 0：现付（PM_IMMEDIATE），1：到付（PM_REACH），2：混合支付（PM_MIXED 指定收款的部分到付，其余的现付）
+        isTransferOrder: { type: GraphQLBoolean }, // 是否是中转单
+        receiveAgentMember: { type: clientType }, // 收货员
+        stateList: { type: new GraphQLList(stateListType) }, // 状态列表
+        deductError: { type: GraphQLBoolean }, // 扣款是否失败
+        // 附加信息
+        unloadNumber: { type: GraphQLInt }, // 未装载的数量
+    },
+});
+export const orderResultType = makeResultType('orderResultType', orderType);
+export const orderListType = makeListType('orderListType', orderType);
+export const orderItemListType = makeListType('orderItemListType', orderType, 'list');
+
+export const orderInputType = new GraphQLInputObjectType({
+    name: 'orderInputType',
+    fields: {
+        orderId: { type: GraphQLID },
+        orderGroupId: { type: GraphQLID },
+        preOrderId: { type: GraphQLID },
+        senderPhone: { type: GraphQLString },
+        senderName: { type: GraphQLString },
+        receiverPhone: { type: GraphQLString },
+        receiverName: { type: GraphQLString },
+        name: { type: GraphQLString },
+        startPoint: { type: GraphQLString },
+        startPointLastCode: { type: GraphQLInt },
+        shopId: { type: GraphQLID },
+        agentId: { type: GraphQLID },
+        endPoint: { type: GraphQLString },
+        endPointLastCode: { type: GraphQLInt },
+        sendDoorEndPoint: { type: GraphQLString },
+        sendDoorEndPointLastCode: { type: GraphQLInt },
+        totalNumbers: { type: GraphQLInt },
+        weight: { type: GraphQLFloat },
+        size: { type: GraphQLFloat },
+        proxyCharge: { type: GraphQLInt },
+        totalDesignatedFee: { type: GraphQLInt },
+        isCityDistribute: { type: GraphQLBoolean },
+        isReachPay: { type: GraphQLBoolean },
+        isSendDoor: { type: GraphQLBoolean },
+        isInsuance: { type: GraphQLBoolean },
+    },
+});
+
+export const orderFeeType = new GraphQLObjectType({
+    name: 'orderFeeType',
+    fields: {
+        id: { type: GraphQLID },
+        endPoint: { type: GraphQLString },
+        selfSignRate: { type: GraphQLFloat },
+        duration: { type: GraphQLFloat },
+        distance: { type: GraphQLFloat },
+        shipperName: { type: GraphQLString },
+        shopName: { type: GraphQLString },
+        shopAddress: { type: GraphQLString },
+        agentName: { type: GraphQLString },
+        agentAddress: { type: GraphQLString },
+        transportFee: { type: GraphQLFloat },
+        price: { type: GraphQLFloat },
+        minFee: { type: GraphQLFloat },
+        sendDoorPrice: { type: GraphQLFloat },
+        sendDoorMinFee: { type: GraphQLFloat },
+    },
+});
+export const orderFeeListType = makeListType('orderFeeListType', orderFeeType, 'roadmapList');
+export const orderFeesType = new GraphQLObjectType({
+    name: 'orderFeesType',
+    fields: {
+        shop: { type: orderFeeListType },
+        agent: { type: orderFeeListType },
+    },
+});
+
+export const needSendOrderType = new GraphQLObjectType({
+    name: 'needSendOrderType',
+    fields: {
+        endPoint: { type: GraphQLString },
+        orderCount: { type: GraphQLInt },
+        totalNumbers: { type: GraphQLInt },
+        totalWeight: { type: GraphQLFloat },
+        totalSize: { type: GraphQLFloat },
+        totalFee: { type: GraphQLFloat },
+    },
+});
+export const needSendOrderListType = makeListType('needSendOrderListType', needSendOrderType, 'orderList');
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/types/orderGroup.js
+
+```js
+import {
+    GraphQLInputObjectType,
+    GraphQLObjectType,
+    GraphQLString,
+    GraphQLFloat,
+    GraphQLInt,
+    GraphQLID,
+    GraphQLList,
+} from 'graphql';
+
+import { makeResultType, makeListType } from './common';
+import { orderType } from './order';
+import { shopType } from './shop';
+import { agentType } from './agent';
+
+export const orderGroupType = new GraphQLObjectType({
+    name: 'orderGroupType',
+    fields: {
+        id: { type: GraphQLID },
+        startPoint: { type: GraphQLString },
+        startPointLastCode: { type: GraphQLInt },
+        shop: { type: shopType },
+        agent: { type: agentType },
+        name: { type: GraphQLString },
+        orderCount: { type: GraphQLInt },
+        totalNumbers: { type: GraphQLInt },
+        totalWeight: { type: GraphQLFloat },
+        totalSize: { type: GraphQLFloat },
+    },
+});
+export const orderGroupResultType = makeResultType('orderGroupResultType', orderGroupType);
+export const orderGroupListType = makeListType('orderGroupListType', orderGroupType);
+
+export const orderGroupInputType = new GraphQLInputObjectType({
+    name: 'orderGroupInputType',
+    fields: {
+        orderGroupId: { type: GraphQLID },
+        groupName: { type: GraphQLString },
+        startPoint: { type: GraphQLString },
+        startPointLastCode: { type: GraphQLInt },
+        shopId: { type: GraphQLID },
+        agentId: { type: GraphQLID },
+        orderGroupIdList:  { type: new GraphQLList(GraphQLID) },
+        orderIdList:  { type: new GraphQLList(GraphQLID) },
+    },
+});
+
+export const orderGroupFeeType = new GraphQLObjectType({
+    name: 'orderGroupFeeType',
+    fields: {
+        id: { type: GraphQLID },
+        totalTransportFee: { type: GraphQLFloat },
+        name: { type: GraphQLString },
+        address: { type: GraphQLString },
+        distance: { type: GraphQLFloat },
+        unfindOrderList: { type: new GraphQLList(orderType) },
+    },
+});
+export const orderGroupFeesType = new GraphQLObjectType({
+    name: 'orderGroupFeesType',
+    fields: {
+        shopList: { type: new GraphQLList(orderGroupFeeType) },
+        agentList: { type: new GraphQLList(orderGroupFeeType) },
+    },
+});
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/types/personal.js
+
+```js
+import {
+    GraphQLInputObjectType,
+    GraphQLObjectType,
+    GraphQLID,
+    GraphQLString,
+    GraphQLInt,
+    GraphQLList,
+} from 'graphql';
+import { makeResultType } from './common';
+import { shipperType } from './shipper';
+import { agentType } from './agent';
+import { truckType } from './truck';
+
+export const personalInfoType = new GraphQLObjectType({
+    name: 'personalInfoType',
+    fields: {
+        userId: { type: GraphQLID },
+        phone: { type: GraphQLString },
+        email: { type: GraphQLString },
+        name: { type: GraphQLString },
+        sex: { type: GraphQLInt },
+        head: { type: GraphQLString },
+        birthday: { type: GraphQLString },
+        age: { type: GraphQLInt },
+        address: { type: GraphQLString },
+        phoneList: { type: GraphQLString },
+        authority: { type: new GraphQLList(GraphQLInt) },
+        shipper: { type: shipperType },
+        agent: { type: agentType },
+        truck: { type: truckType },
+    },
+});
+export const personalInfoResultType = makeResultType('personalInfoResultType', personalInfoType);
+
+export const personalInfoInputType = new GraphQLInputObjectType({
+    name: 'personalInfoInputType',
+    fields: {
+        userId: { type: GraphQLID },
+        phone: { type: GraphQLString },
+        email: { type: GraphQLString },
+        name: { type: GraphQLString },
+        sex: { type: GraphQLInt },
+        head: { type: GraphQLString },
+        birthday: { type: GraphQLString },
+        address: { type: GraphQLString },
+        phoneList: { type: GraphQLString },
+        password: { type: GraphQLString },
+        verifyCode: { type: GraphQLString },
+    },
+});
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/types/roadmap.js
+
+```js
+import {
+    GraphQLInputObjectType,
+    GraphQLObjectType,
+    GraphQLString,
+    GraphQLFloat,
+    GraphQLBoolean,
+    GraphQLInt,
+    GraphQLID,
+    GraphQLList,
+} from 'graphql';
+
+import { makeResultType, makeListType } from './common';
+import { shopType } from './shop';
+
+const sendDoorRoadmapType = new GraphQLObjectType({
+    name: 'sendDoorRoadmapType',
+    fields: {
+        enable: { type: GraphQLBoolean },
+        sendDoorEndPoint: { type: GraphQLString },
+        sendDoorEndPointLastCode: { type: GraphQLInt },
+        sendDoorPrice: { type: GraphQLFloat },
+        baseSendDoorPrice: { type: GraphQLFloat },
+        updateSendDoorPriceTime: { type: GraphQLString },
+        sendDoorMinFee: { type: GraphQLFloat },
+        baseSendDoorMinFee: { type: GraphQLFloat },
+        updateSendDoorMinFeeTime: { type: GraphQLString },
+    },
+});
+
+export const roadmapType = new GraphQLObjectType({
+    name: 'roadmapType',
+    fields: {
+        id: { type: GraphQLID },
+        startPoint: { type: GraphQLString },
+        endPoint: { type: GraphQLString },
+        endPointLastCode: { type: GraphQLInt },
+        price: { type: GraphQLFloat },
+        basePrice: { type: GraphQLFloat },
+        updatePriceTime: { type: GraphQLString },
+        minFee: { type: GraphQLFloat },
+        baseMinFee: { type: GraphQLFloat },
+        updateMinFeeTime: { type: GraphQLString },
+        duration: { type: GraphQLFloat },
+        selfSignRate: { type: GraphQLFloat },
+        modifyTime: { type: GraphQLString },
+        enable: { type: GraphQLBoolean },
+        sendDoorEnable: { type: GraphQLBoolean },
+        sendDoorList: { type: new GraphQLList(sendDoorRoadmapType) },
+    },
+});
+export const roadmapResultType = makeResultType('roadmapResultType', roadmapType);
+export const roadmapListType = makeListType('roadmapListType', roadmapType);
+
+export const roadmapInputType = new GraphQLInputObjectType({
+    name: 'roadmapInputType',
+    fields: {
+        roadmapId: { type: GraphQLID },
+        shopId: { type: GraphQLID },
+        enable: { type: GraphQLBoolean },
+        endPoint: { type: GraphQLString },
+        endPointLastCode: { type: GraphQLInt },
+        price: { type: GraphQLFloat },
+        basePrice: { type: GraphQLFloat },
+        minFee: { type: GraphQLFloat },
+        baseMinFee: { type: GraphQLFloat },
+        isCityDistribute: { type: GraphQLBoolean },
+    },
+});
+export const setRoadmapPriceType = new GraphQLInputObjectType({
+    name: 'setRoadmapPriceType',
+    fields: {
+        roadmapIdList: { type: new GraphQLList(GraphQLID) },
+        mode: { type: GraphQLInt },
+        typeList: { type: new GraphQLList(GraphQLInt) },
+        value: { type: GraphQLFloat },
+    },
+});
+export const setRoadmapSendDoorPriceType = new GraphQLInputObjectType({
+    name: 'setRoadmapSendDoorPriceType',
+    fields: {
+        roadmapId: { type: GraphQLID },
+        lastCodeList: { type: new GraphQLList(GraphQLInt) },
+        mode: { type: GraphQLInt },
+        typeList: { type: new GraphQLList(GraphQLInt) },
+        value: { type: GraphQLFloat },
+    },
+});
+
+export const regionRateType = new GraphQLObjectType({
+    name: 'regionRateType',
+    fields: {
+        id: { type: GraphQLID },
+        // 路线列表的参数
+        shop: { type: shopType },
+        region: { type: GraphQLString },
+        type: { type: GraphQLInt },
+        regionLastCode: { type: GraphQLInt },
+        profitRate: { type: GraphQLFloat },
+        profitCount: { type: GraphQLFloat },
+        createTime: { type: GraphQLString },
+        modifyTime: { type: GraphQLString },
+    },
+});
+export const regionRateResultType = makeResultType('regionRateResultType', regionRateType);
+export const regionRateListType = makeListType('regionRateListType', regionRateType);
+export const regionRateInputType = new GraphQLInputObjectType({
+    name: 'regionRateInputType',
+    fields: {
+        regionId:  { type: GraphQLID },
+        regionRateIdList: { type: new GraphQLList(GraphQLID) },
+        shopId: { type: GraphQLID },
+        region: { type: GraphQLString },
+        regionLastCode: { type: GraphQLInt },
+        profitRate: { type: GraphQLFloat },
+        profitCount: { type: GraphQLFloat },
+        type: { type: GraphQLInt },
+    },
+});
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/types/shipper.js
+
+```js
+import {
+    GraphQLInputObjectType,
+    GraphQLObjectType,
+    GraphQLString,
+    GraphQLFloat,
+    GraphQLID,
+    GraphQLInt,
+    GraphQLList,
+    GraphQLBoolean,
+} from 'graphql';
+
+import { makeResultType, makeListType, descriptType, descriptInputType } from './common';
+import { clientType } from './client';
+import { shopType } from './shop';
+
+export const bondCompanyType = new GraphQLObjectType({
+    name: 'bondCompanyType',
+    fields: {
+        capital: { type: GraphQLFloat }, // 担保公司注册资金
+        bondAmount: { type: GraphQLFloat }, // 担保金额
+        name: { type: GraphQLString }, // 担保公司名称
+        address: { type: GraphQLString }, // 担保公司地址
+        phoneList: { type: GraphQLString }, // 担保公司电话
+        legalName: { type: GraphQLString }, // 法人姓名
+        legalPhone: { type: GraphQLString }, // 法人电话
+        certificate: { type: new GraphQLList(GraphQLString) }, // 担保公司资格证书
+        legalIDCard: { type: new GraphQLList(GraphQLString) }, // 法人身份证
+    },
+});
+export const shipperType = new GraphQLObjectType({
+    name: 'shipperType',
+    fields: {
+        // 列表的字段
+        id: { type: GraphQLID },
+        shipperType: { type: GraphQLInt },
+        name: { type: GraphQLString },
+        chairMan: { type: clientType },
+        acountAmount: { type: GraphQLFloat },
+        totalBondAmount: { type: GraphQLFloat },
+        remainBondAmount: { type: GraphQLFloat },
+        capital: { type: GraphQLFloat },
+        // 基本信息
+        logo: { type: GraphQLString },
+        image: { type: GraphQLString },
+        sign: { type: GraphQLString },
+        address: { type: GraphQLString },
+        phoneList:  { type: GraphQLString },
+        descriptList:  { type: new GraphQLList(descriptType) },
+        registerTime: { type: GraphQLString },
+        // 法人
+        legalName: { type: GraphQLString },
+        legalPhone: { type: GraphQLString },
+        legalIDCard: { type: new GraphQLList(GraphQLString) },
+        // 入驻分店性信息
+        registerShopList: { type: new GraphQLList(shopType) },
+        // 上门自提
+        clientPickPrice: { type: GraphQLFloat },
+        clientPickEnable: { type: GraphQLBoolean },
+        // 担保公司
+        bondCompanyList: { type: new GraphQLList(bondCompanyType) },
+    },
+});
+export const shipperListType = makeListType('shipperListType', shipperType);
+export const shipperResultType = makeResultType('shipperResultType', shipperType);
+
+export const shipperInputType = new GraphQLInputObjectType({
+    name: 'shipperInputType',
+    fields: {
+        shopId: { type: GraphQLID },
+        logo: { type: GraphQLString },
+        image: { type: GraphQLString },
+        sign: { type: GraphQLString },
+        address: { type: GraphQLString },
+        phoneList:  { type: GraphQLString },
+        descriptList:  { type: new GraphQLList(descriptInputType) },
+        clientPickPrice: { type: GraphQLFloat },
+        clientPickEnable: { type: GraphQLBoolean },
+    },
+});
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/types/shop.js
+
+```js
+import {
+    GraphQLObjectType,
+    GraphQLString,
+    GraphQLFloat,
+    GraphQLInt,
+    GraphQLID,
+    GraphQLList,
+} from 'graphql';
+import { makeListType } from './common';
+
+export const carryPartmentType = new GraphQLObjectType({
+    name: 'carryPartmentType',
+    fields: {
+        id: { type: GraphQLID },
+        name: { type: GraphQLString },
+        price: { type: GraphQLFloat },
+        memberCount: { type: GraphQLInt },
+        descript: { type: GraphQLString },
+        phoneList: { type: GraphQLString },
+    },
+});
+
+const memberInShopType = new GraphQLObjectType({
+    name: 'memberInShopType',
+    fields: {
+        id: { type: GraphQLID },
+        name: { type: GraphQLString },
+        phone: { type: GraphQLString },
+        head: { type: GraphQLString },
+    },
+});
+export const shopType = new GraphQLObjectType({
+    name: 'shopType',
+    fields: {
+        id: { type: GraphQLID },
+        name: { type: GraphQLString },
+        logo: { type: GraphQLString },
+        image: { type: GraphQLString },
+        sign: { type: GraphQLString },
+        phoneList: { type: GraphQLString },
+        addressRegion: { type: GraphQLString },
+        addressRegionLastCode: { type: GraphQLInt },
+        address: { type: GraphQLString },
+        location: { type: new GraphQLList(GraphQLFloat) },
+        chairMan: { type: memberInShopType },
+        // 担保公司信息
+        totalBondAmount: { type: GraphQLFloat }, // 总的担保金额
+        remainBondAmount: { type: GraphQLFloat }, // 剩余可用的担保金额
+        registerTime: { type: GraphQLString }, // 注册时间
+    },
+});
+
+export const branchShopListType = makeListType('branchShopListType', shopType);
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/types/statistic.js
+
+```js
+import {
+    GraphQLObjectType,
+    GraphQLFloat,
+    GraphQLInt,
+    GraphQLList,
+} from 'graphql';
+
+export const shipperStatisticType = new GraphQLObjectType({
+    name: 'shipperStatisticType',
+    fields: {
+        count: { type: new GraphQLList(GraphQLInt) },
+        isReachPay: { type: new GraphQLList(GraphQLInt) },
+        fee: { type: new GraphQLList(GraphQLFloat) },
+        totalDesignatedFee: { type: new GraphQLList(GraphQLFloat) },
+        proxyCharge: { type: new GraphQLList(GraphQLFloat) },
+        weight: { type: new GraphQLList(GraphQLFloat) },
+        size: { type: new GraphQLList(GraphQLFloat) },
+    },
+});
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/types/truck.js
+
+```js
+import {
+    GraphQLInputObjectType,
+    GraphQLObjectType,
+    GraphQLString,
+    GraphQLFloat,
+    GraphQLInt,
+    GraphQLID,
+    GraphQLList,
+} from 'graphql';
+
+import { makeResultType, makeListType } from './common';
+import { carryPartmentType } from './shop';
+import { clientType } from './client';
+import { orderType } from './order';
+
+export const truckTypeType = new GraphQLObjectType({
+    name: 'truckTypeType',
+    fields: {
+        name: { type: GraphQLString }, // 名称
+        list: { type: new GraphQLList(GraphQLString) }, // 类型
+    },
+});
+export const driverType = new GraphQLObjectType({
+    name: 'driverType',
+    fields: {
+        id: { type: GraphQLID }, // Id
+        name: { type: GraphQLString }, // 姓名
+        phone: { type: GraphQLString }, // 手机号码
+    },
+});
+
+export const truckType = new GraphQLObjectType({
+    name: 'truckType',
+    fields: {
+        id: { type: GraphQLID }, // Id
+        // 基本信息
+        plateNo: { type: GraphQLString }, // 车牌号码
+        drivingLicense: { type: GraphQLString }, // 行驶证编号
+        truckType: { type: GraphQLString }, // 车型
+        insuanceMount: { type: GraphQLFloat }, // 保险
+        driver: { type: driverType }, // 司机的Id
+        state: { type: GraphQLInt }, // 货车状态
+        // 搬运信息
+        orderCount: { type: GraphQLInt }, // 总单数
+        totalNumbers: { type: GraphQLInt }, // 总件数
+        totalWeight: { type: GraphQLFloat }, // 总重量
+        totalSize: { type: GraphQLFloat }, // 总方量
+        carryPrice: { type: GraphQLFloat }, // 搬运价格
+        unloadAllOrderList: { type: new GraphQLList(orderType) }, // 只上了一部分订单列表
+        scanner: { type: clientType }, // 扫描员
+        carryPartment: { type: carryPartmentType }, // 选择的搬运部
+    },
+});
+
+export const truckResultType = makeResultType('truckResultType', truckType);
+export const truckItemListType = makeListType('truckItemListType', truckType, 'list');
+export const truckListType = makeListType('truckListType', truckType, 'truckList');
+export const trucksType = new GraphQLObjectType({
+    name: 'trucksType',
+    fields: {
+        onway: { type: truckItemListType },
+        complete: { type: truckItemListType },
+    },
+});
+
+export const truckInputType = new GraphQLInputObjectType({
+    name: 'truckInputType',
+    fields: {
+        truckId: { type: GraphQLID }, // 货车 Id
+        shopId: { type: GraphQLID }, // 所在分店 Id
+        plateNo: { type: GraphQLString }, // 车牌号码
+        drivingLicense: { type: GraphQLString }, // 行驶证编号
+        truckType: { type: GraphQLString }, // 车型
+        insuanceMount: { type: GraphQLFloat }, // 保险
+        driverId: { type: GraphQLID }, // 司机的Id
+    },
+});
+
+```
+
+* PDShop_Client_PC/project/App/server/shared/helpers/bind-error-type.js
+
+```js
+import {
+    GraphQLUnionType,
+} from 'graphql';
+import _ from 'lodash';
+import { errorType } from '../../graphql/types/error';
+
+export default function bindErrorType (obj) {
+    let key = _.keys(obj)[0];
+    let type = obj[key];
+    return new GraphQLUnionType({
+        name: key + 'BindErrorType',
+        types: [type, errorType],
+        resolveType: (value) => {
+            if (value.error) {
+                return errorType;
+            }
+            return type;
+        },
+    });
+}
+
+```
+
+* PDShop_Client_PC/project/App/server/shared/helpers/default-favicon.js
+
+```js
+export default function getDefaultIcon (res) {
+    return {
+        tag: 'link',
+        props: {
+            rel: 'shortcut icon',
+            type: 'image/vnd.microsoft.icon',
+            href: `${res.baseScriptsURL}/client/favicon.ico`,
+        },
+    };
+}
+
+```
+
+* PDShop_Client_PC/project/App/server/shared/helpers/get-base-component.js
+
+```js
+import React from 'react';
+import { Provider } from 'react-redux';
+import { ReduxRouter } from 'redux-router';
+import getMuiTheme from 'material-ui/styles/getMuiTheme';
+import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
+
+export default (req) => {
+    const { store, headers } = req;
+    const muiTheme = getMuiTheme({ userAgent: headers['user-agent'] });
+    return (
+        <MuiThemeProvider muiTheme={muiTheme}>
+            <Provider store={store}>
+                <ReduxRouter />
+            </Provider>
+        </MuiThemeProvider>
+    );
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/shared/helpers/get-markup.js
+
+```js
+import serialize from 'serialize-javascript';
+import Html from 'components/html';
+import React from 'react';
+import { renderToString } from 'react-dom/server';
+import { Provider } from 'react-redux';
+import { ReduxRouter } from 'redux-router';
+import getMuiTheme from 'material-ui/styles/getMuiTheme';
+import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
+
+export default function getMarkup (req, res) {
+    const { store, headers } = req;
+    const state = store.getState();
+    const initialState = serialize(state);
+    const muiTheme = getMuiTheme({ userAgent: headers['user-agent'] });
+
+    const markup = renderToString(
+        <MuiThemeProvider muiTheme={muiTheme}>
+            <Provider store={store}>
+                <ReduxRouter />
+            </Provider>
+        </MuiThemeProvider>
+    );
+
+    const htmlMarkup = renderToString(
+        <Html
+            body={markup}
+            props={initialState}
+            locals={res.locals}
+            />
+    );
+
+    return htmlMarkup;
+}
+
+```
+
+* PDShop_Client_PC/project/App/server/shared/helpers/get-projection.js
+
+```js
+export function getProjection (fieldASTs) {
+    return fieldASTs.selectionSet.selections.reduce((projections, selection) => {
+        projections[selection.name.value] = 1;
+        return projections;
+    }, {});
+}
+
+export function getInlineProjection (fieldASTs) {
+    return fieldASTs.selectionSet.selections[0].selectionSet.selections.reduce((projections, selection) => {
+        projections[selection.name.value] = 1;
+        return projections;
+    }, {});
+}
+
+```
+
+* PDShop_Client_PC/project/App/server/shared/helpers/render-html.js
+
+```js
+import serialize from 'serialize-javascript';
+import Html from 'components/html';
+import React from 'react';
+import { renderToString } from 'react-dom/server';
+
+export default ({ component, store, locals }) => {
+    const state = store.getState();
+    const initialState = serialize(state);
+
+    const markup = renderToString(component);
+
+    const htmlMarkup = renderToString(
+        <Html
+            body={markup}
+            props={initialState}
+            locals={locals}
+            />
+    );
+
+    return htmlMarkup;
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/shared/helpers/route-handler.js
+
+```js
+import configureStore from 'helpers/configure-store';
+import { createMemoryHistory } from 'history';
+import { match, reduxReactRouter } from 'redux-router/server';
+
+export default function routeHandler (routes, req, res, next) {
+    const store = configureStore(reduxReactRouter({
+        createHistory: createMemoryHistory,
+        routes,
+    }));
+    const url = req.originalUrl;
+
+    store.dispatch(match(url, async (error, redirectLocation, routerState) => {
+        if (error) {
+            next(error);
+        } else if (redirectLocation) {
+            res.redirect(302, redirectLocation.pathname + redirectLocation.search);
+        } else if (routerState) {
+            req.routerState = routerState;
+            req.store = store;
+            next();
+        } else {
+            res.status(404).send('Not found');
         }
-        res.locals.footer.push({
-            tag: 'script',
-            props: {
-                src: `${res.baseScriptsURL}/shop/assets/shop.js`,
-            },
-        });
-        next();
-    } else {
-        res.redirect('/shop/login');
-    }
-});
-
-shopRouter.get('/shop*', (req, res, next) => {
-    if (req.isAuthenticated()) {
-        routeHandler(routes, req, res, next);
-    } else {
-        next();
-    }
-});
-
-shopRouter.get('/shop*', async (req, res, next) => {
-    if (req.isAuthenticated() && req.routerState) {
-        // get component with redux provider and react router
-        const component = getBaseComponent(req);
-        // get relate js data dependencies
-        await getDataDependencies(component, async (request) => await graphql(
-            schema.getSchema(),
-            request.query,
-            {
-                isAuthenticated: true,
-                user: req.user,
-            },
-            request.variables
-        ));
-
-        // final render html
-        res.status(200).send(renderHtml({
-            component,
-            store: req.store,
-            locals: res.locals,
-        }));
-    } else {
-        next();
-    }
-});
-
-export default shopRouter;
+    }));
+}
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shop/index.js
+* PDShop_Client_PC/project/App/shared/pages/client/index.js
 
 ```js
 import React from 'react';
 import { rootDataConnect } from 'relatejs';
-import Shop from './contents';
+import Client from './contents';
 import _ from 'lodash';
 
 @rootDataConnect()
-export default class ShopContainer extends React.Component {
+export default class ClientContainer extends React.Component {
     state = {
         personal: {},
-        shop : {},
+        currentShop: {},
         printShow: false,
     };
     updatePersonal (personal) {
         this.setState({ personal });
     }
-    updateShop (shop) {
-        this.setState({ shop });
+    updateCurrentShop (currentShop) {
+        this.setState({ currentShop });
     }
     updatePrintShow (printShow) {
         this.setState({ printShow });
@@ -2414,27 +3686,27 @@ export default class ShopContainer extends React.Component {
         return !!_.intersection(personal.authority, authority).length;
     }
     render () {
-        const { personal, shop, printShow } = this.state;
+        const { personal, currentShop, printShow } = this.state;
         return (
-            <Shop {...this.props} printShow={printShow} rootPersonal={personal} rootShop={shop} hasAuthority={::this.hasAuthority}>
+            <Client {...this.props} printShow={printShow} rootPersonal={personal} rootShop={currentShop} hasAuthority={::this.hasAuthority}>
                 {
                     React.cloneElement(this.props.children, {
                         rootPersonal: personal,
                         updatePersonal: ::this.updatePersonal,
-                        rootShop: shop,
-                        updateShop: ::this.updateShop,
+                        rootShop: currentShop,
+                        updateCurrentShop: ::this.updateCurrentShop,
                         updatePrintShow: ::this.updatePrintShow,
                         hasAuthority: ::this.hasAuthority,
                     })
                 }
-            </Shop>
+            </Client>
         );
     }
 }
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/relatejs/actions/mutation.js
+* PDShop_Client_PC/project/App/shared/relatejs/actions/mutation.js
 
 ```js
 import invariant from 'invariant';
@@ -2469,7 +3741,7 @@ export default function (options, callback = false) {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/relatejs/actions/query.js
+* PDShop_Client_PC/project/App/shared/relatejs/actions/query.js
 
 ```js
 import q from 'q';
@@ -2533,7 +3805,7 @@ export default function graphql (
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/relatejs/actions/remove-connector.js
+* PDShop_Client_PC/project/App/shared/relatejs/actions/remove-connector.js
 
 ```js
 import actionTypes from './types';
@@ -2547,7 +3819,7 @@ export default function removeConnector (id) {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/relatejs/actions/settings.js
+* PDShop_Client_PC/project/App/shared/relatejs/actions/settings.js
 
 ```js
 import actionTypes from './types';
@@ -2591,7 +3863,7 @@ export function removeBody (key) {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/relatejs/actions/types.js
+* PDShop_Client_PC/project/App/shared/relatejs/actions/types.js
 
 ```js
 export default {
@@ -2607,7 +3879,7 @@ export default {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/relatejs/decorators/data-connect.js
+* PDShop_Client_PC/project/App/shared/relatejs/decorators/data-connect.js
 
 ```js
 import React, { Component, PropTypes } from 'react';
@@ -2982,7 +4254,7 @@ export default function dataConnect (...args) {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/relatejs/decorators/root-data-connect.js
+* PDShop_Client_PC/project/App/shared/relatejs/decorators/root-data-connect.js
 
 ```js
 import hoistStatics from 'hoist-non-react-statics';
@@ -3144,7 +4416,7 @@ export default function rootDataConnect (config) {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/relatejs/helpers/capture.js
+* PDShop_Client_PC/project/App/shared/relatejs/helpers/capture.js
 
 ```js
 import _ from 'lodash';
@@ -3181,7 +4453,7 @@ export default (action, test) => {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/relatejs/helpers/connectors-ids.js
+* PDShop_Client_PC/project/App/shared/relatejs/helpers/connectors-ids.js
 
 ```js
 let ID_COUNTER = 0;
@@ -3198,7 +4470,7 @@ export function resetConnectorsIds (prefix = '') {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/relatejs/helpers/fragments.js
+* PDShop_Client_PC/project/App/shared/relatejs/helpers/fragments.js
 
 ```js
 import _ from 'lodash';
@@ -3382,7 +4654,7 @@ export function buildQueryAndVariables (fragments, inputVariables = {}, type = '
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/relatejs/helpers/get-variables.js
+* PDShop_Client_PC/project/App/shared/relatejs/helpers/get-variables.js
 
 ```js
 import invariant from 'invariant';
@@ -3452,7 +4724,7 @@ export default function getVariables ({ variables, fragments, variablesTypes, di
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/relatejs/helpers/request.js
+* PDShop_Client_PC/project/App/shared/relatejs/helpers/request.js
 
 ```js
 import request from 'superagent';
@@ -3483,7 +4755,7 @@ export default function doRequest ({ dispatch, query, variables, type, endpoint,
         dataObj;
 
         const req = request
-        .post(endpoint || '/shop/graphql')
+        .post(endpoint || '/client/graphql')
         .set(headers)
         .send(payload);
 
@@ -3501,7 +4773,7 @@ export default function doRequest ({ dispatch, query, variables, type, endpoint,
                 console.log('[relatejs]: body', data);
                 const { errors } = data;
                 if (errors && errors.length && _.find(errors, (item) => (item.message === 'unauthorized'))) {
-                    window.location.href = '/shop/login';
+                    window.location.href = '/client/login';
                 } else {
                     deferred.resolve(data);
                 }
@@ -3523,7 +4795,7 @@ export default function doRequest ({ dispatch, query, variables, type, endpoint,
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/relatejs/redirect-graphql/index.js
+* PDShop_Client_PC/project/App/shared/relatejs/redirect-graphql/index.js
 
 ```js
 import { buildQueryAndVariables } from '../helpers/fragments';
@@ -3556,7 +4828,7 @@ export function apiMutation (options, callback) {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/relatejs/reducer/reducer.js
+* PDShop_Client_PC/project/App/shared/relatejs/reducer/reducer.js
 
 ```js
 import actionTypes from '../actions/types';
@@ -3582,7 +4854,7 @@ const defaultState = {
         Accept: 'application/json',
     },
     body: {},
-    endpoint: '/shop/graphql',
+    endpoint: '/client/graphql',
     withCredentials: false,
 };
 
@@ -3694,7 +4966,7 @@ export function relateReducerInit (settings) {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/relatejs/server/get-data-dependencies.js
+* PDShop_Client_PC/project/App/shared/relatejs/server/get-data-dependencies.js
 
 ```js
 import invariant from 'invariant';
@@ -3796,7 +5068,7 @@ export default function getAllDataDependencies (rootElement, getData) {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/relatejs/store/connectors.js
+* PDShop_Client_PC/project/App/shared/relatejs/store/connectors.js
 
 ```js
 import _ from 'lodash';
@@ -3908,7 +5180,7 @@ export default class Connectors {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/relatejs/store/global-data.js
+* PDShop_Client_PC/project/App/shared/relatejs/store/global-data.js
 
 ```js
 export default {
@@ -3927,7 +5199,7 @@ export default {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/relatejs/store/index.js
+* PDShop_Client_PC/project/App/shared/relatejs/store/index.js
 
 ```js
 import _ from 'lodash';
@@ -3983,7 +5255,7 @@ export default class Store {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/relatejs/store/keep-data.js
+* PDShop_Client_PC/project/App/shared/relatejs/store/keep-data.js
 
 ```js
 import _ from 'lodash';
@@ -4063,1234 +5335,3566 @@ export default {
 
 ```
 
-* PDShop_Shop_PC/project/App/server/graphql/mutations/index.js
-
-```js
-import * as personal from './personal';
-import * as member from './member';
-import * as shop from './shop';
-import * as shipper from './shipper';
-import * as agent from './agent';
-import * as partment from './partment';
-import * as order from './order';
-import * as roadmap from './roadmap';
-import * as setting from './setting';
-import * as notify from './notify';
-import * as warehouse from './warehouse';
-
-export default {
-    ...personal,
-    ...member,
-    ...shop,
-    ...shipper,
-    ...agent,
-    ...partment,
-    ...order,
-    ...roadmap,
-    ...setting,
-    ...notify,
-    ...warehouse,
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/index.js
-
-```js
-import * as common from './common';
-import * as personal from './personal';
-import * as account from './account';
-import * as shop from './shop';
-import * as partment from './partment';
-import * as member from './member';
-import * as shipper from './shipper';
-import * as agent from './agent';
-import * as client from './client';
-import * as roadmap from './roadmap';
-import * as order from './order';
-import * as setting from './setting';
-import * as statistic from './statistic';
-import * as notify from './notify';
-import * as warehouse from './warehouse';
-
-export default {
-    ...common,
-    ...account,
-    ...personal,
-    ...shop,
-    ...partment,
-    ...member,
-    ...shipper,
-    ...agent,
-    ...client,
-    ...roadmap,
-    ...order,
-    ...setting,
-    ...statistic,
-    ...notify,
-    ...warehouse,
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/types/account.js
+* PDShop_Client_PC/project/App/server/graphql/mutations/agentOrder/confirmCachPayed.js
 
 ```js
 import {
-    GraphQLInputObjectType,
-    GraphQLObjectType,
-    GraphQLString,
-    GraphQLFloat,
-} from 'graphql';
-import { makeResultType } from './common';
-
-export const accountType = new GraphQLObjectType({
-    name: 'accountType',
-    fields: {
-        amount: { type: GraphQLFloat },
-        qrcode: { type: GraphQLString },
-    },
-});
-export const accountResultType = makeResultType('accountResultType', accountType);
-
-export const accountInputType = new GraphQLInputObjectType({
-    name: 'accountInputType',
-    fields: {
-        amount: { type: GraphQLFloat },
-        body: { type: GraphQLString },
-        payPassword: { type: GraphQLString },
-    },
-});
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/types/agent.js
-
-```js
-import {
-    GraphQLInputObjectType,
-    GraphQLObjectType,
-    GraphQLString,
-    GraphQLFloat,
-    GraphQLInt,
-    GraphQLID,
-    GraphQLList,
-} from 'graphql';
-
-import { makeResultType, makeListType, descriptType, descriptInputType } from './common';
-import { clientType } from './client';
-
-export const agentType = new GraphQLObjectType({
-    name: 'agentType',
-    fields: {
-        // 列表的字段
-        id: { type: GraphQLID },
-        logo: { type: GraphQLString },
-        image: { type: GraphQLString },
-        addressRegion: { type: GraphQLString },
-        addressRegionLastCode: { type: GraphQLInt },
-        address: { type: GraphQLString },
-        location: { type: new GraphQLList(GraphQLFloat) },
-        phoneList:  { type: GraphQLString },
-        name: { type: GraphQLString },
-        chairMan: { type: clientType },
-        // 基本信息
-        sign: { type: GraphQLString },
-        descriptList:  { type: new GraphQLList(descriptType) },
-        registerTime: { type: GraphQLString },
-        // 法人
-        legalName: { type: GraphQLString },
-        legalPhone: { type: GraphQLString },
-        legalIDCard: { type: new GraphQLList(GraphQLString) },
-    },
-});
-export const agentResultType = makeResultType('agentResultType', agentType);
-export const agentListType = makeListType('agentListType', agentType);
-
-export const agentInputType = new GraphQLInputObjectType({
-    name: 'agentInputType',
-    fields: {
-        agentId: { type: GraphQLID },
-        chairManId: { type: GraphQLString },
-        name: { type: GraphQLString },
-        logo: { type: GraphQLString },
-        image: { type: GraphQLString },
-        sign: { type: GraphQLString },
-        addressRegion: { type: GraphQLString },
-        addressRegionLastCode: { type: GraphQLInt },
-        address: { type: GraphQLString },
-        location: { type: new GraphQLList(GraphQLFloat) },
-        phoneList:  { type: GraphQLString },
-        descriptList:  { type: new GraphQLList(descriptInputType) },
-        legalName: { type: GraphQLString },
-        legalPhone: { type: GraphQLString },
-        legalIDCard: { type: new GraphQLList(GraphQLString) },
-    },
-});
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/types/bill.js
-
-```js
-import {
-    GraphQLObjectType,
-    GraphQLString,
-    GraphQLFloat,
-} from 'graphql';
-
-import { makeListType } from './common';
-
-export const billType = new GraphQLObjectType({
-    name: 'billType',
-    fields: {
-        tradeAmountYuan: { type: GraphQLFloat },
-        tradeTime: { type: GraphQLString },
-        thirdpartyAccount: { type: GraphQLString },
-        remark: { type: GraphQLString },
-    },
-});
-export const billItemListType = makeListType('billItemListType', billType, 'list');
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/types/client.js
-
-```js
-import {
-    GraphQLObjectType,
-    GraphQLString,
-    GraphQLInt,
     GraphQLID,
 } from 'graphql';
+import { authorize } from '../../authorize';
+import { orderResultType } from '../../types/order';
+import { post, urls } from 'helpers/api';
 
-import { makeResultType, makeListType } from './common';
-export const clientType = new GraphQLObjectType({
-    name: 'clientType',
-    fields: {
-        id: { type: GraphQLID },
-        name: { type: GraphQLString },
-        phone: { type: GraphQLString },
-        email: { type: GraphQLString },
-        head: { type: GraphQLString },
-        birthday: { type: GraphQLString },
-        age: { type: GraphQLInt },
-        sex: { type: GraphQLInt },
-        phoneList: { type: GraphQLString },
-    },
-});
-export const clientResultType = makeResultType('clientResultType', clientType);
-export const clientListType = makeListType('clientListType', clientType);
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/types/common.js
-
-```js
-import {
-    GraphQLInputObjectType,
-    GraphQLObjectType,
-    GraphQLString,
-    GraphQLFloat,
-    GraphQLBoolean,
-    GraphQLInt,
-    GraphQLList,
-} from 'graphql';
-
-export function makeResultType (name, type) {
-    const base = {
-        success: { type: GraphQLBoolean },
-        msg: { type: GraphQLString },
-    };
-    const fields = type ? { ...base, context: { type: type } } : base;
-    return new GraphQLObjectType({ name, fields });
-}
-
-export function makeListType (name, type, listName) {
-    return new GraphQLObjectType({
-        name,
-        fields: {
-            count: { type: GraphQLInt },
-            [listName || name.replace(/Type$/, '')]: { type: new GraphQLList(type) },
+export default {
+    type: orderResultType,
+    args: {
+        orderId: {
+            type: GraphQLID,
         },
-    });
-}
-
-export const successType = new GraphQLObjectType({
-    name: 'successType',
-    fields: {
-        success: { type: GraphQLBoolean },
-        msg: { type: GraphQLString },
     },
-});
-
-export const descriptType = new GraphQLObjectType({
-    name: 'descriptType',
-    fields: {
-        img: { type: GraphQLString }, // 图片
-        text: { type: GraphQLString }, // 描述
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.confirmCachPayed, params, root) || { msg: '服务器错误' };
     },
-});
-
-export const descriptInputType = new GraphQLInputObjectType({
-    name: 'descriptInputType',
-    fields: {
-        img: { type: GraphQLString }, // 图片
-        text: { type: GraphQLString }, // 描述
-    },
-});
-
-export const pointType = new GraphQLObjectType({
-    name: 'pointType',
-    fields: {
-        name: { type: GraphQLString }, // 地名
-        longitude: { type: GraphQLFloat }, // 经度
-        latitude: { type: GraphQLFloat }, // 纬度
-        locateTime: { type: GraphQLString }, // 定位时间
-    },
-});
-
-export const pointInputType = new GraphQLInputObjectType({
-    name: 'pointInputType',
-    fields: {
-        name: { type: GraphQLString }, // 地名
-        longitude: { type: GraphQLFloat }, // 经度
-        latitude: { type: GraphQLFloat }, // 纬度
-    },
-});
-
-export const driverType = new GraphQLObjectType({
-    name: 'driverType',
-    fields: {
-        name: { type: GraphQLString }, // 司机名字
-        phone: { type: GraphQLString }, // 司机电话
-    },
-});
-
-export const driverInputType = new GraphQLInputObjectType({
-    name: 'driverInputType',
-    fields: {
-        name: { type: GraphQLString }, // 司机名字
-        phone: { type: GraphQLString }, // 司机电话
-    },
-});
-
-export const sizeType = new GraphQLObjectType({
-    name: 'sizeType',
-    fields: {
-        length: { type: GraphQLFloat }, // 长度
-        width: { type: GraphQLFloat }, // 宽度
-        height: { type: GraphQLFloat }, // 高度
-    },
-});
-
-export const sizeInputType = new GraphQLInputObjectType({
-    name: 'sizeInputType',
-    fields: {
-        length: { type: GraphQLFloat }, // 长度
-        width: { type: GraphQLFloat }, // 宽度
-        height: { type: GraphQLFloat }, // 高度
-    },
-});
-
-export const addressType = new GraphQLObjectType({
-    name: 'addressType',
-    fields: {
-        parentCode: { type: GraphQLInt },
-        code: { type: GraphQLInt },
-        name: { type: GraphQLString },
-        level: { type: GraphQLInt },
-        isLeaf: { type: GraphQLBoolean },
-    },
-});
-
-export const orderAddressType = new GraphQLObjectType({
-    name: 'orderAddressType',
-    fields: {
-        addressList: { type: new GraphQLList(new GraphQLList(addressType)) },
-        cityAddressList: { type: new GraphQLList(new GraphQLList(addressType)) },
-    },
-});
+};
 
 ```
 
-* PDShop_Shop_PC/project/App/server/graphql/types/member.js
+* PDShop_Client_PC/project/App/server/graphql/mutations/agentOrder/confirmCachPayedForOrderList.js
 
 ```js
 import {
-    GraphQLInputObjectType,
-    GraphQLObjectType,
-    GraphQLString,
+    GraphQLID,
+    GraphQLList,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { successType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: successType,
+    args: {
+        orderIdList: {
+            type: new GraphQLList(GraphQLID),
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.confirmCachPayedForOrderList, params, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/agentOrder/index.js
+
+```js
+export placeClientOrder from './placeClientOrder';
+export placeClientOrderWithPreOrder from './placeClientOrderWithPreOrder';
+export modifyClientOrder from './modifyClientOrder';
+export confirmCachPayed from './confirmCachPayed';
+export confirmCachPayedForOrderList from './confirmCachPayedForOrderList';
+export printOrderBill from './printOrderBill';
+export printOrderListBill from './printOrderListBill';
+export printBarCode from './printBarCode';
+export removeClientOrder from './removeClientOrder';
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/agentOrder/modifyClientOrder.js
+
+```js
+import { authorize } from '../../authorize';
+import { orderInputType, orderResultType } from '../../types/order';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: orderResultType,
+    args: {
+        data: {
+            type: orderInputType,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.modifyClientOrder, params.data, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/agentOrder/placeClientOrder.js
+
+```js
+import { authorize } from '../../authorize';
+import { orderInputType, orderResultType } from '../../types/order';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: orderResultType,
+    args: {
+        data: {
+            type: orderInputType,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.placeClientOrder, params.data, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/agentOrder/placeClientOrderWithPreOrder.js
+
+```js
+import { authorize } from '../../authorize';
+import { orderInputType, orderResultType } from '../../types/order';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: orderResultType,
+    args: {
+        data: {
+            type: orderInputType,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.placeClientOrderWithPreOrder, params.data, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/agentOrder/printBarCode.js
+
+```js
+import {
+    GraphQLID,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { orderResultType } from '../../types/order';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: orderResultType,
+    args: {
+        orderId: {
+            type: GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.printBarCode, params, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/agentOrder/printOrderBill.js
+
+```js
+import {
+    GraphQLID,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { orderResultType } from '../../types/order';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: orderResultType,
+    args: {
+        orderId: {
+            type: GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.printOrderBill, params, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/agentOrder/printOrderListBill.js
+
+```js
+import {
+    GraphQLID,
+    GraphQLList,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { successType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: successType,
+    args: {
+        orderIdList: {
+            type: new GraphQLList(GraphQLID),
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.printOrderListBill, params, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/agentOrder/removeClientOrder.js
+
+```js
+import {
+    GraphQLID,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { successType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: successType,
+    args: {
+        orderId: {
+            type: GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.removeClientOrder, params, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/member/index.js
+
+```js
+export modifyShipperMemberAuthority from './modifyShipperMemberAuthority';
+export modifyAgentMemberAuthority from './modifyAgentMemberAuthority';
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/member/modifyAgentMemberAuthority.js
+
+```js
+import {
     GraphQLInt,
     GraphQLID,
     GraphQLList,
 } from 'graphql';
-import { makeResultType, makeListType } from './common';
+import { authorize } from '../../authorize';
+import { memberResultType } from '../../types/client';
+import { post, urls } from 'helpers/api';
 
-const innerPartmentType = new GraphQLObjectType({
-    name: 'innerPartmentType',
-    fields: {
-        id: { type: GraphQLID },
-        name:  { type: GraphQLString },
-        type:  { type: GraphQLInt },
+export default {
+    type: memberResultType,
+    args: {
+        memberId: {
+            type: GraphQLID,
+        },
+        authority: {
+            type: new GraphQLList(GraphQLInt),
+        },
     },
-});
+    async resolve (root, params, options) {
+        authorize(root);
+        let res = await post(urls.modifyAgentMemberAuthority, params, root) || { msg: '服务器错误' };
 
-export const memberType = new GraphQLObjectType({
-    name: 'memberType',
-    fields: {
-        id: { type: GraphQLID },
-        userId: { type: GraphQLID },
-        name: { type: GraphQLString },
-        phone: { type: GraphQLString },
-        email: { type: GraphQLString },
-        head: { type: GraphQLString },
-        age: { type: GraphQLInt },
-        sex: { type: GraphQLInt },
-        post: { type: GraphQLString },
-        authority: { type: new GraphQLList(GraphQLInt) },
-        birthday: { type: GraphQLString },
-        phoneList: { type: GraphQLString },
-        partment: { type: innerPartmentType },
+        return res;
     },
-});
-export const memberResultType = makeResultType('memberResultType', memberType);
-export const memberListType = makeListType('memberListType', memberType);
-
-export const memberInputType = new GraphQLInputObjectType({
-    name: 'memberInputType',
-    fields: {
-        userId: { type: GraphQLString },
-        memberId: { type: GraphQLID },
-        name: { type: GraphQLString },
-        phone: { type: GraphQLString },
-        password: { type: GraphQLString },
-        email: { type: GraphQLString },
-        head: { type: GraphQLString },
-        sex: { type: GraphQLInt },
-        post: { type: GraphQLString },
-        authority: { type: new GraphQLList(GraphQLInt) },
-        birthday: { type: GraphQLString },
-        phoneList: { type: GraphQLString },
-        partmentId: { type: GraphQLID },
-        shopId: { type: GraphQLID },
-        verifyCode: { type: GraphQLString },
-    },
-});
+};
 
 ```
 
-* PDShop_Shop_PC/project/App/server/graphql/types/notify.js
+* PDShop_Client_PC/project/App/server/graphql/mutations/member/modifyshipperMemberAuthority.js
 
 ```js
 import {
-    GraphQLInputObjectType,
+    GraphQLInt,
+    GraphQLID,
+    GraphQLList,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { memberResultType } from '../../types/client';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: memberResultType,
+    args: {
+        memberId: {
+            type: GraphQLID,
+        },
+        authority: {
+            type: new GraphQLList(GraphQLInt),
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.modifyShipperMemberAuthority, params, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/order/createPreOrderGroup.js
+
+```js
+import { authorize } from '../../authorize';
+import { successType } from '../../types/common';
+import { orderGroupInputType } from '../../types/orderGroup';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: successType,
+    args: {
+        data: {
+            type: orderGroupInputType,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.createPreOrderGroup, params.data, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/order/finishOrder.js
+
+```js
+import {
+    GraphQLID,
+    GraphQLString,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { successType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: successType,
+    args: {
+        orderId: {
+            type: GraphQLID,
+        },
+        verifyCode: {
+            type: GraphQLString,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.finishOrder, params, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/order/index.js
+
+```js
+export placePreOrder from './placePreOrder';
+export modifyPreOrder from './modifyPreOrder';
+export removePreOrder from './removePreOrder';
+export createPreOrderGroup from './createPreOrderGroup';
+export modifyPreOrderGroup from './modifyPreOrderGroup';
+export removePreOrderFromGroup from './removePreOrderFromGroup';
+export payForOrderWhenSend from './payForOrderWhenSend';
+export finishOrder from './finishOrder';
+export setClientPickOrderTransportFee from './setClientPickOrderTransportFee';
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/order/modifyPreOrder.js
+
+```js
+import { authorize } from '../../authorize';
+import { orderResultType, orderInputType } from '../../types/order';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: orderResultType,
+    args: {
+        data: {
+            type: orderInputType,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.modifyPreOrder, params.data, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/order/modifyPreOrderGroup.js
+
+```js
+import { authorize } from '../../authorize';
+import { successType } from '../../types/common';
+import { orderGroupInputType } from '../../types/orderGroup';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: successType,
+    args: {
+        data: {
+            type: orderGroupInputType,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.modifyPreOrderGroup, params.data, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/order/payForOrderWhenSend.js
+
+```js
+import {
+    GraphQLID,
+    GraphQLList,
+    GraphQLString,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { successType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: successType,
+    args: {
+        payPassword: {
+            type: GraphQLString,
+        },
+        orderIdList: {
+            type: new GraphQLList(GraphQLID),
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.payForOrderWhenSend, params, root) || { msg: '服务器繁忙,请稍后重试' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/order/placePreOrder.js
+
+```js
+import { authorize } from '../../authorize';
+import { orderResultType, orderInputType } from '../../types/order';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: orderResultType,
+    args: {
+        data: {
+            type: orderInputType,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.placePreOrder, params.data, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/order/removePreOrder.js
+
+```js
+import {
+    GraphQLID,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { successType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: successType,
+    args: {
+        orderId: {
+            type: GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.removePreOrder, params, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/order/removePreOrderFromGroup.js
+
+```js
+import {
+    GraphQLID,
+    GraphQLList,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { successType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: successType,
+    args: {
+        orderIdList: {
+            type: new GraphQLList(GraphQLID),
+        },
+        orderGroupId: {
+            type: GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.removePreOrderFromGroup, params, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/order/setClientPickOrderTransportFee.js
+
+```js
+import {
+    GraphQLID,
+    GraphQLBoolean,
+    GraphQLString,
+    GraphQLFloat,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { successType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: successType,
+    args: {
+        orderId: {
+            type: GraphQLID,
+        },
+        isTransport: {
+            type: GraphQLBoolean,
+        },
+        endPoint: {
+            type: GraphQLString,
+        },
+        transportFee: {
+            type: GraphQLFloat,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.setClientPickOrderTransportFee, params, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/regionRate/addRegionProfit.js
+
+```js
+import { authorize } from '../../authorize';
+import { regionRateResultType, regionRateInputType } from '../../types/roadmap';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: regionRateResultType,
+    args: {
+        data:{
+            type:regionRateInputType,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.addRegionProfit, params.data, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/regionRate/index.js
+
+```js
+export addRegionProfit from './addRegionProfit';
+export modifyRegionProfit from './modifyRegionProfit';
+export removeRegionProfit from './removeRegionProfit';
+export setRegionProfitWithList from './setRegionProfitWithList';
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/regionRate/modifyRegionProfit.js
+
+```js
+import { authorize } from '../../authorize';
+import { regionRateResultType, regionRateInputType } from '../../types/roadmap';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: regionRateResultType,
+    args: {
+        data:{
+            type:regionRateInputType,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.modifyRegionProfit, params.data, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/regionRate/removeRegionProfit.js
+
+```js
+import {
+    GraphQLID,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { successType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: successType,
+    args: {
+        regionId:{
+            type:GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.removeRegionProfit, params, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/regionRate/setRegionProfitWithList.js
+
+```js
+import {
+    GraphQLFloat,
+    GraphQLID,
+    GraphQLList,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { successType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: successType,
+    args: {
+        regionIdList: {
+            type: new GraphQLList(GraphQLID),
+        },
+        profitRate: {
+            type: GraphQLFloat,
+        },
+        profitCount: {
+            type: GraphQLFloat,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.setRegionProfitWithList, params, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/personal/feedback.js
+
+```js
+import {
+    GraphQLString,
+} from 'graphql';
+import { successType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: successType,
+    args: {
+        content: {
+            type: GraphQLString,
+        },
+        email: {
+            type: GraphQLString,
+        },
+    },
+    async resolve (root, params, options) {
+        return await post(urls.feedback, params, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/personal/forgotPwd.js
+
+```js
+import { successType } from '../../types/common';
+import { personalInfoInputType } from '../../types/personal';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: successType,
+    args: {
+        data: {
+            type: personalInfoInputType,
+        },
+    },
+    async resolve (root, params, options) {
+        return await post(urls.forgotPwd, params.data) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/personal/index.js
+
+```js
+export register from './register';
+export forgotPwd from './forgotPwd';
+export setPaymentPassword from './setPaymentPassword';
+export modifyPersonalInfo from './modifyPersonalInfo';
+export modifyShipperInfo from './modifyShipperInfo';
+export modifyAgentInfo from './modifyAgentInfo';
+export feedback from './feedback';
+export setReferShop from './setReferShop';
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/personal/modifyAgentInfo.js
+
+```js
+import { authorize } from '../../authorize';
+import { agentResultType, agentInputType } from '../../types/agent';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: agentResultType,
+    args: {
+        data: {
+            type: agentInputType,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.modifyAgentInfo, params.data, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/personal/modifyPersonalInfo.js
+
+```js
+import { authorize } from '../../authorize';
+import { personalInfoResultType, personalInfoInputType } from '../../types/personal';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: personalInfoResultType,
+    args: {
+        data: {
+            type: personalInfoInputType,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.modifyPersonalInfo, params.data, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/personal/modifyShipperInfo.js
+
+```js
+import { authorize } from '../../authorize';
+import { shipperResultType, shipperInputType } from '../../types/shipper';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: shipperResultType,
+    args: {
+        data: {
+            type: shipperInputType,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.modifyShipperInfo, params.data, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/personal/register.js
+
+```js
+import { successType } from '../../types/common';
+import { personalInfoInputType } from '../../types/personal';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: successType,
+    args: {
+        data: {
+            type: personalInfoInputType,
+        },
+    },
+    async resolve (root, params, options) {
+        return await post(urls.register, params.data) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/personal/setPaymentPassword.js
+
+```js
+import { successType } from '../../types/common';
+import { personalInfoInputType } from '../../types/personal';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: successType,
+    args: {
+        data: {
+            type: personalInfoInputType,
+        },
+    },
+    async resolve (root, params, options) {
+        return await post(urls.setPaymentPassword, params.data) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/personal/setReferShop.js
+
+```js
+import { successType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+import {
+    GraphQLID,
+} from 'graphql';
+
+export default {
+    type: successType,
+    args: {
+        shopId: {
+            type: GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        return await post(urls.setReferShop, params, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/roadmap/index.js
+
+```js
+export publishRoadmap from './publishRoadmap';
+export modifyRoadmap from './modifyRoadmap';
+export removeRoadmap from './removeRoadmap';
+export setRoadmapPrice from './setRoadmapPrice';
+export setRoadmapSendDoorPrice from './setRoadmapSendDoorPrice';
+export setRoadmapSendDoorBasePrice from './setRoadmapSendDoorBasePrice';
+export setRoadmapEnable from './setRoadmapEnable';
+export setRoadmapSendDoorEnable from './setRoadmapSendDoorEnable';
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/roadmap/modifyRoadmap.js
+
+```js
+import { authorize } from '../../authorize';
+import { roadmapInputType, roadmapResultType } from '../../types/roadmap';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: roadmapResultType,
+    args: {
+        data: {
+            type: roadmapInputType,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.modifyRoadmap, params.data, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/roadmap/publishRoadmap.js
+
+```js
+import { authorize } from '../../authorize';
+import { roadmapInputType, roadmapResultType } from '../../types/roadmap';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: roadmapResultType,
+    args: {
+        data: {
+            type: roadmapInputType,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.publishRoadmap, params.data, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/roadmap/removeRoadmap.js
+
+```js
+import {
+    GraphQLID,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { successType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: successType,
+    args: {
+        roadmapId: {
+            type: GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.removeRoadmap, params, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/roadmap/setRoadmapEnable.js
+
+```js
+import {
+    GraphQLID,
+    GraphQLBoolean,
+    GraphQLList,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { successType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: successType,
+    args: {
+        roadmapIdList: {
+            type: new GraphQLList(GraphQLID),
+        },
+        enable: {
+            type: GraphQLBoolean,
+        },
+
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.setRoadmapEnable, params, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/roadmap/setRoadmapPrice.js
+
+```js
+import { authorize } from '../../authorize';
+import { setRoadmapPriceType, roadmapResultType } from '../../types/roadmap';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: roadmapResultType,
+    args: {
+        data: {
+            type: setRoadmapPriceType,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.setRoadmapPrice, params.data, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/roadmap/setRoadmapSendDoorBasePrice.js
+
+```js
+import { authorize } from '../../authorize';
+import { setRoadmapSendDoorPriceType, roadmapResultType } from '../../types/roadmap';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: roadmapResultType,
+    args: {
+        data: {
+            type: setRoadmapSendDoorPriceType,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.setRoadmapSendDoorBasePrice, params.data, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/roadmap/setRoadmapSendDoorEnable.js
+
+```js
+import {
+    GraphQLID,
+    GraphQLInt,
+    GraphQLBoolean,
+    GraphQLList,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { successType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: successType,
+    args: {
+        roadmapId: {
+            type: GraphQLID,
+        },
+        lastCodeList: {
+            type: new GraphQLList(GraphQLInt),
+        },
+        enable: {
+            type: GraphQLBoolean,
+        },
+
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.setRoadmapSendDoorEnable, params, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/roadmap/setRoadmapSendDoorPrice.js
+
+```js
+import { authorize } from '../../authorize';
+import { setRoadmapSendDoorPriceType, roadmapResultType } from '../../types/roadmap';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: roadmapResultType,
+    args: {
+        data: {
+            type: setRoadmapSendDoorPriceType,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.setRoadmapSendDoorPrice, params.data, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/truck/createTruck.js
+
+```js
+import { authorize } from '../../authorize';
+import { truckInputType, truckResultType } from '../../types/truck';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: truckResultType,
+    args: {
+        data: {
+            type: truckInputType,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.createTruck, params.data, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/truck/index.js
+
+```js
+export createTruck from './createTruck';
+export modifyTruck from './modifyTruck';
+export removeTruck from './removeTruck';
+export selectCarryPartment from './selectCarryPartment';
+export payforCarryPartment from './payforCarryPartment';
+export setCityTruck from './setCityTruck';
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/truck/modifyTruck.js
+
+```js
+import { authorize } from '../../authorize';
+import { truckInputType, truckResultType } from '../../types/truck';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: truckResultType,
+    args: {
+        data: {
+            type: truckInputType,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.modifyTruck, params.data, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/truck/payforCarryPartment.js
+
+```js
+import {
+    GraphQLID,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { successType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: successType,
+    args: {
+        truckId: {
+            type: GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.payforCarryPartment, params, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/truck/removeTruck.js
+
+```js
+import {
+    GraphQLID,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { successType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: successType,
+    args: {
+        truckId: {
+            type: GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.removeTruck, params, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/truck/selectCarryPartment.js
+
+```js
+import {
+    GraphQLID,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { successType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: successType,
+    args: {
+        truckId: {
+            type: GraphQLID,
+        },
+        carryPartmentId: {
+            type: GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.selectCarryPartment, params, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/mutations/truck/setCityTruck.js
+
+```js
+import {
+    GraphQLString,
+} from 'graphql';
+import { successType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: successType,
+    args: {
+        plateNo: {
+            type: GraphQLString,
+        },
+    },
+    async resolve (root, params, options) {
+        return await post(urls.setCityTruck, params, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/account/bills.js
+
+```js
+import {
     GraphQLObjectType,
+    GraphQLInt,
+    GraphQLString,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { billItemListType } from '../../types/bill';
+import { post, urls } from 'helpers/api';
+
+const billsType = new GraphQLObjectType({
+    name: 'billsType',
+    fields: {
+        recharge: { type: billItemListType },
+        withdraw: { type: billItemListType },
+        income: { type: billItemListType },
+        pay: { type: billItemListType },
+    },
+});
+
+export default {
+    type: billsType,
+    args: {
+        type: {
+            type: GraphQLString,
+        },
+        keyword: {
+            type: GraphQLString,
+        },
+        pageNo: {
+            type: GraphQLInt,
+        },
+        pageSize: {
+            type: GraphQLInt,
+        },
+        startDate: {
+            type: GraphQLString,
+        },
+        endDate: {
+            type: GraphQLString,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.bills, params, root) || {};
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/account/index.js
+
+```js
+export remainAmount from './remainAmount';
+export weixinPayGetUnifiedOrder from './weixinPayGetUnifiedOrder';
+export weixinPayWithDraw from './weixinPayWithDraw';
+export bills from './bills';
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/account/remainAmount.js
+
+```js
+import { authorize } from '../../authorize';
+import { accountType } from '../../types/account';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: accountType,
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.remainAmount, params, root) || {};
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/account/weixinPayGetUnifiedOrder.js
+
+```js
+import { authorize } from '../../authorize';
+import { accountResultType, accountInputType } from '../../types/account';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: accountResultType,
+    args: {
+        data: {
+            type: accountInputType,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.weixinPayGetUnifiedOrder, params.data, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/account/weixinPayWithDraw.js
+
+```js
+import { authorize } from '../../authorize';
+import { accountResultType, accountInputType } from '../../types/account';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: accountResultType,
+    args: {
+        data: {
+            type: accountInputType,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.weixinPayWithDraw, params.data, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/agentOrder/addressWithOrder.js
+
+```js
+import {
+    GraphQLID,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { orderAddressType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: orderAddressType,
+    args: {
+        orderId: {
+            type: GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.addressWithOrder, params, root) || {};
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/agentOrder/index.js
+
+```js
+export rcorder from './rcorder';
+export rcorders from './rcorders';
+export selectPreOrders from './selectPreOrders';
+export addressWithOrder from './addressWithOrder';
+export sendDoorAddressWithOrder from './sendDoorAddressWithOrder';
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/agentOrder/rcorder.js
+
+```js
+import { authorize } from '../../authorize';
+import { orderType } from '../../types/order';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: orderType,
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.rcorder, params, root) || {};
+        return ret.success ? ret.context : undefined;
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/agentOrder/rcorders.js
+
+```js
+import {
+    GraphQLObjectType,
+    GraphQLInt,
+    GraphQLString,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { orderItemListType } from '../../types/order';
+import { post, urls } from 'helpers/api';
+
+const rcordersType = new GraphQLObjectType({
+    name: 'rcordersType',
+    fields: {
+        topay: { type: orderItemListType },
+        toprintbill: { type: orderItemListType },
+        tosend: { type: orderItemListType },
+        onway: { type: orderItemListType },
+        success: { type: orderItemListType },
+    },
+});
+
+export default {
+    type: rcordersType,
+    args: {
+        type: {
+            type: GraphQLString,
+        },
+        keyword: {
+            type: GraphQLString,
+        },
+        pageNo: {
+            type: GraphQLInt,
+        },
+        pageSize: {
+            type: GraphQLInt,
+        },
+        startDate: {
+            type: GraphQLString,
+        },
+        endDate: {
+            type: GraphQLString,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.rcorders, params, root) || {};
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/agentOrder/selectPreOrders.js
+
+```js
+import {
+    GraphQLInt,
     GraphQLString,
     GraphQLID,
 } from 'graphql';
-import { makeResultType, makeListType } from './common';
+import { authorize } from '../../authorize';
+import { orderListType } from '../../types/order';
+import { post, urls } from 'helpers/api';
 
-export const notifyType = new GraphQLObjectType({
-    name: 'notifyType',
+export default {
+    type: orderListType,
+    args: {
+        keyword: {
+            type: GraphQLString,
+        },
+        senderPhone: {
+            type: GraphQLID,
+        },
+        pageNo: {
+            type: GraphQLInt,
+        },
+        pageSize: {
+            type: GraphQLInt,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.selectPreOrders, params, root) || {};
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/agentOrder/sendDoorAddressWithOrder.js
+
+```js
+import {
+    GraphQLList,
+    GraphQLID,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { addressType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: new GraphQLList(new GraphQLList(addressType)),
+    args: {
+        orderId: {
+            type: GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.sendDoorAddressWithOrder, params, root) || {};
+        return ret.success ? ret.context.addressList : [];
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/client/getClientNameByPhone.js
+
+```js
+import {
+    GraphQLString,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { memberResultType } from '../../types/client';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: memberResultType,
+    args: {
+        phone: {
+            type: GraphQLString,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.getClientNameByPhone, params, root) || {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/client/getClientPickShipperList.js
+
+```js
+import { GraphQLID } from 'graphql';
+import { authorize } from '../../authorize';
+import { shipperListType } from '../../types/shipper';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: shipperListType,
+    args: {
+        shopId: {
+            type: GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.getClientPickShipperList, params, root) || {};
+        console.log('ret', ret);
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/client/index.js
+
+```js
+export getClientNameByPhone from './getClientNameByPhone';
+export clientPickList from './getClientPickShipperList';
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/common/address.js
+
+```js
+import {
+    GraphQLInt,
+    GraphQLList,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { addressType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: new GraphQLList(addressType),
+    args: {
+        parentCode: {
+            type: GraphQLInt,
+        },
+        type: {
+            type: GraphQLInt,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.address, params, root) || {};
+        return ret.success ? ret.context.addressList : [];
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/common/addressFromLastCode.js
+
+```js
+import {
+    GraphQLInt,
+    GraphQLList,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { addressType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: new GraphQLList(new GraphQLList(addressType)),
+    args: {
+        addressLastCode: {
+            type: GraphQLInt,
+        },
+        type: {
+            type: GraphQLInt,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.addressFromLastCode, params, root) || {};
+        return ret.success ? ret.context.addressList : [];
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/common/index.js
+
+```js
+export address from './address';
+export addressFromLastCode from './addressFromLastCode';
+export sendDoorAddressFromLastCode from './sendDoorAddressFromLastCode';
+export startPointAddress from './startPointAddress';
+export startPointAddressFromLastCode from './startPointAddressFromLastCode';
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/common/sendDoorAddressFromLastCode.js
+
+```js
+import {
+    GraphQLInt,
+    GraphQLList,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { addressType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: new GraphQLList(new GraphQLList(addressType)),
+    args: {
+        addressLastCode: {
+            type: GraphQLInt,
+        },
+        parentCode: {
+            type: GraphQLInt,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.sendDoorAddressFromLastCode, params, root) || {};
+        return ret.success ? ret.context.addressList : [];
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/common/startPointAddress.js
+
+```js
+import {
+    GraphQLInt,
+    GraphQLList,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { startPointType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: new GraphQLList(startPointType),
+    args: {
+        parentCode: {
+            type: GraphQLInt,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.startPointAddress, params, root) || {};
+        return ret.success ? ret.context.addressList : [];
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/common/startPointAddressFromLastCode.js
+
+```js
+import {
+    GraphQLInt,
+    GraphQLList,
+    GraphQLBoolean,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { startPointType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: new GraphQLList(new GraphQLList(startPointType)),
+    args: {
+        addressLastCode: {
+            type: GraphQLInt,
+        },
+        isLeaf: {
+            type: GraphQLBoolean,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.startPointAddressFromLastCode, params, root) || {};
+        return ret.success ? ret.context.addressList : [];
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/member/agentMember.js
+
+```js
+import {
+    GraphQLID,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { clientType } from '../../types/client';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: clientType,
+    args: {
+        memberId: {
+            type: GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.agentMember, params, root) || {};
+        return ret.success ? ret.context : undefined;
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/member/agentMembers.js
+
+```js
+import {
+    GraphQLInt,
+    GraphQLString,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { memberListType } from '../../types/client';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: memberListType,
+    args: {
+        keyword: {
+            type: GraphQLString,
+        },
+        pageNo: {
+            type: GraphQLInt,
+        },
+        pageSize: {
+            type: GraphQLInt,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.agentMembers, params, root) || {};
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/member/getAgentMemberByPhone.js
+
+```js
+import {
+    GraphQLString,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { memberResultType } from '../../types/client';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: memberResultType,
+    args: {
+        memberPhone: {
+            type: GraphQLString,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.getAgentMemberByPhone, params, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/member/getShipperMemberByPhone.js
+
+```js
+import {
+    GraphQLString,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { memberResultType } from '../../types/client';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: memberResultType,
+    args: {
+        memberPhone: {
+            type: GraphQLString,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        return await post(urls.getShipperMemberByPhone, params, root) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/member/index.js
+
+```js
+// shipper
+export shipperMembers from './shipperMembers';
+export shipperMember from './shipperMember';
+export getShipperMemberByPhone from './getShipperMemberByPhone';
+
+// agent
+export agentMembers from './agentMembers';
+export agentMember from './agentMember';
+export getAgentMemberByPhone from './getAgentMemberByPhone';
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/member/shipperMember.js
+
+```js
+import {
+    GraphQLID,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { clientType } from '../../types/client';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: clientType,
+    args: {
+        memberId: {
+            type: GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.shipperMember, params, root) || {};
+        return ret.success ? ret.context : undefined;
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/member/shipperMembers.js
+
+```js
+import {
+    GraphQLInt,
+    GraphQLString,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { memberListType } from '../../types/client';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: memberListType,
+    args: {
+        keyword: {
+            type: GraphQLString,
+        },
+        pageNo: {
+            type: GraphQLInt,
+        },
+        pageSize: {
+            type: GraphQLInt,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.shipperMembers, params, root) || {};
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/order/clientReceiveOrders.js
+
+```js
+import { GraphQLString, GraphQLInt, GraphQLObjectType } from 'graphql';
+import { authorize } from '../../authorize';
+import { orderItemListType } from '../../types/order';
+import { post, urls } from 'helpers/api';
+
+const receiveOrdersType = new GraphQLObjectType({
+    name: 'receiveOrdersType',
     fields: {
-        id: { type: GraphQLID },
+        unsend: { type: orderItemListType },
+        toreceive: { type: orderItemListType },
+        onway: { type: orderItemListType },
+        success: { type: orderItemListType },
+    },
+});
+
+export default {
+    type: receiveOrdersType,
+    args: {
+        type: {
+            type: GraphQLString,
+        },
+        keyword: {
+            type: GraphQLString,
+        },
+        pageNo: {
+            type: GraphQLInt,
+        },
+        pageSize: {
+            type: GraphQLInt,
+        },
+        startDate: {
+            type: GraphQLString,
+        },
+        endDate: {
+            type: GraphQLString,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        const res = await post(urls.receiveOrders, params, root) || { msg: '服务器繁忙请稍后再试!!!' };
+        return res.success ? res.context : { msg: res.msg };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/order/clientSendOrders.js
+
+```js
+import { GraphQLString, GraphQLInt, GraphQLID, GraphQLObjectType } from 'graphql';
+import { authorize } from '../../authorize';
+import { orderItemListType } from '../../types/order';
+import { post, urls } from 'helpers/api';
+
+const sendOrdersType = new GraphQLObjectType({
+    name: 'sendOrdersType',
+    fields: {
+        topay: { type: orderItemListType },
+        onway: { type: orderItemListType },
+        success: { type: orderItemListType },
+    },
+});
+
+export default {
+    type: sendOrdersType,
+    args: {
+        type: {
+            type: GraphQLString,
+        },
+        keyword: {
+            type: GraphQLString,
+        },
+        pageNo: {
+            type: GraphQLInt,
+        },
+        pageSize: {
+            type: GraphQLInt,
+        },
+        senderId: {
+            type: GraphQLID,
+        },
+        startDate: {
+            type: GraphQLString,
+        },
+        endDate: {
+            type: GraphQLString,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        const res = await post(urls.sendOrders, params, root) || { msg: '服务器繁忙请稍后再试!!!' };
+        return res.success ? res.context : { msg: res.msg };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/order/inGroupPreOrders.js
+
+```js
+import {
+    GraphQLID,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { orderListType } from '../../types/order';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: orderListType,
+    args: {
+        orderGroupId: {
+            type: GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.inGroupPreOrders, params, root) || {};
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/order/index.js
+
+```js
+export order from './order';
+export sporders from './sporders';
+export scorders from './scorders';
+export preOrders from './preOrders';
+export preOrderGroups from './preOrderGroups';
+export inGroupPreOrders from './inGroupPreOrders';
+export lookPreOrderFee from './lookPreOrderFee';
+export lookOrderFee from './lookOrderFee';
+export lookGroupFee from './lookGroupFee';
+export lookTruckOrderFee from './lookTruckOrderFee';
+export needSendOrders from './needSendOrders';
+export orderListByEndPoint from './orderListByEndPoint';
+export sendOrders from './clientSendOrders';
+export receiveOrders from './clientReceiveOrders';
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/order/lookGroupFee.js
+
+```js
+import {
+    GraphQLID,
+    GraphQLFloat,
+    GraphQLList,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { orderGroupFeesType } from '../../types/orderGroup';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: orderGroupFeesType,
+    args: {
+        orderGroupId: {
+            type: GraphQLID,
+        },
+        location: {
+            type: new GraphQLList(GraphQLFloat),
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.lookGroupFee, params, root) || {};
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/order/lookOrderFee.js
+
+```js
+import {
+    GraphQLID,
+    GraphQLFloat,
+    GraphQLInt,
+    GraphQLList,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { orderFeeListType } from '../../types/order';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: orderFeeListType,
+    args: {
+        orderId: {
+            type: GraphQLID,
+        },
+        startPointLastCode: {
+            type: GraphQLInt,
+        },
+        shopId: {
+            type: GraphQLID,
+        },
+        agentId: {
+            type: GraphQLID,
+        },
+        location: {
+            type: new GraphQLList(GraphQLFloat),
+        },
+        orderBy: {
+            type: GraphQLInt,
+        },
+        pageNo: {
+            type: GraphQLInt,
+        },
+        pageSize: {
+            type: GraphQLInt,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.lookOrderFee, params, root) || {};
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/order/lookPreOrderFee.js
+
+```js
+import {
+    GraphQLID,
+    GraphQLFloat,
+    GraphQLInt,
+    GraphQLList,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { orderFeesType } from '../../types/order';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: orderFeesType,
+    args: {
+        orderId: {
+            type: GraphQLID,
+        },
+        location: {
+            type: new GraphQLList(GraphQLFloat),
+        },
+        orderBy: {
+            type: GraphQLInt,
+        },
+        pageNo: {
+            type: GraphQLInt,
+        },
+        pageSize: {
+            type: GraphQLInt,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.lookPreOrderFee, params, root) || {};
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/order/lookTruckOrderFee.js
+
+```js
+import {
+    GraphQLID,
+    GraphQLInt,
+    GraphQLFloat,
+    GraphQLList,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { orderGroupFeeType } from '../../types/orderGroup';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: new GraphQLList(orderGroupFeeType),
+    args: {
+        truckId: {
+            type: GraphQLID,
+        },
+        startPointLastCode: {
+            type: GraphQLInt,
+        },
+        shopId: {
+            type: GraphQLID,
+        },
+        location: {
+            type: new GraphQLList(GraphQLFloat),
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.lookTruckOrderFee, params, root) || {};
+        return ret.success ? ret.context.shopList : [];
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/order/needSendOrders.js
+
+```js
+import {
+    GraphQLInt,
+    GraphQLString,
+    GraphQLID,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { needSendOrderListType } from '../../types/order';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: needSendOrderListType,
+    args: {
+        keyword: {
+            type: GraphQLString,
+        },
+        shopId: {
+            type: GraphQLID,
+        },
+        pageNo: {
+            type: GraphQLInt,
+        },
+        pageSize: {
+            type: GraphQLInt,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.needSendOrders, params, root) || {};
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/order/order.js
+
+```js
+import {
+    GraphQLID,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { orderType } from '../../types/order';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: orderType,
+    args: {
+        orderId: {
+            type: GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        if (!params.orderId) {
+            return undefined;
+        }
+        let ret = await post(urls.order, params, root) || {};
+        return ret.success ? ret.context : undefined;
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/order/orderListByEndpoint.js
+
+```js
+import {
+    GraphQLInt,
+    GraphQLString,
+    GraphQLID,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { orderListType } from '../../types/order';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: orderListType,
+    args: {
+        endPoint: {
+            type: GraphQLString,
+        },
+        shopId: {
+            type: GraphQLID,
+        },
+        pageNo: {
+            type: GraphQLInt,
+        },
+        pageSize: {
+            type: GraphQLInt,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.orderListByEndPoint, params, root) || {};
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/order/preOrderGroups.js
+
+```js
+import { authorize } from '../../authorize';
+import { orderGroupListType } from '../../types/orderGroup';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: orderGroupListType,
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.preOrderGroups, params, root) || {};
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/order/preOrders.js
+
+```js
+import {
+    GraphQLInt,
+    GraphQLString,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { orderListType } from '../../types/order';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: orderListType,
+    args: {
+        keyword: {
+            type: GraphQLString,
+        },
+        pageNo: {
+            type: GraphQLInt,
+        },
+        pageSize: {
+            type: GraphQLInt,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.preOrders, params, root) || {};
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/order/scorders.js
+
+```js
+import {
+    GraphQLObjectType,
+    GraphQLInt,
+    GraphQLID,
+    GraphQLString,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { orderItemListType } from '../../types/order';
+import { post, urls } from 'helpers/api';
+
+const scordersType = new GraphQLObjectType({
+    name: 'scordersType',
+    fields: {
+        tostore: { type: orderItemListType },
+        toconfirm: { type: orderItemListType },
+        waitpick: { type: orderItemListType },
+        toload: { type: orderItemListType },
+        onway: { type: orderItemListType },
+        success: { type: orderItemListType },
+    },
+});
+
+export default {
+    type: scordersType,
+    args: {
+        type: {
+            type: GraphQLString,
+        },
+        keyword: {
+            type: GraphQLString,
+        },
+        pageNo: {
+            type: GraphQLInt,
+        },
+        pageSize: {
+            type: GraphQLInt,
+        },
+        shopId: {
+            type: GraphQLID,
+        },
+        startDate: {
+            type: GraphQLString,
+        },
+        endDate: {
+            type: GraphQLString,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.scorders, params, root) || {};
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/order/sporders.js
+
+```js
+import {
+    GraphQLObjectType,
+    GraphQLInt,
+    GraphQLID,
+    GraphQLString,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { orderItemListType } from '../../types/order';
+import { post, urls } from 'helpers/api';
+
+const spordersType = new GraphQLObjectType({
+    name: 'spordersType',
+    fields: {
+        tostore: { type: orderItemListType },
+        stored: { type: orderItemListType },
+        tostartoff: { type: orderItemListType },
+        onway: { type: orderItemListType },
+        success: { type: orderItemListType },
+    },
+});
+
+export default {
+    type: spordersType,
+    args: {
+        type: {
+            type: GraphQLString,
+        },
+        keyword: {
+            type: GraphQLString,
+        },
+        pageNo: {
+            type: GraphQLInt,
+        },
+        pageSize: {
+            type: GraphQLInt,
+        },
+        shopId: {
+            type: GraphQLID,
+        },
+        startDate: {
+            type: GraphQLString,
+        },
+        endDate: {
+            type: GraphQLString,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.sporders, params, root) || {};
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/quotation/index.js
+
+```js
+export lookRoadmap from './lookRoadmap';
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/quotation/lookRoadmap.js
+
+```js
+import {
+    GraphQLID,
+    GraphQLFloat,
+    GraphQLInt,
+    GraphQLBoolean,
+    GraphQLList,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { orderFeesType } from '../../types/order';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: orderFeesType,
+    args: {
+        startPointLastCode: {
+            type: GraphQLInt,
+        },
+        shopId: {
+            type: GraphQLID,
+        },
+        agentId: {
+            type: GraphQLID,
+        },
+        endPointLastCode: {
+            type: GraphQLInt,
+        },
+        sendDoorEndPointLastCode: {
+            type: GraphQLInt,
+        },
+        isSendDoor: {
+            type: GraphQLBoolean,
+        },
+        location: {
+            type: new GraphQLList(GraphQLFloat),
+        },
+        orderBy: {
+            type: GraphQLInt,
+        },
+        pageNo: {
+            type: GraphQLInt,
+        },
+        pageSize: {
+            type: GraphQLInt,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        if (!params.startPointLastCode || !params.endPointLastCode) {
+            return undefined;
+        }
+        let ret = await post(urls.lookRoadmap, params, root) || {};
+        return ret.success ? ret.context : undefined;
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/personal/agent.js
+
+```js
+import { authorize } from '../../authorize';
+import { agentType } from '../../types/agent';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: agentType,
+    async resolve (root, params, options) {
+        authorize(root);
+        let agent = await post(urls.agent, params, root) || {};
+        return agent.context || {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/personal/getUserNameByPhone.js
+
+```js
+import {
+    GraphQLString,
+} from 'graphql';
+import { personalInfoResultType } from '../../types/personal';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: personalInfoResultType,
+    args: {
+        phone: {
+            type: GraphQLString,
+        },
+    },
+    async resolve (root, params, options) {
+        return await post(urls.getUserNameByPhone, params) || {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/personal/getVerifyCode.js
+
+```js
+import {
+    GraphQLString,
+} from 'graphql';
+import { successType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: successType,
+    args: {
+        phone: {
+            type: GraphQLString,
+        },
+    },
+    async resolve (root, params, options) {
+        return await post(urls.getVerifyCode, params) || { msg: '服务器错误' };
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/personal/index.js
+
+```js
+export session from './session';
+export getVerifyCode from './getVerifyCode';
+export login from './login';
+export personal from './personal';
+export shipper from './shipper';
+export agent from './agent';
+export getUserNameByPhone from './getUserNameByPhone';
+export notify from './notify';
+export statistics from './statistics';
+export referShops from './referShops';
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/personal/login.js
+
+```js
+import {
+    GraphQLString,
+} from 'graphql';
+import passport from 'passport';
+import { successType } from '../../types/common';
+
+export default {
+    type: successType,
+    args: {
+        phone: {
+            type: GraphQLString,
+        },
+        password: {
+            type: GraphQLString,
+        },
+    },
+    async resolve (root, params, options) {
+        return new Promise((resolve) => {
+            const { req } = root;
+            req.body = params;
+            console.log('[login]: start', params);
+            passport.authenticate('local', (err, user) => {
+                console.log('[login]: authenticate', err, user);
+                if (err) {
+                    resolve({ msg: err.message });
+                } else {
+                    req.logIn(user, (error) => {
+                        console.log('[login] logIn:', error);
+                        if (error) {
+                            resolve({ msg: '服务器错误' });
+                        } else {
+                            resolve({ success: true });
+                        }
+                    });
+                }
+            })(req);
+        });
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/personal/notify.js
+
+```js
+import {
+    GraphQLObjectType,
+    GraphQLInt,
+    GraphQLString,
+    GraphQLList,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { post, urls } from 'helpers/api';
+
+const newsType = new GraphQLObjectType({
+    name: 'newsType',
+    fields: {
         title: { type: GraphQLString },
-        content: { type: GraphQLString },
         time: { type: GraphQLString },
         source: { type: GraphQLString },
     },
 });
-export const notifyResultType = makeResultType('notifyResultType', notifyType);
-export const notifyListType = makeListType('notifyListType', notifyType);
 
-export const notifyInputType = new GraphQLInputObjectType({
-    name: 'notifyInputType',
+const newsListType = new GraphQLObjectType({
+    name: 'newsListType',
     fields: {
-        notifyId: { type: GraphQLID },
-        type: { type: GraphQLString },
-        title: { type: GraphQLString },
-        content: { type: GraphQLString },
-    },
-});
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/types/order.js
-
-```js
-import {
-    GraphQLInputObjectType,
-    GraphQLObjectType,
-    GraphQLString,
-    GraphQLFloat,
-    GraphQLBoolean,
-    GraphQLInt,
-    GraphQLID,
-    GraphQLList,
-} from 'graphql';
-
-import { makeResultType, makeListType } from './common';
-import { memberType } from './member';
-
-const stateListType = new GraphQLObjectType({
-    name: 'stateListType',
-    fields: {
-        state: { type: GraphQLInt },
         count: { type: GraphQLInt },
+        list: { type: new GraphQLList(newsType) },
     },
 });
-export const orderType = new GraphQLObjectType({
-    name: 'orderType',
+
+const notifyType = new GraphQLObjectType({
+    name: 'notifyType',
     fields: {
-        id: { type: GraphQLID },
-        senderPhone: { type: GraphQLString },
-        senderName: { type: GraphQLString },
-        receiverPhone: { type: GraphQLString },
-        receiverName: { type: GraphQLString },
-        name: { type: GraphQLString },
-        endPoint: { type: GraphQLString },
-        endPointLastCode: { type: GraphQLInt },
-        sendDoorEndPoint: { type: GraphQLString },
-        sendDoorEndPointLastCode: { type: GraphQLInt },
-        totalNumbers: { type: GraphQLInt },
-        weight: { type: GraphQLFloat },
-        size: { type: GraphQLFloat },
-        proxyCharge: { type: GraphQLFloat },
-        proxyChargeProfit: { type: GraphQLFloat },
-        totalDesignatedFee: { type: GraphQLFloat },
-        isReachPay: { type: GraphQLBoolean },
-        isSendDoor: { type: GraphQLBoolean },
-        isClientPick: { type: GraphQLBoolean },
-        state: { type: GraphQLInt },
-        placeOrderTime: { type: GraphQLString },
-        // 价格
-        realFee: { type: GraphQLFloat }, // 实际运费
-        designatedFee: { type: GraphQLFloat }, // 指定收款
-        needPayTransportFee: { type: GraphQLFloat }, // 应该付的运费
-        needPayInsuanceFee: { type: GraphQLFloat }, // 应该付的保险金额
-        photo: { type: GraphQLString }, // 图片
-        // 保险
-        isInsuance: { type: GraphQLBoolean },
-        insuanceFee: { type: GraphQLFloat },
-        insuanceMount: { type: GraphQLFloat },
-        // 提成
-        profit: { type: GraphQLFloat },
-        masterProfit: { type: GraphQLFloat },
-        branchProfit: { type: GraphQLFloat },
-        // 其他
-        warehouse: { type: GraphQLString }, // 仓库
-        isCityDistribute: { type: GraphQLBoolean }, // 是否是同城配送
-        payMode: { type: GraphQLInt }, // 支付方式 0：现付（PM_IMMEDIATE），1：到付（PM_REACH），2：混合支付（PM_MIXED 指定收款的部分到付，其余的现付）
-        isTransferOrder: { type: GraphQLBoolean }, // 是否是中转单
-        receiveMember: { type: memberType }, // 收货员
-        stateList: { type: new GraphQLList(stateListType) }, // 状态列表
-        deductError: { type: GraphQLBoolean }, // 扣款是否失败
-    },
-});
-export const orderResultType = makeResultType('orderResultType', orderType);
-export const orderListType = makeListType('orderListType', orderType);
-export const orderItemListType = makeListType('orderItemListType', orderType, 'list');
-
-export const orderInputType = new GraphQLInputObjectType({
-    name: 'orderInputType',
-    fields: {
-        orderId: { type: GraphQLID },
-        preOrderId: { type: GraphQLID },
-        senderPhone: { type: GraphQLString },
-        senderName: { type: GraphQLString },
-        receiverPhone: { type: GraphQLString },
-        receiverName: { type: GraphQLString },
-        name: { type: GraphQLString },
-        endPoint: { type: GraphQLString },
-        endPointLastCode: { type: GraphQLInt },
-        sendDoorEndPoint: { type: GraphQLString },
-        sendDoorEndPointLastCode: { type: GraphQLInt },
-        totalNumbers: { type: GraphQLInt },
-        weight: { type: GraphQLFloat },
-        size: { type: GraphQLFloat },
-        proxyCharge: { type: GraphQLInt },
-        totalDesignatedFee: { type: GraphQLInt },
-        isCityDistribute: { type: GraphQLBoolean },
-        isReachPay: { type: GraphQLBoolean },
-        isSendDoor: { type: GraphQLBoolean },
-        isInsuance: { type: GraphQLBoolean },
-        roadmapId: { type: GraphQLID },
-        roadmapRankIndex: { type: GraphQLInt },
+        news: { type: newsListType },
+        publicity: { type: newsListType },
+        policy: { type: newsListType },
+        notice: { type: newsListType },
     },
 });
 
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/types/partment.js
-
-```js
-import {
-    GraphQLInputObjectType,
-    GraphQLObjectType,
-    GraphQLString,
-    GraphQLFloat,
-    GraphQLBoolean,
-    GraphQLInt,
-    GraphQLID,
-} from 'graphql';
-import { makeResultType, makeListType } from './common';
-import { memberType } from './member';
-
-export const partmentType = new GraphQLObjectType({
-    name: 'partmentType',
-    fields: {
-        id: { type: GraphQLID },
-        name:  { type: GraphQLString },
-        descript: { type: GraphQLString },
-        type:  { type: GraphQLInt },
-        phoneList: { type: GraphQLString },
-        chargeMan: { type: memberType },
-        price: { type: GraphQLFloat },
-        enable: { type: GraphQLBoolean },
-    },
-});
-export const partmentResultType = makeResultType('partmentResultType', partmentType);
-export const partmentListType = makeListType('partmentListType', partmentType);
-
-export const partmentInputType = new GraphQLInputObjectType({
-    name: 'partmentInputType',
-    fields: {
-        partmentId: { type: GraphQLID },
-        name:  { type: GraphQLString },
-        descript: { type: GraphQLString },
-        type:  { type: GraphQLInt },
-        phoneList: { type: GraphQLString },
-        chargeManPhone: { type: GraphQLString },
-        chargeManName: { type: GraphQLString },
-        chargeManPassword: { type: GraphQLString },
-        price: { type: GraphQLFloat },
-        enable: { type: GraphQLBoolean },
-    },
-});
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/types/roadmap.js
-
-```js
-import {
-    GraphQLInputObjectType,
-    GraphQLObjectType,
-    GraphQLString,
-    GraphQLFloat,
-    GraphQLInt,
-    GraphQLID,
-    GraphQLList,
-} from 'graphql';
-
-import { makeResultType, makeListType } from './common';
-import { shipperType } from './shipper';
-import { shopType } from './shop';
-
-export const roadmapType = new GraphQLObjectType({
-    name: 'roadmapType',
-    fields: {
-        id: { type: GraphQLID },
-        // 选择物流公司的参数
-        shipperName: { type: GraphQLString },
-        transportFee: { type: GraphQLFloat },
-        duration: { type: GraphQLFloat },
-        price: { type: GraphQLFloat },
-        minFee: { type: GraphQLFloat },
-        sendDoorPrice: { type: GraphQLFloat },
-        sendDoorMinFee: { type: GraphQLFloat },
-        roadmapRankIndex: { type: GraphQLInt },
-        // 路线列表的参数
-        startPoint: { type: GraphQLString },
-        endPoint: { type: GraphQLString },
-        shipper: { type: shipperType },
-        shop: { type: shopType },
-        // 提成
-        profitRate: { type: GraphQLFloat },
-        defaultProfitRate: { type: GraphQLFloat },
-        // 其他
-        selfSignRate: { type: GraphQLFloat },
-        createTime: { type: GraphQLString },
-        setProfitRateTime: { type: GraphQLString },
-    },
-});
-export const roadmapResultType = makeResultType('roadmapResultType', roadmapType);
-export const roadmapListType = makeListType('roadmapListType', roadmapType);
-export const roadmapInputType = new GraphQLInputObjectType({
-    name: 'roadmapInputType',
-    fields: {
-        roadmapId: { type: GraphQLID },
-        roadmapIdList: { type: new GraphQLList(GraphQLID) },
-        profitRate: { type: GraphQLFloat },
-    },
-});
-
-export const regionRateType = new GraphQLObjectType({
-    name: 'regionRateType',
-    fields: {
-        id: { type: GraphQLID },
-        // 路线列表的参数
-        shop: { type: shopType },
-        region: { type: GraphQLString },
-        regionLastCode: { type: GraphQLInt },
-        profitRate: { type: GraphQLFloat },
-        type: { type: GraphQLInt },
-        createTime: { type: GraphQLString },
-        modifyTime: { type: GraphQLString },
-    },
-});
-export const regionRateResultType = makeResultType('regionRateResultType', regionRateType);
-export const regionRateListType = makeListType('regionRateListType', regionRateType);
-export const regionRateInputType = new GraphQLInputObjectType({
-    name: 'regionRateInputType',
-    fields: {
-        regionRateId: { type: GraphQLID },
-        regionRateIdList: { type: new GraphQLList(GraphQLID) },
-        shopId: { type: GraphQLID },
-        region: { type: GraphQLString },
-        regionLastCode: { type: GraphQLInt },
-        profitRate: { type: GraphQLFloat },
-        type: { type: GraphQLInt },
-    },
-});
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/types/setting.js
-
-```js
-import {
-    GraphQLInputObjectType,
-    GraphQLObjectType,
-    GraphQLFloat,
-    GraphQLList,
-} from 'graphql';
-
-import { makeResultType } from './common';
-
-const gradientPriceType = new GraphQLObjectType({
-    name: 'gradientPriceType',
-    fields: {
-        rate: { type: GraphQLFloat },
-        min:  { type: GraphQLFloat },
-    },
-});
-
-const gradientPriceInputType = new GraphQLInputObjectType({
-    name: 'gradientPriceInputType',
-    fields: {
-        rate: { type: GraphQLFloat },
-        min:  { type: GraphQLFloat },
-    },
-});
-
-export const settingType = new GraphQLObjectType({
-    name: 'settingType',
-    fields: {
-        sizeWeightRate: { type: GraphQLFloat }, // 方量和重量的计算比
-        insuanceRate:  { type: GraphQLFloat }, // 担保保险的费用（客户实际付的钱）= 担保保险额度（需要赔偿用户的钱）* insuanceRate
-        insuanceMountRate:  { type: GraphQLFloat }, // 保额相对于运费的多少倍，默认为10
-        insuanceBaseValue:  { type: GraphQLFloat }, // 保险的最低值（默认为最低10元）
-        proxyChargeProfitRate:  { type: GraphQLFloat }, //  手续费 = 代收货款 * proxyChargeProfitRate
-        // 设置min必须从0开始，默认： [ {rate: 1.1, min: 0}, {rate: 1, min: 10}, {rate: 0.9, min: 20 } ] 如果物流公司设置的是100元/吨，表示0-10为110元/吨，10-20为100元/吨，20以上为90元/吨
-        gradientPriceList: { type: new GraphQLList(gradientPriceType) }, // 每吨的价格，单位为元/吨（采用阶梯价格）
-        additionalDeliverTime: { type: GraphQLFloat }, // 物流公司没有让货主确认附加的交易成功时间，单位小时(h)
-        noticeShipperStorageWeight: { type: GraphQLFloat }, // 没多少吨货物放置后通知物流公司
-        bondAmountWeightRate: { type: GraphQLFloat }, // 每吨货需要的保证金
-        rankedMaskFirstRankWeight: { type: GraphQLFloat }, // 用来判断排名第一的物流公司的收购多少吨货被屏蔽的依据
-        rankedMaskRateList: { type: new GraphQLList(GraphQLFloat) }, // 为了防止物流公司垄断，排在前3（数组的长度+1）名的需要轮流收货，第一名收货的量为rankedMaskFirstRankWeight*1，第二名为rankedMaskFirstRankWeight*0.8，第三名为rankedMaskFirstRankWeight*0.6。默认： [ 1, 0.8, 0.6 ]，屏蔽规则：见 RoadmapMaskModel
-    },
-});
-
-export const settingInputType = new GraphQLInputObjectType({
-    name: 'settingInputType',
-    fields: {
-        sizeWeightRate: { type: GraphQLFloat }, // 方量和重量的计算比
-        insuanceRate:  { type: GraphQLFloat }, // 担保保险的费用（客户实际付的钱）= 担保保险额度（需要赔偿用户的钱）* insuanceRate
-        insuanceMountRate:  { type: GraphQLFloat }, // 保额相对于运费的多少倍，默认为10
-        insuanceBaseValue:  { type: GraphQLFloat }, // 保险的最低值（默认为最低10元）
-        proxyChargeProfitRate:  { type: GraphQLFloat }, //  手续费 = 代收货款 * proxyChargeProfitRate
-        // 设置min必须从0开始，默认： [ {rate: 1.1, min: 0}, {rate: 1, min: 10}, {rate: 0.9, min: 20 } ] 如果物流公司设置的是100元/吨，表示0-10为110元/吨，10-20为100元/吨，20以上为90元/吨
-        gradientPriceList: { type: new GraphQLList(gradientPriceInputType) }, // 每吨的价格，单位为元/吨（采用阶梯价格）
-        additionalDeliverTime: { type: GraphQLFloat }, // 物流公司没有让货主确认附加的交易成功时间，单位小时(h)
-        noticeShipperStorageWeight: { type: GraphQLFloat }, // 没多少吨货物放置后通知物流公司
-        bondAmountWeightRate: { type: GraphQLFloat }, // 每吨货需要的保证金
-        rankedMaskFirstRankWeight: { type: GraphQLFloat }, // 用来判断排名第一的物流公司的收购多少吨货被屏蔽的依据
-        rankedMaskRateList: { type: new GraphQLList(GraphQLFloat) }, // 为了防止物流公司垄断，排在前3（数组的长度+1）名的需要轮流收货，第一名收货的量为rankedMaskFirstRankWeight*1，第二名为rankedMaskFirstRankWeight*0.8，第三名为rankedMaskFirstRankWeight*0.6。默认： [ 1, 0.8, 0.6 ]，屏蔽规则：见 RoadmapMaskModel
-    },
-});
-export const settingResultType = makeResultType('settingResultType', settingType);
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/types/shipper.js
-
-```js
-import {
-    GraphQLInputObjectType,
-    GraphQLObjectType,
-    GraphQLString,
-    GraphQLFloat,
-    GraphQLInt,
-    GraphQLID,
-    GraphQLList,
-} from 'graphql';
-
-import { makeResultType, makeListType, descriptType, descriptInputType } from './common';
-import { clientType } from './client';
-
-export const bondCompanyType = new GraphQLObjectType({
-    name: 'bondCompanyType',
-    fields: {
-        capital: { type: GraphQLFloat }, // 担保公司注册资金
-        bondAmount: { type: GraphQLFloat }, // 担保金额
-        name: { type: GraphQLString }, // 担保公司名称
-        address: { type: GraphQLString }, // 担保公司地址
-        phoneList: { type: GraphQLString }, // 担保公司电话
-        legalName: { type: GraphQLString }, // 法人姓名
-        legalPhone: { type: GraphQLString }, // 法人电话
-        certificate: { type: new GraphQLList(GraphQLString) }, // 担保公司资格证书
-        legalIDCard: { type: new GraphQLList(GraphQLString) }, // 法人身份证
-    },
-});
-export const shipperType = new GraphQLObjectType({
-    name: 'shipperType',
-    fields: {
-        // 列表的字段
-        id: { type: GraphQLID },
-        shipperType: { type: GraphQLInt },
-        shopId: { type: GraphQLID },
-        shopName: { type: GraphQLString },
-        name: { type: GraphQLString },
-        chairMan: { type: clientType },
-        acountAmount: { type: GraphQLFloat },
-        totalBondAmount: { type: GraphQLFloat },
-        remainBondAmount: { type: GraphQLFloat },
-        capital: { type: GraphQLFloat },
-        // 基本信息
-        logo: { type: GraphQLString },
-        image: { type: GraphQLString },
-        sign: { type: GraphQLString },
-        address: { type: GraphQLString },
-        phoneList:  { type: GraphQLString },
-        descriptList:  { type: new GraphQLList(descriptType) },
-        registerTime: { type: GraphQLString },
-        // 法人
-        legalName: { type: GraphQLString },
-        legalPhone: { type: GraphQLString },
-        legalIDCard: { type: new GraphQLList(GraphQLString) },
-        // 担保公司
-        bondCompanyList: { type: new GraphQLList(bondCompanyType) },
-    },
-});
-export const shipperResultType = makeResultType('shipperResultType', shipperType);
-export const shipperListType = makeListType('shipperListType', shipperType);
-
-export const bondCompanyInputType = new GraphQLInputObjectType({
-    name: 'bondCompanyInputType',
-    fields: {
-        capital: { type: GraphQLFloat }, // 担保公司注册资金
-        bondAmount: { type: GraphQLFloat }, // 担保金额
-        name: { type: GraphQLString }, // 担保公司名称
-        address: { type: GraphQLString }, // 担保公司地址
-        phoneList: { type: GraphQLString }, // 担保公司电话
-        legalName: { type: GraphQLString }, // 法人姓名
-        legalPhone: { type: GraphQLString }, // 法人电话
-        certificate: { type: new GraphQLList(GraphQLString) }, // 担保公司资格证书
-        legalIDCard: { type: new GraphQLList(GraphQLString) }, // 法人身份证
-    },
-});
-export const shipperInputType = new GraphQLInputObjectType({
-    name: 'shipperInputType',
-    fields: {
-        shipperId: { type: GraphQLID },
-        shipperType: { type: GraphQLInt },
-        chairManId: { type: GraphQLString },
-        name: { type: GraphQLString },
-        logo: { type: GraphQLString },
-        image: { type: GraphQLString },
-        sign: { type: GraphQLString },
-        address: { type: GraphQLString },
-        phoneList:  { type: GraphQLString },
-        descriptList:  { type: new GraphQLList(descriptInputType) },
-        capital: { type: GraphQLFloat },
-        legalName: { type: GraphQLString },
-        legalPhone: { type: GraphQLString },
-        legalIDCard: { type: new GraphQLList(GraphQLString) },
-        bondCompanyList: { type: new GraphQLList(bondCompanyInputType) },
-    },
-});
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/types/shop.js
-
-```js
-import {
-    GraphQLInputObjectType,
-    GraphQLObjectType,
-    GraphQLString,
-    GraphQLBoolean,
-    GraphQLFloat,
-    GraphQLInt,
-    GraphQLID,
-    GraphQLList,
-} from 'graphql';
-import { makeResultType, makeListType, descriptType, descriptInputType } from './common';
-
-const memberInShopType = new GraphQLObjectType({
-    name: 'memberInShopType',
-    fields: {
-        id: { type: GraphQLID },
-        name: { type: GraphQLString },
-        phone: { type: GraphQLString },
-        head: { type: GraphQLString },
-    },
-});
-export const shopType = new GraphQLObjectType({
-    name: 'shopType',
-    fields: {
-        id: { type: GraphQLID },
-        name: { type: GraphQLString },
-        logo: { type: GraphQLString },
-        image: { type: GraphQLString },
-        sign: { type: GraphQLString },
-        phoneList: { type: GraphQLString },
-        addressRegion: { type: GraphQLString },
-        addressRegionLastCode: { type: GraphQLInt },
-        address: { type: GraphQLString },
-        location: { type: new GraphQLList(GraphQLFloat) },
-        descriptList: { type: new GraphQLList(descriptType) },
-        chairMan: { type: memberInShopType },
-        profitRate: { type: GraphQLFloat },
-        isMasterShop: { type: GraphQLBoolean },
-    },
-});
-export const shopResultType = makeResultType('shopResultType', shopType);
-export const branchShopListType = makeListType('branchShopListType', shopType);
-
-export const shopInputType = new GraphQLInputObjectType({
-    name: 'shopInputType',
-    fields: {
-        shopId: { type: GraphQLID },
-        name: { type: GraphQLString },
-        logo: { type: GraphQLString },
-        image: { type: GraphQLString },
-        sign: { type: GraphQLString },
-        phoneList: { type: GraphQLString },
-        addressRegion: { type: GraphQLString },
-        addressRegionLastCode: { type: GraphQLInt },
-        address: { type: GraphQLString },
-        location: { type: new GraphQLList(GraphQLFloat) },
-        descriptList:  { type: new GraphQLList(descriptInputType) },
-        profitRate: { type: GraphQLFloat },
-        chairManPhone: { type: GraphQLString },
-        chairManName: { type: GraphQLString },
-        chairManPassword: { type: GraphQLString },
-    },
-});
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/types/statistic.js
-
-```js
-import {
-    GraphQLObjectType,
-    GraphQLFloat,
-    GraphQLInt,
-    GraphQLList,
-} from 'graphql';
-
-export const shopStatisticType = new GraphQLObjectType({
-    name: 'shopStatisticType',
-    fields: {
-        count: { type: new GraphQLList(GraphQLInt) },
-        isReachPay: { type: new GraphQLList(GraphQLInt) },
-        isInsuance: { type: new GraphQLList(GraphQLInt) },
-        insuanceMount: { type: new GraphQLList(GraphQLFloat) },
-        insuanceFee: { type: new GraphQLList(GraphQLFloat) },
-        realFee: { type: new GraphQLList(GraphQLFloat) },
-        totalDesignatedFee: { type: new GraphQLList(GraphQLFloat) },
-        proxyCharge: { type: new GraphQLList(GraphQLFloat) },
-        masterProfit: { type: new GraphQLList(GraphQLFloat) },
-        branchProfit: { type: new GraphQLList(GraphQLFloat) },
-        weight: { type: new GraphQLList(GraphQLFloat) },
-        size: { type: new GraphQLList(GraphQLFloat) },
-    },
-});
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/types/truck.js
-
-```js
-import {
-    GraphQLObjectType,
-    GraphQLString,
-    GraphQLFloat,
-    GraphQLInt,
-    GraphQLID,
-} from 'graphql';
-
-import { makeResultType, makeListType, driverType } from './common';
-
-export const truckType = new GraphQLObjectType({
-    name: 'truckType',
-    fields: {
-        id: { type: GraphQLID }, // Id
-        // 基本信息
-        plateNo: { type: GraphQLString }, // 车牌号码
-        drivingLicense: { type: GraphQLString }, // 行驶证编号
-        truckType: { type: GraphQLString }, // 车型
-        insuanceMount: { type: GraphQLFloat }, // 保险
-        driver: { type: driverType }, // 司机的Id
-        state: { type: GraphQLInt }, // 货车状态
-    },
-});
-
-export const truckResultType = makeResultType('truckResultType', truckType);
-export const truckListType = makeListType('truckListType', truckType);
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/types/warehouse.js
-
-```js
-import {
-    GraphQLInputObjectType,
-    GraphQLObjectType,
-    GraphQLString,
-    GraphQLInt,
-    GraphQLID,
-    GraphQLList,
-    GraphQLFloat,
-} from 'graphql';
-import { makeResultType, makeListType } from './common';
-import { partmentType } from './partment';
-import { shipperType } from './shipper';
-
-export const warehouseType = new GraphQLObjectType({
-    name: 'warehouseType',
-    fields: {
-        id: { type: GraphQLID },
-        shopId: { type: GraphQLID },
-        shipperList: { type: new GraphQLList(shipperType) },
-        warehousePartment: { type: partmentType },
-        houseNo: { type: GraphQLString },
-        maxStoreWeight: { type: GraphQLFloat },
-        maxStoreSize: { type: GraphQLFloat },
-        orderCount: { type: GraphQLInt },
-        totalNumbers: { type: GraphQLInt },
-        totalWeight: { type: GraphQLFloat },
-        totalSize: { type: GraphQLString },
-    },
-});
-export const warehouseResultType = makeResultType('warehouseResultType', warehouseType);
-export const warehouseListType = makeListType('warehouseListType', warehouseType);
-
-export const warehouseInputType = new GraphQLInputObjectType({
-    name: 'warehouseInputType',
-    fields: {
-        warehouseId: { type: GraphQLID },
-        shopId: { type: GraphQLID },
-        shipperList: { type: new GraphQLList(GraphQLID) },
-        warehousePartmentId: { type: GraphQLID },
-        houseNo: { type: GraphQLString },
-        maxStoreWeight: { type: GraphQLFloat },
-        maxStoreSize: { type: GraphQLFloat },
-        orderCount: { type: GraphQLInt },
-        totalNumbers: { type: GraphQLInt },
-        totalWeight: { type: GraphQLFloat },
-        totalSize: { type: GraphQLString },
-    },
-});
-
-```
-
-* PDShop_Shop_PC/project/App/server/shared/helpers/bind-error-type.js
-
-```js
-import {
-    GraphQLUnionType,
-} from 'graphql';
-import _ from 'lodash';
-import { errorType } from '../../graphql/types/error';
-
-export default function bindErrorType (obj) {
-    let key = _.keys(obj)[0];
-    let type = obj[key];
-    return new GraphQLUnionType({
-        name: key + 'BindErrorType',
-        types: [type, errorType],
-        resolveType: (value) => {
-            if (value.error) {
-                return errorType;
-            }
-            return type;
+export default {
+    type: notifyType,
+    args: {
+        type: {
+            type: GraphQLString,
         },
+        keyword: {
+            type: GraphQLString,
+        },
+        pageNo: {
+            type: GraphQLInt,
+        },
+        pageSize: {
+            type: GraphQLInt,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.notify, params, root) || {};
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/personal/personal.js
+
+```js
+import { authorize } from '../../authorize';
+import { personalInfoType } from '../../types/personal';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: personalInfoType,
+    async resolve (root, params, options) {
+        authorize(root);
+        const personal = await post(urls.personal, params, root) || {};
+        return personal.context || {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/personal/referShops.js
+
+```js
+import {
+    GraphQLString,
+    GraphQLInt,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { branchShopListType } from '../../types/shop';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: branchShopListType,
+    args: {
+        keyword: {
+            type: GraphQLString,
+        },
+        pageNo: {
+            type: GraphQLInt,
+        },
+        pageSize: {
+            type: GraphQLInt,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let agent = await post(urls.getReferShopList, params, root) || {};
+        return agent.context || {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/personal/session.js
+
+```js
+import { GraphQLBoolean } from 'graphql';
+
+export default {
+    type: GraphQLBoolean,
+    resolve (root) {
+        return root.isAuthenticated;
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/personal/shipper.js
+
+```js
+import {
+    GraphQLID,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { shipperType } from '../../types/shipper';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: shipperType,
+    args: {
+        shopId: {
+            type: GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let shipper = await post(urls.shipper, params, root) || {};
+        return shipper.context || {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/personal/statistics.js
+
+```js
+import {
+    GraphQLObjectType,
+    GraphQLInt,
+    GraphQLList,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { post, urls } from 'helpers/api';
+
+const releaseCardInfoType = new GraphQLObjectType({
+    name: 'releaseCardInfoType',
+    fields: {
+        today: { type: GraphQLInt },
+        past: { type: GraphQLInt },
+        remain: { type: GraphQLInt },
+    },
+});
+const consumeInfoType = new GraphQLObjectType({
+    name: 'consumeInfoType',
+    fields: {
+        today: { type: new GraphQLList(GraphQLInt) },
+        week: { type: new GraphQLList(GraphQLInt) },
+        month: { type: new GraphQLList(GraphQLInt) },
+    },
+});
+const userSexInfoType = new GraphQLObjectType({
+    name: 'userSexInfoType',
+    fields: {
+        male: { type: GraphQLInt },
+        female: { type: GraphQLInt },
+    },
+});
+const statisticsType = new GraphQLObjectType({
+    name: 'statisticsType',
+    fields: {
+        releaseCardInfo: { type: releaseCardInfoType },
+        consumeInfo: { type: consumeInfoType },
+        userSexInfo: { type: userSexInfoType },
+        userAgeInfo: { type: new GraphQLList(GraphQLInt) },
+    },
+});
+
+export default {
+    type: statisticsType,
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.statistics, params, root) || {};
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/regionRate/addressWithRegion.js
+
+```js
+import {
+    GraphQLID,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { orderAddressType } from '../../types/common';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: orderAddressType,
+    args: {
+        regionId: {
+            type: GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.addressWithRegion, params, root) || {};
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/regionRate/index.js
+
+```js
+export regionRates from './regionRates';
+export regionRate from './regionRate';
+export addressWithRegion from './addressWithRegion';
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/regionRate/regionRate.js
+
+```js
+import {
+    GraphQLID,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { regionRateType } from '../../types/roadmap';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: regionRateType,
+    args: {
+        regionId: {
+            type: GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.getRegionProfitDetail, params, root) || {};
+        return ret.success ? ret.context : undefined;
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/regionRate/regionRates.js
+
+```js
+import {
+    GraphQLInt,
+    GraphQLString,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { regionRateListType } from '../../types/roadmap';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: regionRateListType,
+    args: {
+        keyword: {
+            type: GraphQLString,
+        },
+        pageNo: {
+            type: GraphQLInt,
+        },
+        pageSize: {
+            type: GraphQLInt,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.getRegionProfitList, params, root) || {};
+        return ret.success ? ret.context : undefined;
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/roadmap/index.js
+
+```js
+export roadmap from './roadmap';
+export roadmaps from './roadmaps';
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/roadmap/roadmap.js
+
+```js
+import {
+    GraphQLID,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { roadmapType } from '../../types/roadmap';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: roadmapType,
+    args: {
+        roadmapId: {
+            type: GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        if (!params.roadmapId) {
+            return undefined;
+        }
+        let ret = await post(urls.roadmap, params, root) || {};
+        return ret.success ? ret.context : undefined;
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/roadmap/roadmaps.js
+
+```js
+import {
+    GraphQLInt,
+    GraphQLString,
+    GraphQLID,
+    GraphQLBoolean,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { roadmapListType } from '../../types/roadmap';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: roadmapListType,
+    args: {
+        keyword: {
+            type: GraphQLString,
+        },
+        shopId: {
+            type: GraphQLID,
+        },
+        isCityDistribute: {
+            type: GraphQLBoolean,
+        },
+        pageNo: {
+            type: GraphQLInt,
+        },
+        pageSize: {
+            type: GraphQLInt,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.roadmaps, params, root) || {};
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/statistic/index.js
+
+```js
+export shipperStatistics from './shipperStatistics';
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/statistic/shipperStatistics.js
+
+```js
+import { authorize } from '../../authorize';
+import { shipperStatisticType } from '../../types/statistic';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: shipperStatisticType,
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.shipperStatistics, params, root) || {};
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/truck/carryPartments.js
+
+```js
+import {
+    GraphQLID,
+    GraphQLList,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { carryPartmentType } from '../../types/shop';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: new GraphQLList(carryPartmentType),
+    args: {
+        truckId: {
+            type: GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.carryPartments, params, root) || {};
+        return ret.success ? ret.context.partmenList : [];
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/truck/getDriverNameByPhone.js
+
+```js
+import {
+    GraphQLString,
+} from 'graphql';
+import { driverType } from '../../types/truck';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: driverType,
+    args: {
+        phone: {
+            type: GraphQLString,
+        },
+    },
+    async resolve (root, params, options) {
+        const ret = await post(urls.getDriverNameByPhone, params) || {};
+        return ret.context;
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/truck/historyTrucks.js
+
+```js
+import {
+    GraphQLInt,
+    GraphQLString,
+    GraphQLID,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { truckListType } from '../../types/truck';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: truckListType,
+    args: {
+        keyword: {
+            type: GraphQLString,
+        },
+        type: {
+            type: GraphQLString,
+        },
+        pageNo: {
+            type: GraphQLInt,
+        },
+        pageSize: {
+            type: GraphQLInt,
+        },
+        shopId:{
+            type: GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.historyTrucks, params, root) || {};
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/truck/index.js
+
+```js
+export truck from './truck';
+export truckTypes from './truckTypes';
+export trucks from './trucks';
+export workTruckList from './workTruckList';
+export getDriverNameByPhone from './getDriverNameByPhone';
+export carryPartments from './carryPartments';
+export orderListInTruck from './orderListInTruck';
+export historyTrucks from './historyTrucks';
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/truck/orderListInTruck.js
+
+```js
+import {
+    GraphQLID,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { orderListType } from '../../types/order';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: orderListType,
+    args: {
+        truckId: {
+            type: GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.orderListInTruck, params, root) || {};
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/truck/truck.js
+
+```js
+import {
+    GraphQLID,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { truckType } from '../../types/truck';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: truckType,
+    args: {
+        truckId: {
+            type: GraphQLID,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        if (!params.truckId) {
+            return undefined;
+        }
+        let ret = await post(urls.truck, params, root) || {};
+        return ret.success ? ret.context : undefined;
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/truck/truckTypes.js
+
+```js
+import {
+    GraphQLList,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { truckTypeType } from '../../types/truck';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: new GraphQLList(truckTypeType),
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.truckType, params, root) || {};
+        return ret.success ? ret.context : [];
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/truck/trucks.js
+
+```js
+import {
+    GraphQLInt,
+    GraphQLString,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { trucksType } from '../../types/truck';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: trucksType,
+    args: {
+        keyword: {
+            type: GraphQLString,
+        },
+        type: {
+            type: GraphQLString,
+        },
+        pageNo: {
+            type: GraphQLInt,
+        },
+        pageSize: {
+            type: GraphQLInt,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.trucks, params, root) || {};
+        return ret.success ? ret.context : {};
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/graphql/queries/truck/workTruckList.js
+
+```js
+import {
+    GraphQLInt,
+    GraphQLString,
+} from 'graphql';
+import { authorize } from '../../authorize';
+import { truckItemListType } from '../../types/truck';
+import { post, urls } from 'helpers/api';
+
+export default {
+    type: truckItemListType,
+    args: {
+        keyword: {
+            type: GraphQLString,
+        },
+        type: {
+            type: GraphQLString,
+        },
+        pageNo: {
+            type: GraphQLInt,
+        },
+        pageSize: {
+            type: GraphQLInt,
+        },
+    },
+    async resolve (root, params, options) {
+        authorize(root);
+        let ret = await post(urls.workTruckList, params, root) || {};
+        if (ret.success) {
+            return {
+                count: ret.context.count,
+                list: ret.context.truckList,
+            };
+        }
+        return undefined;
+    },
+};
+
+```
+
+* PDShop_Client_PC/project/App/server/shared/helpers/api/index.js
+
+```js
+export urls from './urls';
+export post from './post';
+
+```
+
+* PDShop_Client_PC/project/App/server/shared/helpers/api/post.js
+
+```js
+import request from 'superagent';
+
+export default function doRequest (url, data, root) {
+    return new Promise((resolve) => {
+        if (root && root.user) {
+            Object.assign(data, { userId: root.user.userId, fromPC: true });
+        }
+        const req = request
+        .post(url)
+        .set({
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        })
+        .send(data);
+
+        req.end((error, res) => {
+            if (error) {
+                console.error('recv error[' + url + ']:', error);
+                resolve();
+            } else {
+                console.log('recv[' + url + ']:', res.body);
+                resolve(res.body);
+            }
+        });
     });
 }
 
 ```
 
-* PDShop_Shop_PC/project/App/server/shared/helpers/default-favicon.js
+* PDShop_Client_PC/project/App/server/shared/helpers/api/urls.js
 
 ```js
-export default function getDefaultIcon (res) {
-    return {
-        tag: 'link',
-        props: {
-            rel: 'shortcut icon',
-            type: 'image/vnd.microsoft.icon',
-            href: `${res.baseScriptsURL}/shop/favicon.ico`,
-        },
-    };
-}
+const { apiServer } = require('../../../../../config.js');
+const clientServer = apiServer + 'client/';
+const shipperServer = apiServer + 'shipper/';
+const agentServer = apiServer + 'agent/';
 
-```
+module.exports = {
+    // common
+    address: apiServer + 'getRegionAddress', // 获取地址列表
+    addressFromLastCode: apiServer + 'getRegionAddressFromLastCode', // 通过最后一个code地址列表
+    sendDoorAddressFromLastCode: apiServer + 'getRegionSendDoorAddressFromLastCode', // 通过最后一个code送货上门地址列表
+    startPointAddress: apiServer + 'getStartPointAddress', // 获取始发地的地址列表
+    startPointAddressFromLastCode: apiServer + 'getStartPointAddressFromLastCode', // 通过最后一个code获取始发地的地址列表
 
-* PDShop_Shop_PC/project/App/server/shared/helpers/get-base-component.js
+    // 个人中心
+    getVerifyCode: apiServer + 'requestSendVerifyCode', // 请求发送验证码
+    login: clientServer + 'login', // 登录
+    register: clientServer + 'register', // 注册
+    forgotPwd: clientServer + 'findPassword', // 忘记密码
+    setPaymentPassword: clientServer + 'setPaymentPassword', // 设置支付密码
+    modifyPassword: clientServer + 'modifyPassword', // 修改密码
+    personal: clientServer + 'getPersonalInfo', // 获取个人信息
+    modifyPersonalInfo: clientServer + 'modifyPersonalInfo', // 修改个人信息
+    shipper: clientServer + 'getShipperInfo', // 获取物流公司信息
+    modifyShipperInfo: clientServer + 'modifyShipperInfo', // 修改物流公司信息
+    agent: clientServer + 'getAgentInfo', // 获取收货点信息
+    modifyAgentInfo: clientServer + 'modifyAgentInfo', // 修改收货点信息
+    getUserNameByPhone: clientServer + 'getUserNameByPhone', // 通过电话号码获取用户名
+    feedback: clientServer + 'submitFeedback', // 意见反馈
+    getReferShopList:agentServer + 'getReferShopList', // 收货点获取分店列表
+    setReferShop:agentServer + 'setReferShop', // 收货点设置分店
 
-```js
-import React from 'react';
-import { Provider } from 'react-redux';
-import { ReduxRouter } from 'redux-router';
-import getMuiTheme from 'material-ui/styles/getMuiTheme';
-import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
+    // 账目
+    remainAmount: clientServer + 'getRemainAmount', // 获取余额
+    weixinPayGetUnifiedOrder: clientServer + 'weixinPayGetUnifiedOrderForPC', // 统一下单
+    weixinPayWithDraw: clientServer + 'withdraw', // 提现
+    bills: clientServer + 'getBills', // 获取账单
 
-export default (req) => {
-    const { store, headers } = req;
-    const muiTheme = getMuiTheme({ userAgent: headers['user-agent'] });
-    return (
-        <MuiThemeProvider muiTheme={muiTheme}>
-            <Provider store={store}>
-                <ReduxRouter />
-            </Provider>
-        </MuiThemeProvider>
-    );
+    // 物流人员
+    shipperMembers: shipperServer + 'getMemberList', // 获取人员列表
+    shipperMember: shipperServer + 'getMemberDetail', // 获取人员详情
+    getShipperMemberByPhone: shipperServer + 'getMemberByPhone', // 通过电话号码获取成员信息
+    modifyShipperMemberAuthority: shipperServer + 'modifyMemberAuthority', // 修改人员权限
+
+    // 同城配送物流公司获取同行上门自提行情
+    getClientPickShipperList: shipperServer + 'getClientPickShipperList',
+
+    // 收货点人员
+    agentMembers: agentServer + 'getMemberList', // 获取人员列表
+    agentMember: agentServer + 'getMemberDetail', // 获取人员详情
+    getAgentMemberByPhone: agentServer + 'getMemberByPhone', // 通过电话号码获取成员信息
+    modifyAgentMemberAuthority: agentServer + 'modifyMemberAuthority', // 修改人员权限
+
+    // 路线
+    roadmaps: shipperServer + 'getRoadmapList', // 获取路线列表
+    roadmap: shipperServer + 'getRoadmapDetail', // 获取路线详情
+    publishRoadmap: shipperServer + 'publishRoadmap', // 发布路线
+    modifyRoadmap: shipperServer + 'modifyRoadmap', // 修改路线
+    removeRoadmap: shipperServer + 'removeRoadmap', // 删除路线
+    setRoadmapPrice: shipperServer + 'setRoadmapPrice', // 设置路线价格
+    setRoadmapSendDoorPrice: shipperServer + 'setRoadmapSendDoorPrice', // 设置路线送货上门价格
+    setRoadmapSendDoorBasePrice: shipperServer + 'setRoadmapSendDoorBasePrice', // 设置路线送货上门底价
+    setRoadmapEnable: shipperServer + 'setRoadmapEnable', // 设置路线停运或恢复
+    setRoadmapSendDoorEnable: shipperServer + 'setRoadmapSendDoorEnable', // 设置路线送货上门停运或恢复
+
+    // 区域提成
+    getRegionProfitList: agentServer + 'getRegionProfitList', // 收货点获取区域路线提成列表
+    addRegionProfit: agentServer + 'addRegionProfit', // 收货点添加区域的路线提成
+    removeRegionProfit: agentServer + 'removeRegionProfit', // 收货点删除区域的路线提成
+    modifyRegionProfit: agentServer + 'modifyRegionProfit', // 收货点修改区域的路线提成
+    getRegionProfitDetail: agentServer + 'getRegionProfitDetail', // 收货点获取区域的路线提成详情
+    setRegionProfitWithList: agentServer + 'setRegionProfitWithList', // 批量设置区域的路线提成
+    addressWithRegion: agentServer + 'getRegionAddressWithRegion', // 通过区域获取地址列表
+
+    // 货单
+    preOrders: clientServer + 'getPreOrderList', // 获取预下单列表
+    preOrderGroups: clientServer + 'getPreOrderGroupList', // 获取预下单批次列表
+    placePreOrder: clientServer + 'placePreOrder', // 预下单
+    modifyPreOrder: clientServer + 'modifyPreOrder', // 修改预下单
+    removePreOrder: clientServer + 'removePreOrder', // 删除预下单
+    createPreOrderGroup: clientServer + 'createPreOrderGroup', // 创建预下单批次
+    modifyPreOrderGroup: clientServer + 'modifyPreOrderGroup', // 修改预下单批次
+    removePreOrderFromGroup: clientServer + 'removePreOrderFromGroup', // 移除预下单批次的货单
+    inGroupPreOrders: clientServer + 'getPreOrderListInGroup', // 获取批次中的预下单列表
+    lookGroupFee: clientServer + 'getRoadmapListWithPreOrderGroup', // 通过预下单批次获取收货点和分店路线列表
+    lookPreOrderFee: clientServer + 'getRoadmapListWithPreOrder', // 通过预下单获取收货点和分店路线列表
+    lookOrderFee: clientServer + 'getRoadmapListWithOrder', // 通过货单获取收货点和分店路线列表
+    lookTruckOrderFee: clientServer + 'getRoadmapListWithTruck', // 通过货车获取分店路线列表
+    sporders: shipperServer + 'getOrders', // 物流公司获取订单综合列表
+    scorders: shipperServer + 'getCityDistributeOrders', // 同城配送物流公司获取订单综合列表
+    order: clientServer + 'getOrderDetail', // 获取订单详情
+    sendOrders: clientServer + 'getSendOrders', // 获取发货订单
+    receiveOrders: clientServer + 'getReceiveOrders', // 获取收货订单
+    payForOrderWhenSend: clientServer + 'payForOrderWhenSend', // 支付货单
+    finishOrder: clientServer + 'finishOrder', // 完成货单
+    setClientPickOrderTransportFee: shipperServer + 'setClientPickOrderTransportFee', // 设置上门自提的信息
+
+    // 收货部货单
+    addressWithOrder: agentServer + 'getRegionAddressWithOrder', // 通过货单获取地址列表
+    sendDoorAddressWithOrder: agentServer + 'getRegionSendDoorAddressWithOrder', // 通过货单获取送货上门地址列表
+    rcorders: agentServer + 'getOrders', // 收货点获取货单综合列表
+    rcorder: agentServer + 'getLastestOrder', // 获取收货点需要的货单
+    placeClientOrder: agentServer + 'placeOrder', // 下初始货单
+    placeClientOrderWithPreOrder: agentServer + 'placeOrderWithPreOrder', // 通过预下单下初始货单
+    modifyClientOrder: agentServer + 'modifyOrder', // 修改初始货单
+    removeClientOrder: agentServer + 'removeOrder', // 删除货单
+    confirmCachPayed: agentServer + 'confirmCachPayed', // 待支付
+    confirmCachPayedForOrderList: agentServer + 'confirmCachPayedForOrderList', // 待支付多个货单
+    printOrderBill: agentServer + 'printOrderBill', // 打印收据
+    printOrderListBill: agentServer + 'printOrderListBill', // 打印多个货单
+    printBarCode: agentServer + 'printBarCode', // 打印二维码
+    selectPreOrders: agentServer + 'getPreOrderList', // 收货部获取用户预下单列表
+
+    // 行情
+    lookRoadmap: clientServer + 'getRoadmapListWithEndPoint', // 查询行情路线
+
+    // 竞得货物
+    needSendOrders: shipperServer + 'getNeedSendOrderSummaryList', // 获取竞得货物汇总列表
+    orderListByEndPoint: shipperServer + 'getNeedSendOrderListByEndPoint', // 通过到货地获取竞得货物汇总列表
+
+    // 货车
+    trucks: shipperServer + 'getTrucks', // 获取货车综合列表
+    workTruckList: shipperServer + 'getWorkTruckList', // 获取工作状态的货车列表
+    truck: shipperServer + 'getTruckDetail', // 获取货车详情
+    createTruck: shipperServer + 'createTruck', // 创建货车
+    modifyTruck: shipperServer + 'modifyTruck', // 修改货车
+    removeTruck: shipperServer + 'removeTruck', // 删除货车
+    getDriverNameByPhone: shipperServer + 'getDriverInfoByPhone', // 通过电话号码获取司机姓名
+    truckType: shipperServer + 'getTruckType', // 通过电话号码获取司机姓名
+    carryPartments: shipperServer + 'getCarryPartmentList', // 获取搬运队列表
+    selectCarryPartment: shipperServer + 'selectCarryPartment', // 选择搬运队
+    payforCarryPartment: shipperServer + 'payforCarryPartment', // 支付搬运队搬运费
+    orderListInTruck: shipperServer + 'getOrderListInTruck', // 获取货车里面的订单
+    setCityTruck: shipperServer + 'setCityTruck', // 设置同城配送的货车
+    historyTrucks: shipperServer + 'getHistoryTruckList', // 获取历史货车列表
+
+    // 统计
+    shipperStatistics: shipperServer + 'getStatistics', // 获取物流公司的统计数据
+
+    // 客户
+    getClientNameByPhone: apiServer + 'getClientNameByPhone', // 通过电话号码获取用户名
+
+    // 其他
+    statistics: apiServer + 'getStatistics', // 获取统计数据
+    uploadFile: apiServer + 'uploadFile', // 上传文件
+    notify: apiServer + 'notify', // 通知接口
 };
 
 ```
 
-* PDShop_Shop_PC/project/App/server/shared/helpers/get-markup.js
-
-```js
-import serialize from 'serialize-javascript';
-import Html from 'components/html';
-import React from 'react';
-import { renderToString } from 'react-dom/server';
-import { Provider } from 'react-redux';
-import { ReduxRouter } from 'redux-router';
-import getMuiTheme from 'material-ui/styles/getMuiTheme';
-import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
-
-export default function getMarkup (req, res) {
-    const { store, headers } = req;
-    const state = store.getState();
-    const initialState = serialize(state);
-    const muiTheme = getMuiTheme({ userAgent: headers['user-agent'] });
-
-    const markup = renderToString(
-        <MuiThemeProvider muiTheme={muiTheme}>
-            <Provider store={store}>
-                <ReduxRouter />
-            </Provider>
-        </MuiThemeProvider>
-    );
-
-    const htmlMarkup = renderToString(
-        <Html
-            body={markup}
-            props={initialState}
-            locals={res.locals}
-            />
-    );
-
-    return htmlMarkup;
-}
-
-```
-
-* PDShop_Shop_PC/project/App/server/shared/helpers/get-projection.js
-
-```js
-export function getProjection (fieldASTs) {
-    return fieldASTs.selectionSet.selections.reduce((projections, selection) => {
-        projections[selection.name.value] = 1;
-        return projections;
-    }, {});
-}
-
-export function getInlineProjection (fieldASTs) {
-    return fieldASTs.selectionSet.selections[0].selectionSet.selections.reduce((projections, selection) => {
-        projections[selection.name.value] = 1;
-        return projections;
-    }, {});
-}
-
-```
-
-* PDShop_Shop_PC/project/App/server/shared/helpers/render-html.js
-
-```js
-import serialize from 'serialize-javascript';
-import Html from 'components/html';
-import React from 'react';
-import { renderToString } from 'react-dom/server';
-
-export default ({ component, store, locals }) => {
-    const state = store.getState();
-    const initialState = serialize(state);
-
-    const markup = renderToString(component);
-
-    const htmlMarkup = renderToString(
-        <Html
-            body={markup}
-            props={initialState}
-            locals={locals}
-            />
-    );
-
-    return htmlMarkup;
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/shared/helpers/route-handler.js
-
-```js
-import configureStore from 'helpers/configure-store';
-import { createMemoryHistory } from 'history';
-import { match, reduxReactRouter } from 'redux-router/server';
-
-export default function routeHandler (routes, req, res, next) {
-    const store = configureStore(reduxReactRouter({
-        createHistory: createMemoryHistory,
-        routes,
-    }));
-    const url = req.originalUrl;
-
-    store.dispatch(match(url, async (error, redirectLocation, routerState) => {
-        if (error) {
-            next(error);
-        } else if (redirectLocation) {
-            res.redirect(302, redirectLocation.pathname + redirectLocation.search);
-        } else if (routerState) {
-            req.routerState = routerState;
-            req.store = store;
-            next();
-        } else {
-            res.status(404).send('Not found');
-        }
-    }));
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/pages/shared/components/index.js
+* PDShop_Client_PC/project/App/shared/pages/shared/components/index.js
 
 ```js
 // form
@@ -5330,7 +8934,7 @@ export * from './form/config';
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shared/utils/account.js
+* PDShop_Client_PC/project/App/shared/pages/shared/utils/account.js
 
 ```js
 export function getPayTool (str = '') {
@@ -5365,7 +8969,7 @@ export function getPayBill (str = '') {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shared/utils/check.js
+* PDShop_Client_PC/project/App/shared/pages/shared/utils/check.js
 
 ```js
 import _ from 'lodash';
@@ -5433,7 +9037,7 @@ export function checkPlateNo (rule, value, callback) {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shared/utils/common.js
+* PDShop_Client_PC/project/App/shared/pages/shared/utils/common.js
 
 ```js
 import _ from 'lodash';
@@ -5515,7 +9119,7 @@ export function getStartPointOptions (list = [], lastCode, id) { // 如果始发
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shared/utils/confirm.js
+* PDShop_Client_PC/project/App/shared/pages/shared/utils/confirm.js
 
 ```js
 import React from 'react';
@@ -5578,7 +9182,7 @@ export function showError (info, title) {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shared/utils/index.js
+* PDShop_Client_PC/project/App/shared/pages/shared/utils/index.js
 
 ```js
 export * from './common';
@@ -5590,7 +9194,7 @@ export * from './socket';
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shared/utils/qrcode.js
+* PDShop_Client_PC/project/App/shared/pages/shared/utils/qrcode.js
 
 ```js
 export function genQRString (id, type) {
@@ -5638,7 +9242,7 @@ export function getQRResult (str) {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shared/utils/socket.js
+* PDShop_Client_PC/project/App/shared/pages/shared/utils/socket.js
 
 ```js
 import io from 'socket.io-client';
@@ -5665,2976 +9269,7 @@ export function createSocketIO (userId) {
 
 ```
 
-* PDShop_Shop_PC/project/App/server/graphql/mutations/agent/checkAgentByChairManPhone.js
-
-```js
-import {
-    GraphQLString,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { agentResultType } from '../../types/agent';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: agentResultType,
-    args: {
-        chairManPhone: {
-            type: GraphQLString,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.checkAgentByChairManPhone, params, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/agent/createAgent.js
-
-```js
-import { authorize } from '../../authorize';
-import { agentInputType, agentResultType } from '../../types/agent';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: agentResultType,
-    args: {
-        data: {
-            type: agentInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.createAgent, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/agent/index.js
-
-```js
-export createAgent from './createAgent';
-export modifyAgent from './modifyAgent';
-export removeAgent from './removeAgent';
-export checkAgentByChairManPhone from './checkAgentByChairManPhone';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/agent/modifyAgent.js
-
-```js
-import { authorize } from '../../authorize';
-import { agentInputType, agentResultType } from '../../types/agent';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: agentResultType,
-    args: {
-        data: {
-            type: agentInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.modifyAgent, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/agent/removeAgent.js
-
-```js
-import {
-    GraphQLID,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { successType } from '../../types/common';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: successType,
-    args: {
-        agentId: {
-            type: GraphQLID,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.removeAgent, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/member/createMember.js
-
-```js
-import { authorize } from '../../authorize';
-import { memberInputType, memberResultType } from '../../types/member';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: memberResultType,
-    args: {
-        data: {
-            type: memberInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.createMember, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/member/index.js
-
-```js
-export createMember from './createMember';
-export modifyMember from './modifyMember';
-export removeMember from './removeMember';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/member/modifyMember.js
-
-```js
-import { authorize } from '../../authorize';
-import { memberInputType, memberResultType } from '../../types/member';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: memberResultType,
-    args: {
-        data: {
-            type: memberInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.modifyMember, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/member/removeMember.js
-
-```js
-import {
-    GraphQLID,
-    GraphQLString,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { successType } from '../../types/common';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: successType,
-    args: {
-        memberId: {
-            type: GraphQLID,
-        },
-        password: {
-            type: GraphQLString,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.removeMember, params, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/notify/index.js
-
-```js
-export sendNotify from './sendNotify';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/notify/sendNotify.js
-
-```js
-import { notifyResultType, notifyInputType } from '../../types/notify';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: notifyResultType,
-    args: {
-        data: {
-            type: notifyInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        params.data.source = '物流超市平台';
-        params.data.memberId = root.user.userId;
-        return await post(urls.sendNotify, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/order/index.js
-
-```js
-export placeOriginOrder from './placeOriginOrder';
-export placeOriginOrderWithPreOrder from './placeOriginOrderWithPreOrder';
-export modifyOriginOrder from './modifyOriginOrder';
-export selectRoadmap from './selectRoadmap';
-export selectRoadmapForOrderList from './selectRoadmapForOrderList';
-export proxyPay from './proxyPay';
-export proxyPayForOrderList from './proxyPayForOrderList';
-export printOrderBill from './printOrderBill';
-export printOrderListBill from './printOrderListBill';
-export printBarCode from './printBarCode';
-export removeOrder from './removeOrder';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/order/modifyOriginOrder.js
-
-```js
-import { authorize } from '../../authorize';
-import { orderInputType, orderResultType } from '../../types/order';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: orderResultType,
-    args: {
-        data: {
-            type: orderInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.modifyOriginOrder, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/order/placeOriginOrder.js
-
-```js
-import { authorize } from '../../authorize';
-import { orderInputType, orderResultType } from '../../types/order';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: orderResultType,
-    args: {
-        data: {
-            type: orderInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.placeOriginOrder, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/order/placeOriginOrderWithPreOrder.js
-
-```js
-import { authorize } from '../../authorize';
-import { orderInputType, orderResultType } from '../../types/order';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: orderResultType,
-    args: {
-        data: {
-            type: orderInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.placeOriginOrderWithPreOrder, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/order/printBarCode.js
-
-```js
-import {
-    GraphQLID,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { orderResultType } from '../../types/order';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: orderResultType,
-    args: {
-        orderId: {
-            type: GraphQLID,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.printBarCode, params, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/order/printOrderBill.js
-
-```js
-import {
-    GraphQLID,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { orderResultType } from '../../types/order';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: orderResultType,
-    args: {
-        orderId: {
-            type: GraphQLID,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.printOrderBill, params, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/order/printOrderListBill.js
-
-```js
-import {
-    GraphQLID,
-    GraphQLList,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { successType } from '../../types/common';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: successType,
-    args: {
-        orderIdList: {
-            type: new GraphQLList(GraphQLID),
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.printOrderListBill, params, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/order/proxyPay.js
-
-```js
-import {
-    GraphQLID,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { orderResultType } from '../../types/order';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: orderResultType,
-    args: {
-        orderId: {
-            type: GraphQLID,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.proxyPay, params, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/order/proxyPayForOrderList.js
-
-```js
-import {
-    GraphQLID,
-    GraphQLList,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { successType } from '../../types/common';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: successType,
-    args: {
-        orderIdList: {
-            type: new GraphQLList(GraphQLID),
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.proxyPayForOrderList, params, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/order/removeOrder.js
-
-```js
-import {
-    GraphQLID,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { successType } from '../../types/common';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: successType,
-    args: {
-        orderId: {
-            type: GraphQLID,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.removeOrder, params, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/order/selectRoadmap.js
-
-```js
-import { authorize } from '../../authorize';
-import { orderInputType, orderResultType } from '../../types/order';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: orderResultType,
-    args: {
-        data: {
-            type: orderInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.selectRoadmap, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/order/selectRoadmapForOrderList.js
-
-```js
-import {
-    GraphQLID,
-    GraphQLList,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { successType } from '../../types/common';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: successType,
-    args: {
-        orderIdList: {
-            type: new GraphQLList(GraphQLID),
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.selectRoadmapForOrderList, params, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/partment/createPartment.js
-
-```js
-import { authorize } from '../../authorize';
-import { partmentInputType, partmentResultType } from '../../types/partment';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: partmentResultType,
-    args: {
-        data: {
-            type: partmentInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.createPartment, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/partment/index.js
-
-```js
-export createPartment from './createPartment';
-export modifyPartment from './modifyPartment';
-export removePartment from './removePartment';
-export modifyOwnPartment from './modifyOwnPartment';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/partment/modifyOwnPartment.js
-
-```js
-import { authorize } from '../../authorize';
-import { partmentInputType, partmentResultType } from '../../types/partment';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: partmentResultType,
-    args: {
-        data: {
-            type: partmentInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.modifyOwnPartment, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/partment/modifyPartment.js
-
-```js
-import { authorize } from '../../authorize';
-import { partmentInputType, partmentResultType } from '../../types/partment';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: partmentResultType,
-    args: {
-        data: {
-            type: partmentInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.modifyPartment, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/partment/removePartment.js
-
-```js
-import {
-    GraphQLID,
-    GraphQLString,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { successType } from '../../types/common';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: successType,
-    args: {
-        partmentId: {
-            type: GraphQLID,
-        },
-        password: {
-            type: GraphQLString,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.removePartment, params, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/personal/feedback.js
-
-```js
-import {
-    GraphQLString,
-} from 'graphql';
-import { successType } from '../../types/common';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: successType,
-    args: {
-        content: {
-            type: GraphQLString,
-        },
-        email: {
-            type: GraphQLString,
-        },
-    },
-    async resolve (root, params, options) {
-        return await post(urls.feedback, params, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/personal/forgotPwd.js
-
-```js
-import { successType } from '../../types/common';
-import { memberInputType } from '../../types/member';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: successType,
-    args: {
-        data: {
-            type: memberInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        return await post(urls.forgotPwd, params.data) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/personal/index.js
-
-```js
-export register from './register';
-export forgotPwd from './forgotPwd';
-export setPaymentPassword from './setPaymentPassword';
-export modifyPersonalInfo from './modifyPersonalInfo';
-export feedback from './feedback';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/personal/modifyPersonalInfo.js
-
-```js
-import { authorize } from '../../authorize';
-import { memberResultType, memberInputType } from '../../types/member';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: memberResultType,
-    args: {
-        data: {
-            type: memberInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.modifyPersonalInfo, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/personal/register.js
-
-```js
-import { successType } from '../../types/common';
-import { memberInputType } from '../../types/member';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: successType,
-    args: {
-        data: {
-            type: memberInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        return await post(urls.register, params.data) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/personal/setPaymentPassword.js
-
-```js
-import { successType } from '../../types/common';
-import { memberInputType } from '../../types/member';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: successType,
-    args: {
-        data: {
-            type: memberInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        return await post(urls.setPaymentPassword, params.data) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/roadmap/addRoadmapRegionProfitRate.js
-
-```js
-import { authorize } from '../../authorize';
-import { regionRateInputType, regionRateResultType } from '../../types/roadmap';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: regionRateResultType,
-    args: {
-        data: {
-            type: regionRateInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.addRoadmapRegionProfitRate, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/roadmap/index.js
-
-```js
-export setRoadmapProfit from './setRoadmapProfit';
-export setRegionRateProfit from './setRegionRateProfit';
-export addRoadmapRegionProfitRate from './addRoadmapRegionProfitRate';
-export modifyRoadmapRegionProfitRate from './modifyRoadmapRegionProfitRate';
-export removeRoadmapRegionProfitRate from './removeRoadmapRegionProfitRate';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/roadmap/modifyRoadmapRegionProfitRate.js
-
-```js
-import { authorize } from '../../authorize';
-import { regionRateInputType, regionRateResultType } from '../../types/roadmap';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: regionRateResultType,
-    args: {
-        data: {
-            type: regionRateInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.modifyRoadmapRegionProfitRate, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/roadmap/removeRoadmapRegionProfitRate.js
-
-```js
-import {
-    GraphQLID,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { successType } from '../../types/common';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: successType,
-    args: {
-        regionRateId: {
-            type: GraphQLID,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.removeRoadmapRegionProfitRate, params, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/roadmap/setRegionRateProfit.js
-
-```js
-import { authorize } from '../../authorize';
-import { successType } from '../../types/common';
-import { regionRateInputType } from '../../types/roadmap';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: successType,
-    args: {
-        data: {
-            type: regionRateInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.setRegionRateProfit, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/roadmap/setRoadmapProfit.js
-
-```js
-import { authorize } from '../../authorize';
-import { successType } from '../../types/common';
-import { roadmapInputType } from '../../types/roadmap';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: successType,
-    args: {
-        data: {
-            type: roadmapInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.setRoadmapProfit, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/setting/index.js
-
-```js
-export modifySetting from './modifySetting';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/setting/modifySetting.js
-
-```js
-import { authorize } from '../../authorize';
-import { settingInputType, settingResultType } from '../../types/setting';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: settingResultType,
-    args: {
-        data: {
-            type: settingInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.modifySetting, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/shipper/createAndRegisterShipper.js
-
-```js
-import { authorize } from '../../authorize';
-import { shipperResultType, shipperInputType } from '../../types/shipper';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: shipperResultType,
-    args: {
-        data: {
-            type: shipperInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.createAndRegisterShipper, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/shipper/index.js
-
-```js
-export registerShipper from './registerShipper';
-export createAndRegisterShipper from './createAndRegisterShipper';
-export modifyShipper from './modifyShipper';
-export passExamineTruck from './passExamineTruck';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/shipper/modifyShipper.js
-
-```js
-import { authorize } from '../../authorize';
-import { shipperResultType, shipperInputType } from '../../types/shipper';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: shipperResultType,
-    args: {
-        data: {
-            type: shipperInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.modifyShipper, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/shipper/passExamineTruck.js
-
-```js
-import {
-    GraphQLID,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { successType } from '../../types/common';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: successType,
-    args: {
-        truckId: {
-            type: GraphQLID,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.passExamineTruck, params, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/shipper/registerShipper.js
-
-```js
-import { authorize } from '../../authorize';
-import { shipperResultType, shipperInputType } from '../../types/shipper';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: shipperResultType,
-    args: {
-        data: {
-            type: shipperInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.registerShipper, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/shop/createBranchShop.js
-
-```js
-import { authorize } from '../../authorize';
-import { shopInputType, shopResultType } from '../../types/shop';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: shopResultType,
-    args: {
-        data: {
-            type: shopInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.createBranchShop, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/shop/index.js
-
-```js
-export modifyOwnShop from './modifyOwnShop';
-export createBranchShop from './createBranchShop';
-export modifyBranchShop from './modifyBranchShop';
-export removeBranchShop from './removeBranchShop';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/shop/modifyBranchShop.js
-
-```js
-import { authorize } from '../../authorize';
-import { shopInputType, shopResultType } from '../../types/shop';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: shopResultType,
-    args: {
-        data: {
-            type: shopInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.modifyBranchShop, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/shop/modifyOwnShop.js
-
-```js
-import { authorize } from '../../authorize';
-import { shopInputType, shopResultType } from '../../types/shop';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: shopResultType,
-    args: {
-        data: {
-            type: shopInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.modifyOwnShop, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/shop/removeBranchShop.js
-
-```js
-import {
-    GraphQLID,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { successType } from '../../types/common';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: successType,
-    args: {
-        shopId: {
-            type: GraphQLID,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.removeBranchShop, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/warehouse/createWarehouse.js
-
-```js
-import { authorize } from '../../authorize';
-import { warehouseInputType, warehouseResultType } from '../../types/warehouse';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: warehouseResultType,
-    args: {
-        data: {
-            type: warehouseInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.createWarehouse, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/warehouse/index.js
-
-```js
-export createWarehouse from './createWarehouse';
-export modifyWarehouse from './modifyWarehouse';
-export removeWarehouse from './removeWarehouse';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/warehouse/modifyWarehouse.js
-
-```js
-import { authorize } from '../../authorize';
-import { warehouseInputType, warehouseResultType } from '../../types/warehouse';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: warehouseResultType,
-    args: {
-        data: {
-            type: warehouseInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.modifyWarehouse, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/mutations/warehouse/removeWarehouse.js
-
-```js
-import { authorize } from '../../authorize';
-import { warehouseResultType } from '../../types/warehouse';
-import { post, urls } from 'helpers/api';
-import { GraphQLID, GraphQLString } from 'graphql';
-
-export default {
-    type: warehouseResultType,
-    args: {
-        warehouseId: {
-            type: GraphQLID,
-        },
-        password: {
-            type: GraphQLString,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.removeWarehouse, params, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/account/bills.js
-
-```js
-import {
-    GraphQLObjectType,
-    GraphQLInt,
-    GraphQLString,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { billItemListType } from '../../types/bill';
-import { post, urls } from 'helpers/api';
-
-const billsType = new GraphQLObjectType({
-    name: 'billsType',
-    fields: {
-        recharge: { type: billItemListType },
-        withdraw: { type: billItemListType },
-        income: { type: billItemListType },
-        pay: { type: billItemListType },
-    },
-});
-
-export default {
-    type: billsType,
-    args: {
-        type: {
-            type: GraphQLString,
-        },
-        keyword: {
-            type: GraphQLString,
-        },
-        pageNo: {
-            type: GraphQLInt,
-        },
-        pageSize: {
-            type: GraphQLInt,
-        },
-        startDate: {
-            type: GraphQLString,
-        },
-        endDate: {
-            type: GraphQLString,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.bills, params, root) || {};
-        return ret.success ? ret.context : {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/account/index.js
-
-```js
-export remainAmount from './remainAmount';
-export weixinPayGetUnifiedOrder from './weixinPayGetUnifiedOrder';
-export weixinPayWithDraw from './weixinPayWithDraw';
-export bills from './bills';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/account/remainAmount.js
-
-```js
-import { authorize } from '../../authorize';
-import { accountType } from '../../types/account';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: accountType,
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.remainAmount, params, root) || {};
-        return ret.success ? ret.context : {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/account/weixinPayGetUnifiedOrder.js
-
-```js
-import { authorize } from '../../authorize';
-import { accountResultType, accountInputType } from '../../types/account';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: accountResultType,
-    args: {
-        data: {
-            type: accountInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.weixinPayGetUnifiedOrder, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/account/weixinPayWithDraw.js
-
-```js
-import { authorize } from '../../authorize';
-import { accountResultType, accountInputType } from '../../types/account';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: accountResultType,
-    args: {
-        data: {
-            type: accountInputType,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.weixinPayWithDraw, params.data, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/agent/agent.js
-
-```js
-import {
-    GraphQLID,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { agentType } from '../../types/agent';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: agentType,
-    args: {
-        agentId: {
-            type: GraphQLID,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let agent = await post(urls.agent, params, root) || {};
-        return agent.context || {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/agent/agents.js
-
-```js
-import {
-    GraphQLInt,
-    GraphQLString,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { agentListType } from '../../types/agent';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: agentListType,
-    args: {
-        keyword: {
-            type: GraphQLString,
-        },
-        pageNo: {
-            type: GraphQLInt,
-        },
-        pageSize: {
-            type: GraphQLInt,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.agents, params, root) || {};
-        return ret.success ? ret.context : {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/agent/index.js
-
-```js
-export agent from './agent';
-export agents from './agents';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/client/client.js
-
-```js
-import {
-    GraphQLID,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { clientType } from '../../types/client';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: clientType,
-    args: {
-        clientId: {
-            type: GraphQLID,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.client, params, root) || {};
-        return ret.success ? ret.context : undefined;
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/client/clients.js
-
-```js
-import {
-    GraphQLInt,
-    GraphQLString,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { clientListType } from '../../types/client';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: clientListType,
-    args: {
-        keyword: {
-            type: GraphQLString,
-        },
-        pageNo: {
-            type: GraphQLInt,
-        },
-        pageSize: {
-            type: GraphQLInt,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.clients, params, root) || {};
-        return ret.success ? ret.context : {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/client/getClientNameByPhone.js
-
-```js
-import {
-    GraphQLString,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { clientResultType } from '../../types/client';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: clientResultType,
-    args: {
-        phone: {
-            type: GraphQLString,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.getClientNameByPhone, params, root) || {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/client/index.js
-
-```js
-export client from './client';
-export clients from './clients';
-export getClientNameByPhone from './getClientNameByPhone';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/common/address.js
-
-```js
-import {
-    GraphQLInt,
-    GraphQLList,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { addressType } from '../../types/common';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: new GraphQLList(addressType),
-    args: {
-        parentCode: {
-            type: GraphQLInt,
-        },
-        type: {
-            type: GraphQLInt,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.address, params, root) || {};
-        return ret.success ? ret.context.addressList : [];
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/common/addressFromLastCode.js
-
-```js
-import {
-    GraphQLInt,
-    GraphQLList,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { addressType } from '../../types/common';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: new GraphQLList(new GraphQLList(addressType)),
-    args: {
-        addressLastCode: {
-            type: GraphQLInt,
-        },
-        type: {
-            type: GraphQLInt,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.addressFromLastCode, params, root) || {};
-        return ret.success ? ret.context.addressList : [];
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/common/addressWithOrder.js
-
-```js
-import {
-    GraphQLID,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { orderAddressType } from '../../types/common';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: orderAddressType,
-    args: {
-        orderId: {
-            type: GraphQLID,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.addressWithOrder, params, root) || {};
-        return ret.success ? ret.context : {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/common/index.js
-
-```js
-export address from './address';
-export addressWithOrder from './addressWithOrder';
-export addressFromLastCode from './addressFromLastCode';
-export sendDoorAddressWithOrder from './sendDoorAddressWithOrder';
-export sendDoorAddressFromLastCode from './sendDoorAddressFromLastCode';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/common/sendDoorAddressFromLastCode.js
-
-```js
-import {
-    GraphQLList,
-    GraphQLInt,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { addressType } from '../../types/common';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: new GraphQLList(new GraphQLList(addressType)),
-    args: {
-        addressLastCode: {
-            type: GraphQLInt,
-        },
-        parentCode: {
-            type: GraphQLInt,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.sendDoorAddressFromLastCode, params, root) || {};
-        return ret.success ? ret.context.addressList : [];
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/common/sendDoorAddressWithOrder.js
-
-```js
-import {
-    GraphQLList,
-    GraphQLID,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { addressType } from '../../types/common';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: new GraphQLList(new GraphQLList(addressType)),
-    args: {
-        orderId: {
-            type: GraphQLID,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.sendDoorAddressWithOrder, params, root) || {};
-        return ret.success ? ret.context.addressList : [];
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/member/index.js
-
-```js
-export members from './members';
-export member from './member';
-export wareHouseMembers from './wareHouseMembers';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/member/member.js
-
-```js
-import {
-    GraphQLID,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { memberType } from '../../types/member';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: memberType,
-    args: {
-        memberId: {
-            type: GraphQLID,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.member, params, root) || {};
-        return ret.success ? ret.context : undefined;
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/member/members.js
-
-```js
-import {
-    GraphQLInt,
-    GraphQLString,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { memberListType } from '../../types/member';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: memberListType,
-    args: {
-        keyword: {
-            type: GraphQLString,
-        },
-        pageNo: {
-            type: GraphQLInt,
-        },
-        pageSize: {
-            type: GraphQLInt,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.members, params, root) || {};
-        return ret.success ? ret.context : {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/member/warehouseMembers.js
-
-```js
-import {
-    GraphQLInt,
-    GraphQLString,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { memberListType } from '../../types/member';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: memberListType,
-    args: {
-        keyword: {
-            type: GraphQLString,
-        },
-        pageNo: {
-            type: GraphQLInt,
-        },
-        pageSize: {
-            type: GraphQLInt,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.warehouseMemberList, params, root) || {};
-        return ret.success ? ret.context : {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/notify/index.js
-
-```js
-export notifies from './notifies';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/notify/notifies.js
-
-```js
-import {
-    GraphQLObjectType,
-    GraphQLInt,
-    GraphQLString,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { notifyListType } from '../../types/notify';
-import { post, urls } from 'helpers/api';
-
-const notifiesType = new GraphQLObjectType({
-    name: 'notifiesType',
-    fields: {
-        news: { type: notifyListType },
-        publicity: { type: notifyListType },
-        policy: { type: notifyListType },
-        notice: { type: notifyListType },
-    },
-});
-
-export default {
-    type: notifiesType,
-    args: {
-        type: {
-            type: GraphQLString,
-        },
-        keyword: {
-            type: GraphQLString,
-        },
-        pageNo: {
-            type: GraphQLInt,
-        },
-        pageSize: {
-            type: GraphQLInt,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.notifies, params, root) || {};
-        return ret.success ? ret.context : {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/order/index.js
-
-```js
-export order from './order';
-export orders from './orders';
-export rporder from './rporder';
-export rporders from './rporders';
-export whorders from './whorders';
-export selectPreOrders from './selectPreOrders';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/order/order.js
-
-```js
-import {
-    GraphQLID,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { orderType } from '../../types/order';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: orderType,
-    args: {
-        orderId: {
-            type: GraphQLID,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.order, params, root) || {};
-        return ret.success ? ret.context : undefined;
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/order/orders.js
-
-```js
-import {
-    GraphQLObjectType,
-    GraphQLInt,
-    GraphQLID,
-    GraphQLString,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { orderItemListType } from '../../types/order';
-import { post, urls } from 'helpers/api';
-
-const ordersType = new GraphQLObjectType({
-    name: 'ordersType',
-    fields: {
-        toselectroadmap: { type: orderItemListType },
-        toprintbarcode: { type: orderItemListType },
-        topay: { type: orderItemListType },
-        toprintbill: { type: orderItemListType },
-        tostore: { type: orderItemListType },
-        stored: { type: orderItemListType },
-        tostartoff: { type: orderItemListType },
-        onway: { type: orderItemListType },
-        success: { type: orderItemListType },
-    },
-});
-
-export default {
-    type: ordersType,
-    args: {
-        type: {
-            type: GraphQLString,
-        },
-        keyword: {
-            type: GraphQLString,
-        },
-        pageNo: {
-            type: GraphQLInt,
-        },
-        pageSize: {
-            type: GraphQLInt,
-        },
-        shopId: {
-            type: GraphQLID,
-        },
-        startDate: {
-            type: GraphQLString,
-        },
-        endDate: {
-            type: GraphQLString,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.orders, params, root) || {};
-        return ret.success ? ret.context : {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/order/rporder.js
-
-```js
-import { authorize } from '../../authorize';
-import { orderType } from '../../types/order';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: orderType,
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.rporder, params, root) || {};
-        return ret.success ? ret.context : undefined;
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/order/rporders.js
-
-```js
-import {
-    GraphQLObjectType,
-    GraphQLInt,
-    GraphQLString,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { orderItemListType } from '../../types/order';
-import { post, urls } from 'helpers/api';
-
-const rpordersType = new GraphQLObjectType({
-    name: 'rpordersType',
-    fields: {
-        toselectroadmap: { type: orderItemListType },
-        topay: { type: orderItemListType },
-        toprintbill: { type: orderItemListType },
-        tostore: { type: orderItemListType },
-        stored: { type: orderItemListType },
-    },
-});
-
-export default {
-    type: rpordersType,
-    args: {
-        type: {
-            type: GraphQLString,
-        },
-        keyword: {
-            type: GraphQLString,
-        },
-        pageNo: {
-            type: GraphQLInt,
-        },
-        pageSize: {
-            type: GraphQLInt,
-        },
-        startDate: {
-            type: GraphQLString,
-        },
-        endDate: {
-            type: GraphQLString,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.rporders, params, root) || {};
-        return ret.success ? ret.context : {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/order/selectPreOrders.js
-
-```js
-import {
-    GraphQLInt,
-    GraphQLString,
-    GraphQLID,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { orderListType } from '../../types/order';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: orderListType,
-    args: {
-        keyword: {
-            type: GraphQLString,
-        },
-        senderPhone: {
-            type: GraphQLID,
-        },
-        pageNo: {
-            type: GraphQLInt,
-        },
-        pageSize: {
-            type: GraphQLInt,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.selectPreOrders, params, root) || {};
-        return ret.success ? ret.context : {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/order/whorders.js
-
-```js
-import {
-    GraphQLObjectType,
-    GraphQLInt,
-    GraphQLString,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { orderItemListType } from '../../types/order';
-import { post, urls } from 'helpers/api';
-
-const whordersType = new GraphQLObjectType({
-    name: 'whordersType',
-    fields: {
-        stored: { type: orderItemListType },
-        loaded: { type: orderItemListType },
-    },
-});
-
-export default {
-    type: whordersType,
-    args: {
-        type: {
-            type: GraphQLString,
-        },
-        keyword: {
-            type: GraphQLString,
-        },
-        pageNo: {
-            type: GraphQLInt,
-        },
-        pageSize: {
-            type: GraphQLInt,
-        },
-        startDate: {
-            type: GraphQLString,
-        },
-        endDate: {
-            type: GraphQLString,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.whorders, params, root) || {};
-        return ret.success ? ret.context : {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/partment/index.js
-
-```js
-export partments from './partments';
-export partment from './partment';
-export ownPartment from './ownPartment';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/partment/ownPartment.js
-
-```js
-import { authorize } from '../../authorize';
-import { partmentType } from '../../types/partment';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: partmentType,
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.ownPartment, params, root) || {};
-        return ret.success ? ret.context : undefined;
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/partment/partment.js
-
-```js
-import {
-    GraphQLID,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { partmentType } from '../../types/partment';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: partmentType,
-    args: {
-        partmentId: {
-            type: GraphQLID,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.partment, params, root) || {};
-        return ret.success ? ret.context : undefined;
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/partment/partments.js
-
-```js
-import {
-    GraphQLInt,
-    GraphQLString,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { partmentListType } from '../../types/partment';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: partmentListType,
-    args: {
-        keyword: {
-            type: GraphQLString,
-        },
-        pageNo: {
-            type: GraphQLInt,
-        },
-        pageSize: {
-            type: GraphQLInt,
-        },
-        type: {
-            type: GraphQLInt,
-        }
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.partments, params, root) || {};
-        return ret.success ? ret.context : {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/personal/getVerifyCode.js
-
-```js
-import {
-    GraphQLString,
-} from 'graphql';
-import { successType } from '../../types/common';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: successType,
-    args: {
-        phone: {
-            type: GraphQLString,
-        },
-    },
-    async resolve (root, params, options) {
-        return await post(urls.getVerifyCode, params) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/personal/index.js
-
-```js
-export session from './session';
-export login from './login';
-export personal from './personal';
-export getVerifyCode from './getVerifyCode';
-export statistics from './statistics';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/personal/login.js
-
-```js
-import {
-    GraphQLString,
-} from 'graphql';
-import passport from 'passport';
-import { successType } from '../../types/common';
-
-export default {
-    type: successType,
-    args: {
-        phone: {
-            type: GraphQLString,
-        },
-        password: {
-            type: GraphQLString,
-        },
-    },
-    async resolve (root, params, options) {
-        return new Promise((resolve) => {
-            const { req } = root;
-            req.body = params;
-            console.log('[login]: start', params);
-            passport.authenticate('local', (err, user) => {
-                console.log('[login]: authenticate', err, user);
-                if (err) {
-                    resolve({ msg: err.message });
-                } else {
-                    req.logIn(user, (error) => {
-                        console.log('[login] logIn:', error);
-                        if (error) {
-                            resolve({ msg: '服务器错误' });
-                        } else {
-                            resolve({ success: true });
-                        }
-                    });
-                }
-            })(req);
-        });
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/personal/personal.js
-
-```js
-import { authorize } from '../../authorize';
-import { memberType } from '../../types/member';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: memberType,
-    async resolve (root, params, options) {
-        authorize(root);
-        let personal = await post(urls.personal, params, root) || {};
-        return personal.context || {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/personal/session.js
-
-```js
-import { GraphQLBoolean } from 'graphql';
-
-export default {
-    type: GraphQLBoolean,
-    resolve (root) {
-        return root.isAuthenticated;
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/personal/statistics.js
-
-```js
-import {
-    GraphQLObjectType,
-    GraphQLInt,
-    GraphQLList,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { post, urls } from 'helpers/api';
-
-const releaseCardInfoType = new GraphQLObjectType({
-    name: 'releaseCardInfoType',
-    fields: {
-        today: { type: GraphQLInt },
-        past: { type: GraphQLInt },
-        remain: { type: GraphQLInt },
-    },
-});
-const consumeInfoType = new GraphQLObjectType({
-    name: 'consumeInfoType',
-    fields: {
-        today: { type: new GraphQLList(GraphQLInt) },
-        week: { type: new GraphQLList(GraphQLInt) },
-        month: { type: new GraphQLList(GraphQLInt) },
-    },
-});
-const userSexInfoType = new GraphQLObjectType({
-    name: 'userSexInfoType',
-    fields: {
-        male: { type: GraphQLInt },
-        female: { type: GraphQLInt },
-    },
-});
-const statisticsType = new GraphQLObjectType({
-    name: 'statisticsType',
-    fields: {
-        releaseCardInfo: { type: releaseCardInfoType },
-        consumeInfo: { type: consumeInfoType },
-        userSexInfo: { type: userSexInfoType },
-        userAgeInfo: { type: new GraphQLList(GraphQLInt) },
-    },
-});
-
-export default {
-    type: statisticsType,
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.statistics, params, root) || {};
-        return ret.success ? ret.context : {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/roadmap/index.js
-
-```js
-export roadmap from './roadmap';
-export roadmaps from './roadmaps';
-export onOrderRoadmaps from './onOrderRoadmaps';
-export regionRate from './regionRate';
-export regionRates from './regionRates';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/roadmap/onOrderRoadmaps.js
-
-```js
-import {
-    GraphQLInt,
-    GraphQLID,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { roadmapListType } from '../../types/roadmap';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: roadmapListType,
-    args: {
-        orderId: {
-            type: GraphQLID,
-        },
-        orderBy: {
-            type: GraphQLInt,
-        },
-        pageNo: {
-            type: GraphQLInt,
-        },
-        pageSize: {
-            type: GraphQLInt,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.onOrderRoadmaps, params, root) || {};
-        return ret.success ? ret.context : {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/roadmap/regionRate.js
-
-```js
-import {
-    GraphQLID,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { regionRateType } from '../../types/roadmap';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: regionRateType,
-    args: {
-        regionRateId: {
-            type: GraphQLID,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.regionRate, params, root) || {};
-        return ret.success ? ret.context : undefined;
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/roadmap/regionRates.js
-
-```js
-import {
-    GraphQLInt,
-    GraphQLID,
-    GraphQLString,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { regionRateListType } from '../../types/roadmap';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: regionRateListType,
-    args: {
-        keyword: {
-            type: GraphQLString,
-        },
-        shopId: {
-            type: GraphQLID,
-        },
-        pageNo: {
-            type: GraphQLInt,
-        },
-        pageSize: {
-            type: GraphQLInt,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.regionRates, params, root) || {};
-        return ret.success ? ret.context : {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/roadmap/roadmap.js
-
-```js
-import {
-    GraphQLID,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { roadmapType } from '../../types/roadmap';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: roadmapType,
-    args: {
-        roadmapId: {
-            type: GraphQLID,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.roadmap, params, root) || {};
-        return ret.success ? ret.context : undefined;
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/roadmap/roadmaps.js
-
-```js
-import {
-    GraphQLInt,
-    GraphQLID,
-    GraphQLString,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { roadmapListType } from '../../types/roadmap';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: roadmapListType,
-    args: {
-        keyword: {
-            type: GraphQLString,
-        },
-        shopId: {
-            type: GraphQLID,
-        },
-        pageNo: {
-            type: GraphQLInt,
-        },
-        pageSize: {
-            type: GraphQLInt,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.roadmaps, params, root) || {};
-        return ret.success ? ret.context : {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/setting/index.js
-
-```js
-export setting from './setting';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/setting/setting.js
-
-```js
-import { authorize } from '../../authorize';
-import { settingType } from '../../types/setting';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: settingType,
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.setting, params, root) || {};
-        return ret.success ? ret.context : undefined;
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/shipper/getShipperByChairManPhone.js
-
-```js
-import {
-    GraphQLString,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { shipperResultType } from '../../types/shipper';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: shipperResultType,
-    args: {
-        chairManPhone: {
-            type: GraphQLString,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        return await post(urls.getShipperByChairManPhone, params, root) || { msg: '服务器错误' };
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/shipper/index.js
-
-```js
-export shipper from './shipper';
-export shippers from './shippers';
-export getShipperByChairManPhone from './getShipperByChairManPhone';
-export trucks from './trucks';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/shipper/shipper.js
-
-```js
-import {
-    GraphQLID,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { shipperType } from '../../types/shipper';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: shipperType,
-    args: {
-        shipperId: {
-            type: GraphQLID,
-        },
-        shopId: {
-            type: GraphQLID,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.shipper, params, root) || {};
-        return ret.success ? ret.context : undefined;
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/shipper/shippers.js
-
-```js
-import {
-    GraphQLInt,
-    GraphQLID,
-    GraphQLString,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { shipperListType } from '../../types/shipper';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: shipperListType,
-    args: {
-        keyword: {
-            type: GraphQLString,
-        },
-        shopId: {
-            type: GraphQLID,
-        },
-        pageNo: {
-            type: GraphQLInt,
-        },
-        pageSize: {
-            type: GraphQLInt,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.shippers, params, root) || {};
-        return ret.success ? ret.context : {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/shipper/trucks.js
-
-```js
-import {
-    GraphQLInt,
-    GraphQLString,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { truckListType } from '../../types/truck';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: truckListType,
-    args: {
-        keyword: {
-            type: GraphQLString,
-        },
-        pageNo: {
-            type: GraphQLInt,
-        },
-        pageSize: {
-            type: GraphQLInt,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.trucks, params, root) || {};
-        return ret.success ? ret.context : {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/shop/branchShop.js
-
-```js
-import {
-    GraphQLID,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { shopType } from '../../types/shop';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: shopType,
-    args: {
-        shopId: {
-            type: GraphQLID,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        if (!params.shopId) {
-            return undefined;
-        }
-        let shop = await post(urls.branchShop, params, root) || {};
-        return shop.context || undefined;
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/shop/branchShops.js
-
-```js
-import {
-    GraphQLInt,
-    GraphQLString,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { branchShopListType } from '../../types/shop';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: branchShopListType,
-    args: {
-        keyword: {
-            type: GraphQLString,
-        },
-        pageNo: {
-            type: GraphQLInt,
-        },
-        pageSize: {
-            type: GraphQLInt,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.branchShops, params, root) || {};
-        return ret.success ? ret.context : {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/shop/index.js
-
-```js
-export shop from './shop';
-export branchShop from './branchShop';
-export branchShops from './branchShops';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/shop/shop.js
-
-```js
-import { authorize } from '../../authorize';
-import { shopType } from '../../types/shop';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: shopType,
-    async resolve (root, params, options) {
-        authorize(root);
-        let shop = await post(urls.shop, params, root) || {};
-        return shop.context || {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/statistic/index.js
-
-```js
-export shopStatistics from './shopStatistics';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/statistic/shopStatistics.js
-
-```js
-import {
-    GraphQLID,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { shopStatisticType } from '../../types/statistic';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: shopStatisticType,
-    args: {
-        shopId: {
-            type: GraphQLID,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.shopStatistics, params, root) || {};
-        return ret.success ? ret.context : {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/warehouse/index.js
-
-```js
-export warehouses from './warehouses';
-export warehouse from './warehouse';
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/warehouse/warehouse.js
-
-```js
-import {
-    GraphQLID,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { warehouseType } from '../../types/warehouse';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: warehouseType,
-    args: {
-        warehouseId:{
-            type:GraphQLID,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.getWarehouseDetail, params, root) || {};
-        return ret.success ? ret.context : {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/graphql/queries/warehouse/warehouses.js
-
-```js
-import {
-    GraphQLInt,
-    GraphQLString,
-} from 'graphql';
-import { authorize } from '../../authorize';
-import { warehouseListType } from '../../types/warehouse';
-import { post, urls } from 'helpers/api';
-
-export default {
-    type: warehouseListType,
-    args: {
-        keyword: {
-            type: GraphQLString,
-        },
-        pageNo: {
-            type: GraphQLInt,
-        },
-        pageSize: {
-            type: GraphQLInt,
-        },
-    },
-    async resolve (root, params, options) {
-        authorize(root);
-        let ret = await post(urls.getWarehouseList, params, root) || {};
-        return ret.success ? ret.context : {};
-    },
-};
-
-```
-
-* PDShop_Shop_PC/project/App/server/shared/helpers/api/index.js
-
-```js
-export urls from './urls';
-export post from './post';
-
-```
-
-* PDShop_Shop_PC/project/App/server/shared/helpers/api/post.js
-
-```js
-import request from 'superagent';
-
-export default function doRequest (url, data, root) {
-    return new Promise((resolve) => {
-        if (root && root.user) {
-            Object.assign(data, { userId: root.user.userId, fromPC: true });
-        }
-        const req = request
-        .post(url)
-        .set({
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-        })
-        .send(data);
-
-        req.end((error, res) => {
-            if (error) {
-                console.error('recv error[' + url + ']:', error);
-                resolve();
-            } else {
-                console.log('recv[' + url + ']:', res.body);
-                resolve(res.body);
-            }
-        });
-    });
-}
-
-```
-
-* PDShop_Shop_PC/project/App/server/shared/helpers/api/urls.js
-
-```js
-const { apiServer } = require('../../../../../config.js');
-const server = apiServer + 'shop/';
-module.exports = {
-    // common
-    address: apiServer + 'getRegionAddress', // 获取地址列表
-    addressFromLastCode: apiServer + 'getRegionAddressFromLastCode', // 通过最后一个code地址列表
-    sendDoorAddressFromLastCode: server + 'getRegionSendDoorAddressFromLastCode', // 通过最后一个code获取送货上门地址列表
-
-    // 个人中心
-    getVerifyCode: apiServer + 'requestSendVerifyCode', // 请求发送验证码
-    login: server + 'login', // 登录
-    register: server + 'register', // 注册
-    forgotPwd: server + 'findPassword', // 忘记密码
-    setPaymentPassword: server + 'setPaymentPassword', // 设置支付密码
-    modifyPassword: server + 'modifyPassword', // 修改密码
-    personal: server + 'getPersonalInfo', // 获取物流公司信息
-    modifyPersonalInfo: server + 'modifyPersonalInfo', // 修改个人信息
-    feedback: server + 'submitFeedback', // 意见反馈
-
-    // 账目
-    remainAmount: server + 'getRemainAmount', // 获取余额
-    weixinPayGetUnifiedOrder: server + 'weixinPayGetUnifiedOrderForPC', // 统一下单
-    weixinPayWithDraw: server + 'withdraw', // 提现
-    bills: server + 'getBills', // 获取账单
-
-    // 店铺
-    shop: server + 'getOwnShopDetail', // 获取自身所在物流超市详情（总部和分店）
-    modifyOwnShop: server + 'modifyOwnShop', // 修改自身所在物流超市详情（总部和分店）
-    branchShop: server + 'getBranchShopDetail', // 获取分店详情（总部）
-    branchShops: server + 'getBranchShopList', // 获取分店列表（总部）
-    createBranchShop: server + 'createBranchShop', // 创建分店（总部）
-    modifyBranchShop: server + 'modifyBranchShop', // 修改分店（总部）
-    removeBranchShop: server + 'removeBranchShop', // 删除分店（总部）
-
-    // 货单
-    orders: server + 'getOrders', // 分店获取货单综合列表
-    order: server + 'getOrderDetail', // 获取货单详情
-
-    // 部门
-    partments: server + 'getPartmentList', // 获取部门列表
-    ownPartment: server + 'getOwnPartmentInfo', // 获取所在部门的信息
-    partment: server + 'getPartmentDetail', // 获取部门详情
-    createPartment: server + 'createPartment', // 创建部门
-    modifyPartment: server + 'modifyPartment', // 修改部门信息
-    modifyOwnPartment: server + 'modifyOwnPartment', // 修改所在部门信息
-    removePartment: server + 'removePartment', // 删除部门
-
-    // 人员
-    members: server + 'getMemberList', // 获取人员列表
-    member: server + 'getMemberDetail', // 获取人员详情
-    createMember: server + 'createMember', // 创建人员
-    modifyMember: server + 'modifyMember', // 修改人员信息
-    removeMember: server + 'removeMember', // 删除人员
-    warehouseMemberList: server + 'getWarehouseMemberList',  // 获取分店库管人员
-
-    // 设置
-    setting: server + 'getSettingInfo', // 获取设置信息
-    modifySetting: server + 'modifySettingInfo', // 修改设置信息
-
-    // 物流公司
-    shippers: server + 'getShipperList', // 获取物流公司列表
-    shipper: server + 'getShipperDetail', // 获取物流公司详情
-    registerShipper: server + 'registerShipper', // 注册物流公司
-    createAndRegisterShipper: server + 'createAndRegisterShipper', // 创建并注册物流公司
-    modifyShipper: server + 'modifyShipper', // 修改物流公司信息
-    getShipperByChairManPhone: server + 'getShipperByChairManPhone', // 通过董事长电话获取物流公司
-    passExamineTruck: server + 'passExamineTruck', // 通过汽车的审核
-
-    // 收货点
-    agents: server + 'getAgentList', // 获取收货点列表
-    agent: server + 'getAgentDetail', // 获取收货点详情
-    createAgent: server + 'createAgent', // 创建收货点
-    modifyAgent: server + 'modifyAgent', // 修改收货点信息
-    removeAgent: server + 'removeAgent', // 删除收货点
-    checkAgentByChairManPhone: server + 'checkAgentByChairManPhone', // 检测收货点董事长
-    trucks: server + 'getNeedExamineTruckList', // 获取需要审核的货车
-
-    // 客户
-    clients: server + 'getClientList', // 获取路线列表
-    client: server + 'getClientDetail', // 获取路线详情
-    getClientNameByPhone: apiServer + 'getClientNameByPhone', // 通过电话号码获取用户名
-
-    // 路线
-    onOrderRoadmaps: server + 'getRoadmapListWithOrderByReceivePartment', // 根据货单获取路线列表
-    roadmap: server + 'getRoadmapDetail', // 获取路线详情
-    roadmaps: server + 'getRoadmapList', // 获取路线列表
-    setRoadmapProfit: server + 'setRoadmapProfit', // 批量修改路线提成比例
-    regionRate: server + 'getRoadmapRegionProfitRateDetail', // 获取区域的路线提成详情
-    regionRates: server + 'getRoadmapRegionProfitRateList', // 获取区域的路线提成列表
-    addRoadmapRegionProfitRate: server + 'addRoadmapRegionProfitRate', // 添加区域的路线提成
-    removeRoadmapRegionProfitRate: server + 'removeRoadmapRegionProfitRate', // 删除区域的路线提成
-    modifyRoadmapRegionProfitRate: server + 'modifyRoadmapRegionProfitRate', // 修改区域的路线提成
-    setRegionRateProfit: server + 'setRegionRateProfit', // 批量修改区域的路线提成
-
-    // 收货部
-    addressWithOrder: server + 'getRegionAddressWithOrder', // 通过货单获取地址列表
-    sendDoorAddressWithOrder: server + 'getRegionSendDoorAddressWithOrder', // 通过货单获取送货上门地址列表
-    rporders: server + 'getOrdersByReceivePartment', // 收货部获取货单综合列表
-    rporder: server + 'getLastestOrderByReceivePartment', // 获取收货部需要的货单
-    placeOriginOrder: server + 'placeOriginOrder', // 下初始货单
-    placeOriginOrderWithPreOrder: server + 'placeOriginOrderWithPreOrder', // 通过预下单下初始货单
-    modifyOriginOrder: server + 'modifyOriginOrder', // 修改初始货单
-    removeOrder: server + 'removeOrder', // 删除货单
-    selectRoadmap: server + 'selectRoadmap', // 选择物流公司
-    selectRoadmapForOrderList: server + 'selectRoadmapForOrderList', // 批量为订单选择物流公司
-    proxyPay: server + 'proxyPay', // 待支付
-    proxyPayForOrderList: server + 'proxyPayForOrderList', // 待支付多个货单
-    printOrderBill: server + 'printOrderBill', // 打印收据
-    printOrderListBill: server + 'printOrderListBill', // 打印多个货单
-    printBarCode: server + 'printBarCode', // 打印二维码
-    selectPreOrders: server + 'getPreOrderList', // 收货部获取用户预下单列表
-
-    // 仓库管理
-    getWarehouseList: server + 'getWarehouseList', // 获取仓库列表
-    getWarehouseDetail: server + 'getWarehouseDetail', // 获取仓库详细信息
-    createWarehouse: server + 'createWarehouse', // 修改仓库信息
-    modifyWarehouse: server + 'modifyWarehouse', // 修改仓库信息
-    removeWarehouse: server + 'removeWarehouse', // 删除仓库信息
-
-    // 库管部
-    whorders: server + 'getOrdersByWareHousePartment', // 库管部获取货单综合列表
-
-    // 统计
-    shopStatistics: server + 'getStatistics', // 获取统计数据
-
-    // 通知
-    notifies: apiServer + 'getNotifies', // 获取通知列表
-    sendNotify: apiServer + 'sendNotify', // 发布通知接口
-
-    uploadFile: apiServer + 'uploadFile', // 上传文件
-
-};
-
-```
-
-* PDShop_Shop_PC/project/App/shared/pages/auth/pages/forgotPwd/index.js
+* PDShop_Client_PC/project/App/shared/pages/auth/pages/forgotPwd/index.js
 
 ```js
 import React from 'react';
@@ -8659,7 +9294,7 @@ export default class ForgotPwdContainer extends React.Component {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/auth/pages/login/index.js
+* PDShop_Client_PC/project/App/shared/pages/auth/pages/login/index.js
 
 ```js
 import { connect } from 'react-redux';
@@ -8684,7 +9319,7 @@ export default class LoginContainer extends React.Component {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/auth/pages/register/index.js
+* PDShop_Client_PC/project/App/shared/pages/auth/pages/register/index.js
 
 ```js
 import React from 'react';
@@ -8710,7 +9345,7 @@ export default class RegisterContainer extends React.Component {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shared/components/form/config.js
+* PDShop_Client_PC/project/App/shared/pages/shared/components/form/config.js
 
 ```js
 function getNotEmptyValidator (label, word) {
@@ -8747,7 +9382,7 @@ export function isNullValue (value) {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shared/components/table/config.js
+* PDShop_Client_PC/project/App/shared/pages/shared/components/table/config.js
 
 ```js
 import React from 'react';
@@ -8808,60 +9443,63 @@ export function fixColumns (columns) {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shared/pages/SelectBranchShop/index.js
+* PDShop_Client_PC/project/App/shared/pages/shared/pages/SelectHistoryTruck/index.js
 
 ```js
 import React from 'react';
 import { dataConnect } from 'relatejs';
 import { needLoadPage, showError } from 'utils';
-import SelectBranchShop from './contents';
+import SelectHistoryTruck from './contents';
 
 @dataConnect(
     (state) => ({ pageSize: 20, keepLastKeepData: true }),
     null,
     (props) => ({
-        fragments: SelectBranchShop.fragments,
+        fragments: SelectHistoryTruck.fragments,
         variablesTypes: {
-            branchShops: {
+            historyTrucks: {
                 pageNo: 'Int!',
                 pageSize: 'Int!',
                 keyword: 'String!',
+                shopId: 'ID!',
             },
         },
         initialVariables: {
-            branchShops: {
+            historyTrucks: {
                 pageNo: 0,
                 pageSize: props.pageSize,
+                shopId: props.shopId,
                 keyword: '',
             },
         },
     })
 )
-export default class SelectBranchShopContainer extends React.Component {
+export default class SelectTruckContainer extends React.Component {
     refresh (keyword) {
-        const { relate, pageSize } = this.props;
+        const { relate, pageSize, shopId } = this.props;
         relate.refresh({
             variables: {
-                branchShops: {
+                historyTrucks: {
                     pageNo: 0,
                     pageSize,
                     keyword,
+                    shopId,
                 },
             },
             callback (data) {
-                if (!data.branchShops) {
-                    showError('没有相关分店');
+                if (!data.historyTrucks) {
+                    showError('没有相关货车');
                 }
             },
         });
     }
     loadListPage (keyword, pageNo) {
-        const { relate, pageSize, branchShops } = this.props;
-        const property = 'branchShopList';
-        if (needLoadPage(branchShops, property, pageNo, pageSize)) {
+        const { relate, pageSize, historyTrucks } = this.props;
+        const property = 'truckList';
+        if (needLoadPage(historyTrucks, property, pageNo, pageSize)) {
             relate.loadPage({
                 variables: {
-                    branchShops: {
+                    historyTrucks: {
                         pageNo,
                         pageSize,
                         keyword,
@@ -8873,164 +9511,14 @@ export default class SelectBranchShopContainer extends React.Component {
     }
     render () {
         return (
-            <SelectBranchShop {...this.props}
-                refresh={::this.refresh}
-                loadListPage={::this.loadListPage} />
+            <SelectHistoryTruck {...this.props} refresh={::this.refresh} loadListPage={::this.loadListPage} />
         );
     }
 }
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shared/pages/SelectMember/index.js
-
-```js
-import React from 'react';
-import { dataConnect } from 'relatejs';
-import { needLoadPage, showError } from 'utils';
-import SelectMember from './contents';
-
-@dataConnect(
-    (state) => ({ states: state.members, pageSize: 20, keepLastKeepData: true }),
-    null,
-    (props) => ({
-        fragments: SelectMember.fragments,
-        variablesTypes: {
-            members: {
-                pageNo: 'Int!',
-                pageSize: 'Int!',
-                keyword: 'String!',
-            },
-        },
-        initialVariables: {
-            members: {
-                pageNo: 0,
-                pageSize: props.pageSize,
-                keyword: '',
-            },
-        },
-    })
-)
-export default class SelectMemberContainer extends React.Component {
-    refresh (keyword) {
-        const { relate, pageSize } = this.props;
-        relate.refresh({
-            variables: {
-                members: {
-                    pageNo: 0,
-                    pageSize,
-                    keyword,
-                },
-            },
-            callback (data) {
-                if (!data.members) {
-                    showError('没有相关路线');
-                }
-            },
-        });
-    }
-    loadListPage (keyword, pageNo) {
-        const { relate, pageSize, members } = this.props;
-        const property = 'memberList';
-        if (needLoadPage(members, property, pageNo, pageSize)) {
-            relate.loadPage({
-                variables: {
-                    members: {
-                        pageNo,
-                        pageSize,
-                        keyword,
-                    },
-                },
-                property,
-            });
-        }
-    }
-    render () {
-        return (
-            <SelectMember {...this.props}
-                refresh={::this.refresh}
-                loadListPage={::this.loadListPage} />
-        );
-    }
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/pages/shared/pages/SelectPartment/index.js
-
-```js
-import React from 'react';
-import { dataConnect } from 'relatejs';
-import { needLoadPage, showError } from 'utils';
-import SelectPartment from './contents';
-
-@dataConnect(
-    (state) => ({ states: state.partments, pageSize: 20, keepLastKeepData: true }),
-    null,
-    (props) => ({
-        fragments: SelectPartment.fragments,
-        variablesTypes: {
-            partments: {
-                pageNo: 'Int!',
-                pageSize: 'Int!',
-                keyword: 'String!',
-            },
-        },
-        initialVariables: {
-            partments: {
-                pageNo: 0,
-                pageSize: props.pageSize,
-                keyword: '',
-            },
-        },
-    })
-)
-export default class SelectPartmentContainer extends React.Component {
-    refresh (keyword) {
-        const { relate, pageSize } = this.props;
-        relate.refresh({
-            variables: {
-                partments: {
-                    pageNo: 0,
-                    pageSize,
-                    keyword,
-                },
-            },
-            callback (data) {
-                if (!data.partments) {
-                    showError('没有相关路线');
-                }
-            },
-        });
-    }
-    loadListPage (keyword, pageNo) {
-        const { relate, pageSize, partments } = this.props;
-        const property = 'partmentList';
-        if (needLoadPage(partments, property, pageNo, pageSize)) {
-            relate.loadPage({
-                variables: {
-                    partments: {
-                        pageNo,
-                        pageSize,
-                        keyword,
-                    },
-                },
-                property,
-            });
-        }
-    }
-    render () {
-        return (
-            <SelectPartment {...this.props}
-                refresh={::this.refresh}
-                loadListPage={::this.loadListPage} />
-        );
-    }
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/pages/shared/pages/SelectPreOrder/index.js
+* PDShop_Client_PC/project/App/shared/pages/shared/pages/SelectPreOrder/index.js
 
 ```js
 import React from 'react';
@@ -9105,67 +9593,139 @@ export default class SelectPreOrderContainer extends React.Component {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shared/pages/SelectRoadmap/index.js
+* PDShop_Client_PC/project/App/shared/pages/shared/pages/SelectReferShop/index.js
 
 ```js
 import React from 'react';
 import { dataConnect } from 'relatejs';
 import { needLoadPage, showError } from 'utils';
-import SelectRoadmap from './contents';
+import SelectReferShop from './contents';
 
 @dataConnect(
     (state) => ({ pageSize: 20, keepLastKeepData: true }),
     null,
     (props) => ({
-        fragments: SelectRoadmap.fragments,
+        fragments: SelectReferShop.fragments,
         variablesTypes: {
-            onOrderRoadmaps: {
+            referShops: {
                 pageNo: 'Int!',
                 pageSize: 'Int!',
-                orderId: 'ID!',
-                orderBy: 'Int!',
+                keyword: 'String!',
             },
         },
         initialVariables: {
-            onOrderRoadmaps: {
+            referShops: {
                 pageNo: 0,
                 pageSize: props.pageSize,
-                orderId: props.orderId,
-                orderBy: 0,
+                keyword: '',
             },
         },
     })
 )
-export default class SelectRoadmapContainer extends React.Component {
-    refresh (orderBy) {
-        const { relate, pageSize, orderId } = this.props;
+export default class SelectReferShopContainer extends React.Component {
+    refresh (keyword) {
+        const { relate, pageSize } = this.props;
         relate.refresh({
             variables: {
-                onOrderRoadmaps: {
+                referShops: {
                     pageNo: 0,
                     pageSize,
-                    orderId,
-                    orderBy,
+                    keyword,
                 },
             },
             callback (data) {
-                if (!data.onOrderRoadmaps) {
+                if (!data.referShops) {
+                    showError('没有相关分店');
+                }
+            },
+        });
+    }
+
+    loadListPage (keyword, pageNo) {
+        const { relate, pageSize, referShopList } = this.props;
+        const property = 'referShops';
+        if (needLoadPage(referShopList, property, pageNo, pageSize)) {
+            relate.loadPage({
+                variables: {
+                    referShopList: {
+                        pageNo,
+                        pageSize,
+                        keyword,
+                    },
+                },
+                property,
+            });
+        }
+    }
+
+    render () {
+        return (
+            <SelectReferShop {...this.props}
+                refresh={::this.refresh}
+                loadListPage={::this.loadListPage} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/shared/pages/SelectTruck/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { needLoadPage, showError } from 'utils';
+import SelectTruck from './contents';
+
+@dataConnect(
+    (state) => ({ pageSize: 20, keepLastKeepData: true }),
+    null,
+    (props) => ({
+        fragments: SelectTruck.fragments,
+        variablesTypes: {
+            trucks: {
+                pageNo: 'Int!',
+                pageSize: 'Int!',
+                keyword: 'String!',
+            },
+        },
+        initialVariables: {
+            trucks: {
+                pageNo: 0,
+                pageSize: props.pageSize,
+                keyword: '',
+            },
+        },
+    })
+)
+export default class SelectTruckContainer extends React.Component {
+    refresh (keyword) {
+        const { relate, pageSize } = this.props;
+        relate.refresh({
+            variables: {
+                trucks: {
+                    pageNo: 0,
+                    pageSize,
+                    keyword,
+                },
+            },
+            callback (data) {
+                if (!data.trucks) {
                     showError('没有相关路线');
                 }
             },
         });
     }
-    loadListPage (orderBy, pageNo) {
-        const { relate, pageSize, orderId, onOrderRoadmaps } = this.props;
-        const property = 'clientList';
-        if (needLoadPage(onOrderRoadmaps, property, pageNo, pageSize)) {
+    loadListPage (keyword, pageNo) {
+        const { relate, pageSize, trucks } = this.props;
+        const property = 'truckList';
+        if (needLoadPage(trucks, property, pageNo, pageSize)) {
             relate.loadPage({
                 variables: {
-                    onOrderRoadmaps: {
+                    trucks: {
                         pageNo,
                         pageSize,
-                        orderId,
-                        orderBy,
+                        keyword,
                     },
                 },
                 property,
@@ -9174,73 +9734,63 @@ export default class SelectRoadmapContainer extends React.Component {
     }
     render () {
         return (
-            <SelectRoadmap {...this.props} refresh={::this.refresh} loadListPage={::this.loadListPage} />
+            <SelectTruck {...this.props}
+                refresh={::this.refresh}
+                loadListPage={::this.loadListPage} />
         );
     }
 }
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shared/pages/SelectShipper/index.js
+* PDShop_Client_PC/project/App/shared/pages/shared/pages/ShowClientPicker/index.js
 
 ```js
 import React from 'react';
 import { dataConnect } from 'relatejs';
 import { needLoadPage, showError } from 'utils';
-import SelectShipper from './contents';
+import ShowClientPicker from './contents';
 
 @dataConnect(
-    (state) => ({ pageSize: 20, keepLastKeepData: true }),
+    (state) => ({ keepLastKeepData: true }),
     null,
     (props) => ({
-        fragments: SelectShipper.fragments,
+        fragments: ShowClientPicker.fragments,
         variablesTypes: {
-            shippers: {
-                pageNo: 'Int!',
-                pageSize: 'Int!',
-                keyword: 'String!',
+            clientPickList: {
                 shopId: 'ID!',
             },
         },
         initialVariables: {
-            shippers: {
-                pageNo: 0,
-                pageSize: props.pageSize,
-                keyword: '',
+            clientPickList: {
                 shopId: props.shopId,
             },
         },
     })
 )
-export default class SelectShipperShopContainer extends React.Component {
-    refresh (keyword) {
-        const { relate, pageSize } = this.props;
+export default class ShowClientPickerContainer extends React.Component {
+    refresh () {
+        const { relate, shopId } = this.props;
         relate.refresh({
             variables: {
-                shippers: {
-                    pageNo: 0,
-                    pageSize,
-                    keyword,
-                    shopId: this.props.shopId,
+                clientPickList: {
+                    shopId,
                 },
             },
             callback (data) {
-                if (!data.shippers) {
-                    showError('没有相关物流');
+                if (!data.clientPickList) {
+                    showError(data.msg);
                 }
             },
         });
     }
-    loadListPage (keyword, pageNo) {
-        const { relate, pageSize, shippers, shopId } = this.props;
-        const property = 'shipperList';
-        if (needLoadPage(shippers, shopId, property, pageNo, pageSize)) {
+    loadListPage () {
+        const { relate, clientPickList, shopId } = this.props;
+        const property = 'clientPickList';
+        if (needLoadPage(clientPickList)) {
             relate.loadPage({
                 variables: {
-                    shippers: {
-                        pageNo,
-                        pageSize,
-                        keyword,
+                    clientPickList: {
                         shopId,
                     },
                 },
@@ -9250,120 +9800,39 @@ export default class SelectShipperShopContainer extends React.Component {
     }
     render () {
         return (
-            < SelectShipper {...this.props}
-                refresh={::this.refresh}
-                loadListPage={::this.loadListPage} />
+            <ShowClientPicker {...this.props} refresh={::this.refresh} loadListPage={::this.loadListPage} />
         );
     }
 }
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shared/pages/SelectWareHousePartment/index.js
-
-```js
-import React from 'react';
-import { dataConnect } from 'relatejs';
-import { needLoadPage, showError } from 'utils';
-import SelectWareHousePartment from './contents';
-import { SP } from 'constants'
-
-@dataConnect(
-    (state) => ({ states: state.partments, pageSize: 20, keepLastKeepData: true }),
-    null,
-    (props) => ({
-        fragments: SelectWareHousePartment.fragments,
-        variablesTypes: {
-            partments: {
-                pageNo: 'Int!',
-                pageSize: 'Int!',
-                keyword: 'String!',
-                type: 'Int!'
-            },
-        },
-        initialVariables: {
-            partments: {
-                pageNo: 0,
-                pageSize: props.pageSize,
-                keyword: '',
-                type: SP.SP_WARE_HOUSE_PARTMENT,
-            },
-        },
-    })
-)
-export default class SelectWareHousePartmentContainer extends React.Component {
-    refresh (keyword) {
-        const { relate, pageSize } = this.props;
-        relate.refresh({
-            variables: {
-                partments: {
-                    pageNo: 0,
-                    pageSize,
-                    keyword,
-                    type: SP.SP_WARE_HOUSE_PARTMENT,
-                },
-            },
-            callback (data) {
-                if (!data.partments) {
-                    showError('没有相关部门');
-                }
-            },
-        });
-    }
-    loadListPage (keyword, pageNo) {
-        const { relate, pageSize, partments } = this.props;
-        const property = 'partmentList';
-        if (needLoadPage(partments, property, pageNo, pageSize)) {
-            relate.loadPage({
-                variables: {
-                    partments: {
-                        pageNo,
-                        pageSize,
-                        keyword,
-                        type: SP.SP_WARE_HOUSE_PARTMENT,
-                    },
-                },
-                property,
-            });
-        }
-    }
-    render () {
-        return (
-            <SelectWareHousePartment {...this.props}
-                refresh={::this.refresh}
-                loadListPage={::this.loadListPage} />
-        );
-    }
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/branchShops/index.js
+* PDShop_Client_PC/project/App/shared/pages/client/pages/agentMembers/index.js
 
 ```js
 import React from 'react';
 import { dataConnect } from 'relatejs';
 import { bindActionCreators } from 'redux';
-import * as shopActions from 'actions/shops';
+import * as memberActions from 'actions/members';
 import { needLoadPage, showError } from 'utils';
-import BranchShops from './contents';
+import Members from './contents';
 
 @dataConnect(
     (state) => ({ pageSize: 20 }),
     (dispatch) => ({
-        actions : bindActionCreators(shopActions, dispatch),
+        actions : bindActionCreators(memberActions, dispatch),
     }),
     (props) => ({
-        fragments: BranchShops.fragments,
+        fragments: Members.fragments,
         variablesTypes: {
-            branchShops: {
+            agentMembers: {
                 pageNo: 'Int!',
                 pageSize: 'Int!',
                 keyword: 'String!',
             },
         },
         initialVariables: {
-            branchShops: {
+            agentMembers: {
                 pageNo: 0,
                 pageSize: props.pageSize,
                 keyword: '',
@@ -9371,31 +9840,31 @@ import BranchShops from './contents';
         },
     })
 )
-export default class BranchShopsContainer extends React.Component {
+export default class MembersContainer extends React.Component {
     refresh (keyword) {
         const { relate, pageSize } = this.props;
         relate.refresh({
             variables: {
-                branchShops: {
+                agentMembers: {
                     pageNo: 0,
                     pageSize,
                     keyword,
                 },
             },
             callback (data) {
-                if (!data.branchShops) {
+                if (!data.members) {
                     showError('没有相关货车信息');
                 }
             },
         });
     }
     loadListPage (keyword, pageNo) {
-        const { relate, pageSize, branchShops } = this.props;
-        const property = 'branchShopList';
-        if (needLoadPage(branchShops, property, pageNo, pageSize)) {
+        const { relate, pageSize, members } = this.props;
+        const property = 'memberList';
+        if (needLoadPage(members, property, pageNo, pageSize)) {
             relate.loadPage({
                 variables: {
-                    branchShops: {
+                    agentMembers: {
                         pageNo,
                         pageSize,
                         keyword,
@@ -9407,16 +9876,14 @@ export default class BranchShopsContainer extends React.Component {
     }
     render () {
         return (
-            <BranchShops {...this.props}
-                refresh={::this.refresh}
-                loadListPage={::this.loadListPage} />
+            <Members {...this.props} refresh={::this.refresh} loadListPage={::this.loadListPage} />
         );
     }
 }
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/bills/index.js
+* PDShop_Client_PC/project/App/shared/pages/client/pages/bills/index.js
 
 ```js
 import React from 'react';
@@ -9498,161 +9965,7 @@ export default class BillsContainer extends React.Component {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/agents/index.js
-
-```js
-import React from 'react';
-import { dataConnect } from 'relatejs';
-import { bindActionCreators } from 'redux';
-import * as agentActions from 'actions/agents';
-import { needLoadPage, showError } from 'utils';
-import Agents from './contents';
-
-@dataConnect(
-    (state) => ({ pageSize: 20 }),
-    (dispatch) => ({
-        actions : bindActionCreators(agentActions, dispatch),
-    }),
-    (props) => ({
-        fragments: Agents.fragments,
-        variablesTypes: {
-            agents: {
-                pageNo: 'Int!',
-                pageSize: 'Int!',
-                keyword: 'String!',
-            },
-        },
-        initialVariables: {
-            agents: {
-                pageNo: 0,
-                pageSize: props.pageSize,
-                keyword: '',
-            },
-        },
-    })
-)
-export default class AgentsContainer extends React.Component {
-    refresh (keyword) {
-        const { relate, pageSize } = this.props;
-        relate.refresh({
-            variables: {
-                agents: {
-                    pageNo: 0,
-                    pageSize,
-                    keyword,
-                },
-            },
-            callback (data) {
-                if (!data.agents) {
-                    showError('没有相关货车信息');
-                }
-            },
-        });
-    }
-    loadListPage (keyword, pageNo) {
-        const { relate, pageSize, agents } = this.props;
-        const property = 'agentList';
-        if (needLoadPage(agents, property, pageNo, pageSize)) {
-            relate.loadPage({
-                variables: {
-                    agents: {
-                        pageNo,
-                        pageSize,
-                        keyword,
-                    },
-                },
-                property,
-            });
-        }
-    }
-    render () {
-        return (
-            <Agents {...this.props} refresh={::this.refresh} loadListPage={::this.loadListPage} />
-        );
-    }
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/clients/index.js
-
-```js
-import React from 'react';
-import { dataConnect } from 'relatejs';
-import { bindActionCreators } from 'redux';
-import * as clientActions from 'actions/clients';
-import { needLoadPage, showError } from 'utils';
-import Clients from './contents';
-
-@dataConnect(
-    (state) => ({ pageSize: 20 }),
-    (dispatch) => ({
-        actions : bindActionCreators(clientActions, dispatch),
-    }),
-    (props) => ({
-        fragments: Clients.fragments,
-        variablesTypes: {
-            clients: {
-                pageNo: 'Int!',
-                pageSize: 'Int!',
-                keyword: 'String!',
-            },
-        },
-        initialVariables: {
-            clients: {
-                pageNo: 0,
-                pageSize: props.pageSize,
-                keyword: '',
-            },
-        },
-    })
-)
-export default class ClientsContainer extends React.Component {
-    refresh (keyword) {
-        const { relate, pageSize } = this.props;
-        relate.refresh({
-            variables: {
-                clients: {
-                    pageNo: 0,
-                    pageSize,
-                    keyword,
-                },
-            },
-            callback (data) {
-                if (!data.clients) {
-                    showError('没有相关路线');
-                }
-            },
-        });
-    }
-    loadListPage (keyword, pageNo) {
-        const { relate, pageSize, clients } = this.props;
-        const property = 'clientList';
-        if (needLoadPage(clients, property, pageNo, pageSize)) {
-            relate.loadPage({
-                variables: {
-                    clients: {
-                        pageNo,
-                        pageSize,
-                        keyword,
-                    },
-                },
-                property,
-            });
-        }
-    }
-    render () {
-        return (
-            <Clients {...this.props}
-                refresh={::this.refresh}
-                loadListPage={::this.loadListPage} />
-        );
-    }
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/feedback/index.js
+* PDShop_Client_PC/project/App/shared/pages/client/pages/feedback/index.js
 
 ```js
 import React from 'react';
@@ -9677,7 +9990,7 @@ export default class FeedbackContainer extends React.Component {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/home/index.js
+* PDShop_Client_PC/project/App/shared/pages/client/pages/home/index.js
 
 ```js
 import React from 'react';
@@ -9692,6 +10005,12 @@ import Home from './contents';
     })
 )
 export default class HomeContainer extends React.Component {
+    refreshHome () {
+        const { relate } = this.props;
+        relate.refresh({
+            property: 'personal',
+        });
+    }
     render () {
         return (
             <Home {...this.props} />
@@ -9701,31 +10020,106 @@ export default class HomeContainer extends React.Component {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/notifies/index.js
+* PDShop_Client_PC/project/App/shared/pages/client/pages/needSendOrders/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { needLoadPage, showError } from 'utils';
+import NeedSendOrders from './contents';
+
+@dataConnect(
+    (state) => ({ pageSize: 20 }),
+    null,
+    (props) => ({
+        fragments: NeedSendOrders.fragments,
+        variablesTypes: {
+            needSendOrders: {
+                pageNo: 'Int!',
+                pageSize: 'Int!',
+                keyword: 'String',
+                shopId: 'ID!',
+            },
+        },
+        initialVariables: {
+            needSendOrders: {
+                pageNo: 0,
+                pageSize: props.pageSize,
+                shopId: props.rootShop.id,
+            },
+        },
+    })
+)
+export default class NeedSendOrdersContainer extends React.Component {
+    refresh (keyword) {
+        const { relate, pageSize, rootShop } = this.props;
+        relate.refresh({
+            variables: {
+                needSendOrders: {
+                    pageNo: 0,
+                    pageSize,
+                    shopId: rootShop.id,
+                    keyword,
+                },
+            },
+            callback (data) {
+                if (!data.needSendOrders) {
+                    showError('没有相关货单信息');
+                }
+            },
+        });
+    }
+    loadListPage (keyword, pageNo) {
+        const { relate, pageSize, needSendOrders, rootShop } = this.props;
+        const property = 'orderList';
+        if (needLoadPage(needSendOrders, property, pageNo, pageSize)) {
+            relate.loadPage({
+                variables: {
+                    needSendOrders: {
+                        pageNo,
+                        pageSize,
+                        keyword,
+                        shopId: rootShop.id,
+                    },
+                },
+                property,
+            });
+        }
+    }
+    render () {
+        return (
+            <NeedSendOrders {...this.props} refresh={::this.refresh} loadListPage={::this.loadListPage} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/notify/index.js
 
 ```js
 import React from 'react';
 import { dataConnect } from 'relatejs';
 import { bindActionCreators } from 'redux';
 import { needLoadPage } from 'utils';
-import * as notifyActions from 'actions/notifies';
+import * as personalActions from 'actions/personals';
 import Notify from './contents';
 
 @dataConnect(
     (state) => {
-        const { activeType } = state.router.location.state || state.router.location.query || { activeType: 'news' };
+        const { activeType } = state.router.location.state || { activeType: 'news' };
         return {
             activeType,
             pageSize: 20,
         };
     },
     (dispatch) => ({
-        actions : bindActionCreators(notifyActions, dispatch),
+        actions : bindActionCreators(personalActions, dispatch),
     }),
     (props) => ({
         fragments: Notify.fragments,
         variablesTypes: {
-            notifies: {
+            notify: {
                 pageNo: 'Int!',
                 pageSize: 'Int!',
                 type: 'String!',
@@ -9733,7 +10127,7 @@ import Notify from './contents';
             },
         },
         initialVariables: {
-            notifies: {
+            notify: {
                 pageNo: 0,
                 pageSize: props.pageSize,
                 type: '',
@@ -9743,11 +10137,11 @@ import Notify from './contents';
     })
 )
 export default class NotifyContainer extends React.Component {
-    refresh (keyword = '') {
+    getNotify (keyword = '') {
         const { relate, pageSize } = this.props;
         relate.refresh({
             variables: {
-                notifies: {
+                notify: {
                     pageNo: 0,
                     pageSize,
                     type: '',
@@ -9757,11 +10151,11 @@ export default class NotifyContainer extends React.Component {
         });
     }
     loadListPage (keyword = '', type, pageNo) {
-        const { relate, pageSize, notifies } = this.props;
-        if (needLoadPage(notifies[type], pageNo, pageSize)) {
+        const { relate, pageSize, notify } = this.props;
+        if (needLoadPage(notify[type], pageNo, pageSize)) {
             relate.loadPage({
                 variables: {
-                    notifies: {
+                    notify: {
                         pageNo,
                         pageSize,
                         type,
@@ -9775,7 +10169,7 @@ export default class NotifyContainer extends React.Component {
     render () {
         return (
             <Notify {...this.props}
-                refresh={::this.refresh}
+                getNotify={::this.getNotify}
                 loadListPage={::this.loadListPage} />
         );
     }
@@ -9783,348 +10177,88 @@ export default class NotifyContainer extends React.Component {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/orders/index.js
+* PDShop_Client_PC/project/App/shared/pages/client/pages/orderDetail/index.js
 
 ```js
 import React from 'react';
 import { dataConnect } from 'relatejs';
-import { bindActionCreators } from 'redux';
-import * as orderActions from 'actions/orders';
-import { needLoadPage, showError } from 'utils';
-import BROrders from './contents';
+import OrderDetail from './contents';
 
 @dataConnect(
-    (state) => ({ pageSize: 20 }),
-    (dispatch) => ({
-        actions : bindActionCreators(orderActions, dispatch),
-    }),
-    (props) => ({
-        fragments: BROrders.fragments,
-        variablesTypes: {
-            orders: {
-                pageNo: 'Int!',
-                pageSize: 'Int!',
-                shopId: 'ID',
-                type: 'String',
-                keyword: 'String',
-                startDate: 'String',
-                endDate: 'String',
-            },
-        },
-        initialVariables: {
-            orders: {
-                pageNo: 0,
-                pageSize: props.pageSize,
-            },
-        },
-    })
-)
-export default class BROrdersContainer extends React.Component {
-    refresh (keyword, shopId, startDate, endDate) {
-        const { relate, pageSize } = this.props;
-        relate.refresh({
-            variables: {
-                orders: {
-                    pageNo: 0,
-                    pageSize,
-                    keyword,
-                    shopId,
-                    startDate,
-                    endDate,
-                },
-            },
-            callback (data) {
-                if (!data.orders) {
-                    showError('没有相关货单');
-                }
-            },
-        });
-    }
-    loadListPage (keyword, type, pageNo, shopId, startDate, endDate) {
-        const { relate, pageSize, orders } = this.props;
-        if (needLoadPage(orders[type], 'list', pageNo, pageSize)) {
-            relate.loadPage({
-                variables: {
-                    orders: {
-                        pageNo,
-                        pageSize,
-                        type,
-                        keyword,
-                        shopId,
-                        startDate,
-                        endDate,
-                    },
-                },
-                property: type + '.list',
-            });
-        }
-    }
-    render () {
-        return (
-            <BROrders {...this.props} refresh={::this.refresh} loadListPage={::this.loadListPage} />
-        );
-    }
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/members/index.js
-
-```js
-import React from 'react';
-import { dataConnect } from 'relatejs';
-import { bindActionCreators } from 'redux';
-import * as memberActions from 'actions/members';
-import { needLoadPage, showError } from 'utils';
-import Members from './contents';
-
-@dataConnect(
-    (state) => ({ pageSize: 20 }),
-    (dispatch) => ({
-        actions : bindActionCreators(memberActions, dispatch),
-    }),
-    (props) => ({
-        fragments: Members.fragments,
-        variablesTypes: {
-            members: {
-                pageNo: 'Int!',
-                pageSize: 'Int!',
-                keyword: 'String!',
-            },
-        },
-        initialVariables: {
-            members: {
-                pageNo: 0,
-                pageSize: props.pageSize,
-                keyword: '',
-            },
-        },
-    })
-)
-export default class MembersContainer extends React.Component {
-    refresh (keyword) {
-        const { relate, pageSize } = this.props;
-        relate.refresh({
-            variables: {
-                members: {
-                    pageNo: 0,
-                    pageSize,
-                    keyword,
-                },
-            },
-            callback (data) {
-                if (!data.members) {
-                    showError('没有相关货车信息');
-                }
-            },
-        });
-    }
-    loadListPage (keyword, pageNo) {
-        const { relate, pageSize, members } = this.props;
-        const property = 'memberList';
-        if (needLoadPage(members, property, pageNo, pageSize)) {
-            relate.loadPage({
-                variables: {
-                    members: {
-                        pageNo,
-                        pageSize,
-                        keyword,
-                    },
-                },
-                property,
-            });
-        }
-    }
-    render () {
-        return (
-            <Members {...this.props} refresh={::this.refresh} loadListPage={::this.loadListPage} />
-        );
-    }
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/ownShop/index.js
-
-```js
-import React from 'react';
-import { dataConnect } from 'relatejs';
-import { bindActionCreators } from 'redux';
-import * as shopActions from 'actions/shops';
-import * as accountActions from 'actions/accounts';
-import OwnShop from './contents';
-
-@dataConnect(
+    (state) => {
+        const { orderId } = state.router.location.state || state.router.location.query;
+        return { orderId, keepLastKeepData: true };
+    },
     null,
-    (dispatch) => ({
-        actions : bindActionCreators({ ...shopActions, ...accountActions }, dispatch),
-    }),
-    (props) => ({
-        fragments: OwnShop.fragments,
-    })
-)
-export default class ShopContainer extends React.Component {
-    refreshRemainAmount () {
-        const { relate } = this.props;
-        relate.refresh({
-            property: 'remainAmount',
-        });
-    }
-    render () {
-        return (
-            <OwnShop {...this.props} refreshRemainAmount={::this.refreshRemainAmount} />
-        );
-    }
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/partment/index.js
-
-```js
-import React from 'react';
-import { dataConnect } from 'relatejs';
-import { bindActionCreators } from 'redux';
-import * as partmentActions from 'actions/partments';
-import * as accountActions from 'actions/accounts';
-import OwnPartment from './contents';
-
-@dataConnect(
-    (state) => ({}),
-    (dispatch) => ({
-        actions : bindActionCreators({ ...partmentActions, ...accountActions }, dispatch),
-    }),
-    (props) => ({
-        fragments: OwnPartment.fragments,
-    })
-)
-export default class OwnPartmentContainer extends React.Component {
-    refreshRemainAmount () {
-        const { relate } = this.props;
-        relate.refresh({
-            property: 'remainAmount',
-        });
-    }
-    render () {
-        return (
-            <OwnPartment {...this.props} refreshRemainAmount={::this.refreshRemainAmount} />
-        );
-    }
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/partments/index.js
-
-```js
-import React from 'react';
-import { dataConnect } from 'relatejs';
-import { bindActionCreators } from 'redux';
-import * as partmentActions from 'actions/partments';
-import { needLoadPage, showError } from 'utils';
-import Partments from './contents';
-
-@dataConnect(
-    (state) => ({ pageSize: 20 }),
-    (dispatch) => ({
-        actions : bindActionCreators(partmentActions, dispatch),
-    }),
-    (props) => ({
-        fragments: Partments.fragments,
-        variablesTypes: {
-            partments: {
-                pageNo: 'Int!',
-                pageSize: 'Int!',
-                keyword: 'String!',
-            },
-        },
-        initialVariables: {
-            partments: {
-                pageNo: 0,
-                pageSize: props.pageSize,
-                keyword: '',
-            },
-        },
-    })
-)
-export default class PartmentsContainer extends React.Component {
-    refresh (keyword) {
-        const { relate, pageSize } = this.props;
-        relate.refresh({
-            variables: {
-                partments: {
-                    pageNo: 0,
-                    pageSize,
-                    keyword,
+    (props) => {
+        return {
+            fragments: OrderDetail.fragments,
+            variablesTypes: {
+                order: {
+                    orderId: 'ID!',
                 },
             },
-            callback (data) {
-                if (!data.partments) {
-                    showError('没有相关货车信息');
-                }
-            },
-        });
-    }
-    loadListPage (keyword, pageNo) {
-        const { relate, pageSize, partments } = this.props;
-        const property = 'partmentList';
-        if (needLoadPage(partments, property, pageNo, pageSize)) {
-            relate.loadPage({
-                variables: {
-                    partments: {
-                        pageNo,
-                        pageSize,
-                        keyword,
-                    },
+            initialVariables: {
+                order: {
+                    orderId: props.orderId,
                 },
-                property,
-            });
-        }
+            },
+        };
     }
+)
+export default class OrderDetailContainer extends React.Component {
     render () {
         return (
-            <Partments {...this.props} refresh={::this.refresh} loadListPage={::this.loadListPage} />
+            <OrderDetail {...this.props} />
         );
     }
 }
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/personal/index.js
+* PDShop_Client_PC/project/App/shared/pages/client/pages/personal/index.js
 
 ```js
 import React from 'react';
 import { dataConnect } from 'relatejs';
 import { bindActionCreators } from 'redux';
 import * as personalActions from 'actions/personals';
+import * as accountActions from 'actions/accounts';
+import * as trucksActions from 'actions/trucks';
 import Personal from './contents';
 
 @dataConnect(
     (state) => ({}),
     (dispatch) => ({
-        actions : bindActionCreators(personalActions, dispatch),
+        actions : bindActionCreators({ ...personalActions, ...accountActions, ...trucksActions }, dispatch),
     }),
     (props) => ({
         fragments: Personal.fragments,
     })
 )
 export default class PersonalContainer extends React.Component {
+    refreshRemainAmount () {
+        const { relate } = this.props;
+        relate.refresh({
+            property: 'remainAmount',
+        });
+    }
     render () {
         return (
-            <Personal {...this.props} />
+            <Personal {...this.props} refreshRemainAmount={::this.refreshRemainAmount} />
         );
     }
 }
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/placeOrder/index.js
+* PDShop_Client_PC/project/App/shared/pages/client/pages/placeOrder/index.js
 
 ```js
 import React from 'react';
 import { dataConnect } from 'relatejs';
 import { bindActionCreators } from 'redux';
-import * as orderActions from 'actions/orders';
+import * as orderActions from 'actions/agentOrders';
 import * as clientActions from 'actions/clients';
 import PlaceOrder from './contents';
 
@@ -10143,7 +10277,7 @@ export default class PlaceOrderContainer extends React.Component {
     refresh () {
         const { relate } = this.props;
         relate.refresh({
-            property: ['rporder', 'addressWithOrder', 'sendDoorAddressWithOrder'],
+            property: ['rcorder', 'addressWithOrder', 'sendDoorAddressWithOrder'],
         });
     }
     render () {
@@ -10155,7 +10289,345 @@ export default class PlaceOrderContainer extends React.Component {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/regionRates/index.js
+* PDShop_Client_PC/project/App/shared/pages/client/pages/preOrders/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { bindActionCreators } from 'redux';
+import * as orderActions from 'actions/orders';
+import { needLoadPage, showError } from 'utils';
+import PreOrders from './contents';
+
+@dataConnect(
+    (state) => ({ pageSize: 20, keepData: true }),
+    (dispatch) => ({
+        actions : bindActionCreators(orderActions, dispatch),
+    }),
+    (props) => ({
+        fragments: PreOrders.fragments,
+        variablesTypes: {
+            preOrders: {
+                pageNo: 'Int!',
+                pageSize: 'Int!',
+            },
+        },
+        initialVariables: {
+            preOrders: {
+                pageNo: 0,
+                pageSize: props.pageSize,
+            },
+        },
+    })
+)
+export default class PreOrdersContainer extends React.Component {
+    refresh () {
+        const { relate, pageSize } = this.props;
+        relate.refresh({
+            variables: {
+                preOrders: {
+                    pageNo: 0,
+                    pageSize,
+                },
+            },
+            property: 'preOrderGroups',
+            callback (data) {
+                if (!data.preOrders) {
+                    showError('没有相关货车信息');
+                }
+            },
+        });
+    }
+    loadListPage (keyword, pageNo) {
+        const { relate, pageSize, preOrders } = this.props;
+        const property = 'preOrderList';
+        if (needLoadPage(preOrders, property, pageNo, pageSize)) {
+            relate.loadPage({
+                variables: {
+                    preOrders: {
+                        pageNo,
+                        pageSize,
+                    },
+                },
+                property,
+            });
+        }
+    }
+    render () {
+        return <PreOrders {...this.props} refresh={::this.refresh} loadListPage={::this.loadListPage} />;
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/quotations/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { needLoadPage, showError } from 'utils';
+import Quotations from './contents';
+
+@dataConnect(
+    (state) => ({
+        pageSize: 20,
+        location: [106.6886, 26.566621],
+        orderBy: 0,
+    }),
+    null,
+    (props) => ({
+        fragments: Quotations.fragments,
+        variablesTypes: {
+            lookRoadmap: {
+                startPointLastCode: 'Int',
+                shopId: 'ID',
+                agentId: 'ID',
+                endPointLastCode: 'Int',
+                sendDoorEndPointLastCode: 'Int',
+                isSendDoor: 'Boolean',
+                location: '[Float]!',
+                orderBy: 'Int!',
+                pageNo: 'Int!',
+                pageSize: 'Int!',
+            },
+            startPointAddressFromLastCode: {
+                addressLastCode: 'Int',
+                isLeaf: 'Boolean',
+            },
+            addressFromLastCode: {
+                addressLastCode: 'Int',
+            },
+        },
+        initialVariables: {
+            lookRoadmap: {
+                location: props.location,
+                orderBy: props.orderBy,
+                pageNo: 0,
+                pageSize: props.pageSize,
+            },
+        },
+    })
+)
+export default class QuotationsContainer extends React.Component {
+    refresh (startPointLastCode, shopId, agentId, endPointLastCode, sendDoorEndPointLastCode, isSendDoor, location, orderBy) {
+        const { relate, pageSize } = this.props;
+        relate.refresh({
+            variables: {
+                lookRoadmap: {
+                    startPointLastCode,
+                    shopId,
+                    agentId,
+                    endPointLastCode,
+                    sendDoorEndPointLastCode,
+                    isSendDoor,
+                    location,
+                    orderBy,
+                    pageNo: 0,
+                    pageSize,
+                },
+            },
+            callback (data) {
+                if (!data.lookRoadmap) {
+                    showError('没有相关路线');
+                }
+            },
+        });
+    }
+    loadListPage (startPointLastCode, shopId, endPointLastCode, sendDoorEndPointLastCode, isSendDoor, location, orderBy, type, pageNo) {
+        const { relate, pageSize, lookRoadmap } = this.props;
+        if (needLoadPage(lookRoadmap[type], 'roadmapList', pageNo, pageSize)) {
+            relate.loadPage({
+                variables: {
+                    lookRoadmap: {
+                        startPointLastCode,
+                        shopId,
+                        endPointLastCode,
+                        sendDoorEndPointLastCode,
+                        isSendDoor,
+                        location,
+                        orderBy,
+                        pageNo,
+                        pageSize,
+                    },
+                },
+                property: type + '.roadmapList',
+            });
+        }
+    }
+    render () {
+        return (
+            <Quotations {...this.props} refresh={::this.refresh} loadListPage={::this.loadListPage} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/rcorders/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { bindActionCreators } from 'redux';
+import * as orderActions from 'actions/agentOrders';
+import { needLoadPage, showError } from 'utils';
+import RCOrders from './contents';
+
+@dataConnect(
+    (state) => ({ pageSize: 20 }),
+    (dispatch) => ({
+        actions : bindActionCreators(orderActions, dispatch),
+    }),
+    (props) => ({
+        fragments: RCOrders.fragments,
+        variablesTypes: {
+            rcorders: {
+                pageNo: 'Int!',
+                pageSize: 'Int!',
+                type: 'String',
+                keyword: 'String',
+                startDate: 'String',
+                endDate: 'String',
+            },
+        },
+        initialVariables: {
+            rcorders: {
+                pageNo: 0,
+                pageSize: props.pageSize,
+            },
+        },
+    })
+)
+export default class RCOrdersContainer extends React.Component {
+    refresh (keyword, startDate, endDate) {
+        const { relate, pageSize } = this.props;
+        relate.refresh({
+            variables: {
+                rcorders: {
+                    pageNo: 0,
+                    pageSize,
+                    keyword,
+                    startDate,
+                    endDate,
+                },
+            },
+            callback (data) {
+                if (!data.rcorders) {
+                    showError('没有相关货单');
+                }
+            },
+        });
+    }
+    loadListPage (keyword, type, pageNo, startDate, endDate) {
+        const { relate, pageSize, rcorders } = this.props;
+        if (needLoadPage(rcorders[type], 'list', pageNo, pageSize)) {
+            relate.loadPage({
+                variables: {
+                    rcorders: {
+                        pageNo,
+                        pageSize,
+                        type,
+                        keyword,
+                        startDate,
+                        endDate,
+                    },
+                },
+                property: type + '.list',
+            });
+        }
+    }
+    render () {
+        return (
+            <RCOrders {...this.props} refresh={::this.refresh} loadListPage={::this.loadListPage} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/receiveOrders/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { bindActionCreators } from 'redux';
+import * as orderActions from 'actions/orders';
+import { needLoadPage, showError } from 'utils';
+import Orders from './contents';
+
+@dataConnect(
+    (state) => ({ pageSize: 20 }),
+    (dispatch) => ({
+        actions : bindActionCreators(orderActions, dispatch),
+    }),
+    (props) => ({
+        fragments: Orders.fragments,
+        variablesTypes: {
+            receiveOrders: {
+                pageNo: 'Int!',
+                pageSize: 'Int!',
+                type: 'String',
+                keyword: 'String',
+                startDate: 'String',
+                endDate: 'String',
+            },
+        },
+        initialVariables: {
+            receiveOrders: {
+                pageNo: 0,
+                pageSize: props.pageSize,
+            },
+        },
+    })
+)
+export default class OrdersContainer extends React.Component {
+    refresh (keyword, startDate, endDate) {
+        const { relate, pageSize } = this.props;
+        relate.refresh({
+            variables: {
+                receiveOrders: {
+                    pageNo: 0,
+                    pageSize,
+                    keyword,
+                    startDate,
+                    endDate,
+                },
+            },
+            callback (data) {
+                if (!data.receiveOrders) {
+                    showError('没有相关货单');
+                }
+            },
+        });
+    }
+    loadListPage (keyword, type, pageNo, startDate, endDate) {
+        const { relate, pageSize, receiveOrders } = this.props;
+        if (needLoadPage(receiveOrders[type], 'list', pageNo, pageSize)) {
+            relate.loadPage({
+                variables: {
+                    receiveOrders: {
+                        pageNo,
+                        pageSize,
+                        type,
+                        keyword,
+                        startDate,
+                        endDate,
+                    },
+                },
+                property: type + 'list',
+            });
+        }
+    }
+    render () {
+        return (
+            <Orders {...this.props} refresh={::this.refresh} loadListPage={::this.loadListPage} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/regionRates/index.js
 
 ```js
 import React from 'react';
@@ -10177,8 +10649,8 @@ import RegionRates from './contents';
                 pageNo: 'Int!',
                 pageSize: 'Int!',
                 keyword: 'String',
-                shopId: 'ID',
             },
+
         },
         initialVariables: {
             regionRates: {
@@ -10186,10 +10658,11 @@ import RegionRates from './contents';
                 pageSize: props.pageSize,
             },
         },
+
     })
 )
 export default class RegionRatesContainer extends React.Component {
-    refresh (keyword, shopId) {
+    refresh (keyword) {
         const { relate, pageSize } = this.props;
         relate.refresh({
             variables: {
@@ -10197,7 +10670,6 @@ export default class RegionRatesContainer extends React.Component {
                     pageNo: 0,
                     pageSize,
                     keyword,
-                    shopId,
                 },
             },
             callback (data) {
@@ -10207,7 +10679,7 @@ export default class RegionRatesContainer extends React.Component {
             },
         });
     }
-    loadListPage (keyword, shopId, pageNo) {
+    loadListPage (keyword, pageNo) {
         const { relate, pageSize, regionRates } = this.props;
         const property = 'list';
         if (needLoadPage(regionRates, property, pageNo, pageSize)) {
@@ -10217,7 +10689,6 @@ export default class RegionRatesContainer extends React.Component {
                         pageNo,
                         pageSize,
                         keyword,
-                        shopId,
                     },
                 },
                 property,
@@ -10233,7 +10704,7 @@ export default class RegionRatesContainer extends React.Component {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/roadmaps/index.js
+* PDShop_Client_PC/project/App/shared/pages/client/pages/roadmaps/index.js
 
 ```js
 import React from 'react';
@@ -10255,27 +10726,28 @@ import Roadmaps from './contents';
                 pageNo: 'Int!',
                 pageSize: 'Int!',
                 keyword: 'String',
-                shopId: 'ID',
+                shopId: 'ID!',
             },
         },
         initialVariables: {
             roadmaps: {
                 pageNo: 0,
                 pageSize: props.pageSize,
+                shopId: props.rootShop.id,
             },
         },
     })
 )
 export default class RoadmapsContainer extends React.Component {
-    refresh (keyword, shopId) {
-        const { relate, pageSize } = this.props;
+    refresh (keyword) {
+        const { relate, pageSize, rootShop } = this.props;
         relate.refresh({
             variables: {
                 roadmaps: {
                     pageNo: 0,
                     pageSize,
                     keyword,
-                    shopId,
+                    shopId: rootShop.id,
                 },
             },
             callback (data) {
@@ -10285,8 +10757,8 @@ export default class RoadmapsContainer extends React.Component {
             },
         });
     }
-    loadListPage (keyword, shopId, pageNo) {
-        const { relate, pageSize, roadmaps } = this.props;
+    loadListPage (keyword, pageNo) {
+        const { relate, pageSize, roadmaps, rootShop } = this.props;
         const property = 'roadmapList';
         if (needLoadPage(roadmaps, property, pageNo, pageSize)) {
             relate.loadPage({
@@ -10295,7 +10767,7 @@ export default class RoadmapsContainer extends React.Component {
                         pageNo,
                         pageSize,
                         keyword,
-                        shopId,
+                        shopId: rootShop.id,
                     },
                 },
                 property,
@@ -10311,63 +10783,29 @@ export default class RoadmapsContainer extends React.Component {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/setting/index.js
+* PDShop_Client_PC/project/App/shared/pages/client/pages/scorders/index.js
 
 ```js
 import React from 'react';
 import { dataConnect } from 'relatejs';
 import { bindActionCreators } from 'redux';
-import * as settingActions from 'actions/settings';
-import Setting from './contents';
-
-@dataConnect(
-    null,
-    (dispatch) => ({
-        actions : bindActionCreators(settingActions, dispatch),
-    }),
-    (props) => {
-        return {
-            fragments: Setting.fragments,
-        };
-    }
-)
-export default class SettingContainer extends React.Component {
-    refreshSetting () {
-        const { relate } = this.props;
-        relate.refresh({
-            property: 'setting',
-        });
-    }
-    render () {
-        return (
-            <Setting {...this.props} refreshSetting={::this.refreshSetting} />
-        );
-    }
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/rporders/index.js
-
-```js
-import React from 'react';
-import { dataConnect } from 'relatejs';
-import { bindActionCreators } from 'redux';
-import * as orderActions from 'actions/orders';
 import { needLoadPage, showError } from 'utils';
-import RPOrders from './contents';
+import * as orderActions from 'actions/orders';
+import * as personalActions from 'actions/personals';
+import SPOrders from './contents';
 
 @dataConnect(
     (state) => ({ pageSize: 20 }),
     (dispatch) => ({
-        actions : bindActionCreators(orderActions, dispatch),
+        actions : bindActionCreators({ ...orderActions, ...personalActions }, dispatch),
     }),
     (props) => ({
-        fragments: RPOrders.fragments,
+        fragments: SPOrders.fragments,
         variablesTypes: {
-            rporders: {
+            scorders: {
                 pageNo: 'Int!',
                 pageSize: 'Int!',
+                shopId: 'ID!',
                 type: 'String',
                 keyword: 'String',
                 startDate: 'String',
@@ -10375,43 +10813,46 @@ import RPOrders from './contents';
             },
         },
         initialVariables: {
-            rporders: {
+            scorders: {
                 pageNo: 0,
                 pageSize: props.pageSize,
+                shopId: props.rootShop.id,
             },
         },
     })
 )
-export default class RPOrdersContainer extends React.Component {
+export default class SPOrdersContainer extends React.Component {
     refresh (keyword, startDate, endDate) {
-        const { relate, pageSize } = this.props;
+        const { relate, pageSize, rootShop } = this.props;
         relate.refresh({
             variables: {
-                rporders: {
+                scorders: {
                     pageNo: 0,
                     pageSize,
                     keyword,
+                    shopId: rootShop.id,
                     startDate,
                     endDate,
                 },
             },
             callback (data) {
-                if (!data.rporders) {
+                if (!data.scorders) {
                     showError('没有相关货单');
                 }
             },
         });
     }
     loadListPage (keyword, type, pageNo, startDate, endDate) {
-        const { relate, pageSize, rporders } = this.props;
-        if (needLoadPage(rporders[type], 'list', pageNo, pageSize)) {
+        const { relate, pageSize, scorders, rootShop } = this.props;
+        if (needLoadPage(scorders[type], 'list', pageNo, pageSize)) {
             relate.loadPage({
                 variables: {
-                    rporders: {
+                    scorders: {
                         pageNo,
                         pageSize,
                         type,
                         keyword,
+                        shopId: rootShop.id,
                         startDate,
                         endDate,
                     },
@@ -10422,78 +10863,81 @@ export default class RPOrdersContainer extends React.Component {
     }
     render () {
         return (
-            <RPOrders {...this.props} refresh={::this.refresh} loadListPage={::this.loadListPage} />
+            <SPOrders {...this.props} refresh={::this.refresh} loadListPage={::this.loadListPage} />
         );
     }
 }
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/shippers/index.js
+* PDShop_Client_PC/project/App/shared/pages/client/pages/sendDoorRoadmaps/index.js
 
 ```js
 import React from 'react';
 import { dataConnect } from 'relatejs';
 import { bindActionCreators } from 'redux';
-import * as shipperActions from 'actions/shippers';
+import * as roadmapActions from 'actions/roadmaps';
 import { needLoadPage, showError } from 'utils';
-import Shippers from './contents';
+import SendDoorRoadmaps from './contents';
 
 @dataConnect(
     (state) => ({ pageSize: 20 }),
     (dispatch) => ({
-        actions : bindActionCreators(shipperActions, dispatch),
+        actions : bindActionCreators(roadmapActions, dispatch),
     }),
     (props) => ({
-        fragments: Shippers.fragments,
+        fragments: SendDoorRoadmaps.fragments,
         variablesTypes: {
-            shippers: {
+            roadmaps: {
                 pageNo: 'Int!',
                 pageSize: 'Int!',
-                keyword: 'String!',
+                keyword: 'String',
                 shopId: 'ID!',
+                isCityDistribute: 'Boolean',
             },
         },
         initialVariables: {
-            shippers: {
+            roadmaps: {
                 pageNo: 0,
                 pageSize: props.pageSize,
-                keyword: '',
-                shopId: '',
+                shopId: props.rootShop.id,
+                isCityDistribute: true,
             },
         },
     })
 )
-export default class ShippersContainer extends React.Component {
-    refresh (keyword, shopId = '') {
-        const { relate, pageSize } = this.props;
+export default class SendDoorRoadmapsContainer extends React.Component {
+    refresh (keyword) {
+        const { relate, pageSize, rootShop } = this.props;
         relate.refresh({
             variables: {
-                shippers: {
+                roadmaps: {
                     pageNo: 0,
                     pageSize,
                     keyword,
-                    shopId,
+                    shopId: rootShop.id,
+                    isCityDistribute: true,
                 },
             },
             callback (data) {
-                if (!data.shippers) {
+                if (!data.roadmaps) {
                     showError('没有相关路线');
                 }
             },
         });
     }
-    loadListPage (keyword, shopId = '', pageNo) {
-        const { relate, pageSize, shippers } = this.props;
-        const property = 'shipperList';
-        if (needLoadPage(shippers, property, pageNo, pageSize)) {
+    loadListPage (keyword, pageNo) {
+        const { relate, pageSize, roadmaps, rootShop } = this.props;
+        const property = 'roadmapList';
+        if (needLoadPage(roadmaps, property, pageNo, pageSize)) {
             relate.loadPage({
                 variables: {
-                    shippers: {
+                    roadmaps: {
                         pageNo,
                         pageSize,
                         keyword,
-                        shopId,
+                        shopId: rootShop.id,
+                        isCityDistribute: true,
                     },
                 },
                 property,
@@ -10502,14 +10946,258 @@ export default class ShippersContainer extends React.Component {
     }
     render () {
         return (
-            <Shippers {...this.props} refresh={::this.refresh} loadListPage={::this.loadListPage} />
+            <SendDoorRoadmaps {...this.props} refresh={::this.refresh} loadListPage={::this.loadListPage} />
         );
     }
 }
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/statistics/index.js
+* PDShop_Client_PC/project/App/shared/pages/client/pages/sendOrders/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { bindActionCreators } from 'redux';
+import * as orderActions from 'actions/orders';
+import { needLoadPage, showError } from 'utils';
+import Orders from './contents';
+
+@dataConnect(
+    (state) => ({ pageSize: 20 }),
+    (dispatch) => ({
+        actions : bindActionCreators(orderActions, dispatch),
+    }),
+    (props) => ({
+        fragments: Orders.fragments,
+        variablesTypes: {
+            sendOrders: {
+                pageNo: 'Int!',
+                pageSize: 'Int!',
+                senderId: 'ID!',
+                type: 'String',
+                keyword: 'String',
+                startDate: 'String',
+                endDate: 'String',
+            },
+        },
+        initialVariables: {
+            sendOrders: {
+                pageNo: 0,
+                pageSize: props.pageSize,
+                senderId: props.rootPersonal.userId,
+            },
+        },
+    })
+)
+export default class OrdersContainer extends React.Component {
+    refresh (keyword, startDate, endDate) {
+        const { relate, pageSize, rootPersonal } = this.props;
+        relate.refresh({
+            variables: {
+                sendOrders: {
+                    pageNo: 0,
+                    pageSize,
+                    keyword,
+                    senderId: rootPersonal.userId,
+                    startDate,
+                    endDate,
+                },
+            },
+            callback (data) {
+                if (!data.sendOrders) {
+                    showError('没有相关货单');
+                }
+            },
+        });
+    }
+    loadListPage (keyword, type, pageNo, startDate, endDate) {
+        const { relate, pageSize, sendOrders, rootPersonal } = this.props;
+        if (needLoadPage(sendOrders[type], 'list', pageNo, pageSize)) {
+            relate.loadPage({
+                variables: {
+                    sendOrders: {
+                        pageNo,
+                        pageSize,
+                        type,
+                        keyword,
+                        senderId: rootPersonal.userId,
+                        startDate,
+                        endDate,
+                    },
+                },
+                property: type + 'list',
+            });
+        }
+    }
+    render () {
+        return (
+            <Orders {...this.props} refresh={::this.refresh} loadListPage={::this.loadListPage} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/shipperMembers/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { bindActionCreators } from 'redux';
+import * as memberActions from 'actions/members';
+import { needLoadPage, showError } from 'utils';
+import Members from './contents';
+
+@dataConnect(
+    (state) => ({ pageSize: 20 }),
+    (dispatch) => ({
+        actions : bindActionCreators(memberActions, dispatch),
+    }),
+    (props) => ({
+        fragments: Members.fragments,
+        variablesTypes: {
+            shipperMembers: {
+                pageNo: 'Int!',
+                pageSize: 'Int!',
+                keyword: 'String!',
+            },
+        },
+        initialVariables: {
+            shipperMembers: {
+                pageNo: 0,
+                pageSize: props.pageSize,
+                keyword: '',
+            },
+        },
+    })
+)
+export default class MembersContainer extends React.Component {
+    refresh (keyword) {
+        const { relate, pageSize } = this.props;
+        relate.refresh({
+            variables: {
+                shipperMembers: {
+                    pageNo: 0,
+                    pageSize,
+                    keyword,
+                },
+            },
+            callback (data) {
+                if (!data.members) {
+                    showError('没有相关货车信息');
+                }
+            },
+        });
+    }
+    loadListPage (keyword, pageNo) {
+        const { relate, pageSize, members } = this.props;
+        const property = 'memberList';
+        if (needLoadPage(members, property, pageNo, pageSize)) {
+            relate.loadPage({
+                variables: {
+                    shipperMembers: {
+                        pageNo,
+                        pageSize,
+                        keyword,
+                    },
+                },
+                property,
+            });
+        }
+    }
+    render () {
+        return (
+            <Members {...this.props} refresh={::this.refresh} loadListPage={::this.loadListPage} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/sporders/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { needLoadPage, showError } from 'utils';
+import SPOrders from './contents';
+
+@dataConnect(
+    (state) => ({ pageSize: 20 }),
+    null,
+    (props) => ({
+        fragments: SPOrders.fragments,
+        variablesTypes: {
+            sporders: {
+                pageNo: 'Int!',
+                pageSize: 'Int!',
+                shopId: 'ID!',
+                type: 'String',
+                keyword: 'String',
+                startDate: 'String',
+                endDate: 'String',
+            },
+        },
+        initialVariables: {
+            sporders: {
+                pageNo: 0,
+                pageSize: props.pageSize,
+                shopId: props.rootShop.id,
+            },
+        },
+    })
+)
+export default class SPOrdersContainer extends React.Component {
+    refresh (keyword, startDate, endDate) {
+        const { relate, pageSize, rootShop } = this.props;
+        relate.refresh({
+            variables: {
+                sporders: {
+                    pageNo: 0,
+                    pageSize,
+                    keyword,
+                    shopId: rootShop.id,
+                    startDate,
+                    endDate,
+                },
+            },
+            callback (data) {
+                if (!data.sporders) {
+                    showError('没有相关货单');
+                }
+            },
+        });
+    }
+    loadListPage (keyword, type, pageNo, startDate, endDate) {
+        const { relate, pageSize, sporders, rootShop } = this.props;
+        if (needLoadPage(sporders[type], 'list', pageNo, pageSize)) {
+            relate.loadPage({
+                variables: {
+                    sporders: {
+                        pageNo,
+                        pageSize,
+                        type,
+                        keyword,
+                        shopId: rootShop.id,
+                        startDate,
+                        endDate,
+                    },
+                },
+                property: type + '.list',
+            });
+        }
+    }
+    render () {
+        return (
+            <SPOrders {...this.props} refresh={::this.refresh} loadListPage={::this.loadListPage} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/statistics/index.js
 
 ```js
 import React from 'react';
@@ -10521,22 +11209,13 @@ import Statistics from './contents';
     null,
     (props) => ({
         fragments: Statistics.fragments,
-        variablesTypes: {
-            shopStatistics: {
-                shopId: 'ID',
-            },
-        },
     })
 )
 export default class StatisticsContainer extends React.Component {
     refresh (shopId) {
         const { relate } = this.props;
         relate.refresh({
-            variables: {
-                shopStatistics: {
-                    shopId,
-                },
-            },
+            property: 'shipperStatistics',
         });
     }
     render () {
@@ -10548,20 +11227,20 @@ export default class StatisticsContainer extends React.Component {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/trucks/index.js
+* PDShop_Client_PC/project/App/shared/pages/client/pages/trucks/index.js
 
 ```js
 import React from 'react';
 import { dataConnect } from 'relatejs';
 import { bindActionCreators } from 'redux';
-import * as shipperActions from 'actions/shippers';
+import * as truckActions from 'actions/trucks';
 import { needLoadPage, showError } from 'utils';
 import Trucks from './contents';
 
 @dataConnect(
-    (state) => ({ pageSize: 20 }),
+    (state) => ({ pageSize: 20, keepData: true }),
     (dispatch) => ({
-        actions : bindActionCreators(shipperActions, dispatch),
+        actions : bindActionCreators(truckActions, dispatch),
     }),
     (props) => ({
         fragments: Trucks.fragments,
@@ -10569,14 +11248,23 @@ import Trucks from './contents';
             trucks: {
                 pageNo: 'Int!',
                 pageSize: 'Int!',
-                keyword: 'String!',
+                type: 'String',
+                keyword: 'String',
+            },
+            workTruckList: {
+                pageNo: 'Int!',
+                pageSize: 'Int!',
+                keyword: 'String',
             },
         },
         initialVariables: {
             trucks: {
                 pageNo: 0,
                 pageSize: props.pageSize,
-                keyword: '',
+            },
+            workTruckList: {
+                pageNo: 0,
+                pageSize: props.pageSize,
             },
         },
     })
@@ -10591,6 +11279,11 @@ export default class TrucksContainer extends React.Component {
                     pageSize,
                     keyword,
                 },
+                workTruckList: {
+                    pageNo: 0,
+                    pageSize,
+                    keyword,
+                },
             },
             callback (data) {
                 if (!data.trucks) {
@@ -10599,20 +11292,35 @@ export default class TrucksContainer extends React.Component {
             },
         });
     }
-    loadListPage (keyword, pageNo) {
-        const { relate, pageSize, trucks } = this.props;
-        const property = 'truckList';
-        if (needLoadPage(trucks, property, pageNo, pageSize)) {
-            relate.loadPage({
-                variables: {
-                    trucks: {
-                        pageNo,
-                        pageSize,
-                        keyword,
+    loadListPage (keyword, type, pageNo) {
+        const { relate, pageSize, trucks, workTruckList } = this.props;
+        if (type === 'tosend') {
+            if (needLoadPage(workTruckList, 'list', pageNo, pageSize)) {
+                relate.loadPage({
+                    variables: {
+                        workTruckList: {
+                            pageNo,
+                            pageSize,
+                            keyword,
+                        },
                     },
-                },
-                property,
-            });
+                    property: 'list',
+                });
+            }
+        } else {
+            if (needLoadPage(trucks[type], 'list', pageNo, pageSize)) {
+                relate.loadPage({
+                    variables: {
+                        trucks: {
+                            pageNo,
+                            pageSize,
+                            type,
+                            keyword,
+                        },
+                    },
+                    property: type + '.list',
+                });
+            }
         }
     }
     render () {
@@ -10624,443 +11332,7 @@ export default class TrucksContainer extends React.Component {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/warehouse/index.js
-
-```js
-import React from 'react';
-import { dataConnect } from 'relatejs';
-import { bindActionCreators } from 'redux';
-import * as warehouseActions from 'actions/warehouses';
-import { needLoadPage, showError } from 'utils';
-import Warehouses from './contents';
-
-@dataConnect(
-    (state) => ({ pageSize: 20 }),
-    (dispatch) => ({
-        actions : bindActionCreators(warehouseActions, dispatch),
-    }),
-    (props) => ({
-        fragments: Warehouses.fragments,
-        variablesTypes: {
-            warehouses: {
-                pageNo: 'Int!',
-                pageSize: 'Int!',
-                keyword: 'String',
-            },
-        },
-        initialVariables: {
-            warehouses: {
-                pageNo: 0,
-                pageSize: props.pageSize,
-            },
-        },
-    })
-)
-export default class WarehouseContainer extends React.Component {
-    refresh (keyword) {
-        const { relate, pageSize } = this.props;
-        relate.refresh({
-            variables: {
-                warehouses: {
-                    pageNo: 0,
-                    pageSize,
-                    keyword,
-                },
-            },
-            callback (data) {
-                if (!data.warehouses) {
-                    showError('没有相关仓库');
-                }
-            },
-        });
-    }
-    loadListPage (keyword, pageNo) {
-        const { relate, pageSize, warehouses } = this.props;
-        const property = 'list';
-        if (needLoadPage(warehouses, property, pageNo, pageSize)) {
-            relate.loadPage({
-                variables: {
-                    warehouses: {
-                        pageNo,
-                        pageSize,
-                        keyword,
-                    },
-                },
-                property,
-            });
-        }
-    }
-    render () {
-        return (
-            <Warehouses {...this.props} refresh={::this.refresh} loadListPage={::this.loadListPage} />
-        );
-    }
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/whorders/index.js
-
-```js
-import React from 'react';
-import { dataConnect } from 'relatejs';
-import { bindActionCreators } from 'redux';
-import * as orderActions from 'actions/orders';
-import { needLoadPage, showError } from 'utils';
-import WHOrders from './contents';
-
-@dataConnect(
-    (state) => ({ pageSize: 20 }),
-    (dispatch) => ({
-        actions : bindActionCreators(orderActions, dispatch),
-    }),
-    (props) => ({
-        fragments: WHOrders.fragments,
-        variablesTypes: {
-            whorders: {
-                pageNo: 'Int!',
-                pageSize: 'Int!',
-                type: 'String',
-                keyword: 'String',
-                startDate: 'String',
-                endDate: 'String',
-            },
-        },
-        initialVariables: {
-            whorders: {
-                pageNo: 0,
-                pageSize: props.pageSize,
-            },
-        },
-    })
-)
-export default class WHOrdersContainer extends React.Component {
-    refresh (keyword, startDate, endDate) {
-        const { relate, pageSize } = this.props;
-        relate.refresh({
-            variables: {
-                whorders: {
-                    pageNo: 0,
-                    pageSize,
-                    keyword,
-                    startDate,
-                    endDate,
-                },
-            },
-            callback (data) {
-                if (!data.whorders) {
-                    showError('没有相关货单');
-                }
-            },
-        });
-    }
-    loadListPage (keyword, type, pageNo, startDate, endDate) {
-        const { relate, pageSize, whorders } = this.props;
-        if (needLoadPage(whorders[type], 'list', pageNo, pageSize)) {
-            relate.loadPage({
-                variables: {
-                    whorders: {
-                        pageNo,
-                        pageSize,
-                        type,
-                        keyword,
-                        startDate,
-                        endDate,
-                    },
-                },
-                property: type + '.list',
-            });
-        }
-    }
-    render () {
-        return (
-            <WHOrders {...this.props} refresh={::this.refresh} loadListPage={::this.loadListPage} />
-        );
-    }
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/branchShops/pages/detail/index.js
-
-```js
-import React from 'react';
-import { dataConnect } from 'relatejs';
-import { bindActionCreators } from 'redux';
-import * as shopActions from 'actions/shops';
-import BranchShopDetail from './contents';
-
-@dataConnect(
-    (state) => {
-        const { operType, addressRegionLastCode, shopId, record, branchShops } = state.router.location.state || state.router.location.query;
-        return { operType: operType * 1, addressRegionLastCode, shopId, record, branchShops, keepLastKeepData: true };
-    },
-    (dispatch) => ({
-        actions : bindActionCreators(shopActions, dispatch),
-    }),
-    (props) => {
-        return {
-            fragments: BranchShopDetail.fragments,
-            variablesTypes: {
-                branchShop: {
-                    shopId: 'ID',
-                },
-                addressFromLastCode: {
-                    addressLastCode: 'Int',
-                },
-            },
-            initialVariables: {
-                branchShop: {
-                    shopId: props.shopId,
-                },
-                addressFromLastCode: {
-                    addressLastCode: props.addressRegionLastCode,
-                },
-            },
-            mutations: {
-                modifyBranchShop ({ state, data }) {
-                    if (data.success) {
-                        Object.assign(props.record, data.context);
-                    }
-                },
-                removeBranchShop ({ state, data, _ }) {
-                    if (data.success) {
-                        props.branchShops.count--;
-                        _.remove(props.branchShops.branchShopList, (item) => item.id === props.shopId);
-                    }
-                },
-            },
-        };
-    }
-)
-export default class BranchShopDetailContainer extends React.Component {
-    render () {
-        return (
-            <BranchShopDetail {...this.props} />
-        );
-    }
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/agents/pages/detail/index.js
-
-```js
-import React from 'react';
-import { dataConnect } from 'relatejs';
-import { bindActionCreators } from 'redux';
-import * as agentActions from 'actions/agents';
-import AgentDetail from './contents';
-
-@dataConnect(
-    (state) => {
-        const { addressRegionLastCode, agentId, record, agents } = state.router.location.state || state.router.location.query;
-        return { addressRegionLastCode, agentId, record, agents, keepLastKeepData: true };
-    },
-    (dispatch) => ({
-        actions : bindActionCreators(agentActions, dispatch),
-    }),
-    (props) => {
-        return {
-            manualLoad: !!props.agent || !props.agentId,
-            fragments: AgentDetail.fragments,
-            variablesTypes: {
-                agent: {
-                    agentId: 'ID!',
-                },
-                addressFromLastCode: {
-                    addressLastCode: 'Int',
-                },
-            },
-            initialVariables: {
-                agent: {
-                    agentId: props.agentId,
-                },
-                addressFromLastCode: {
-                    addressLastCode: props.addressRegionLastCode,
-                },
-            },
-            mutations: {
-                modifyAgent ({ state, data }) {
-                    if (data.success) {
-                        Object.assign(props.record, data.context);
-                    }
-                },
-                removeAgent ({ state, data, _ }) {
-                    if (data.success) {
-                        props.agents.count--;
-                        _.remove(props.agents.agentList, (item) => item.id === props.agentId);
-                    }
-                },
-            },
-        };
-    }
-)
-export default class AgentDetailContainer extends React.Component {
-    render () {
-        return (
-            <AgentDetail {...this.props} />
-        );
-    }
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/agents/pages/register/index.js
-
-```js
-import React from 'react';
-import { dataConnect } from 'relatejs';
-import { bindActionCreators } from 'redux';
-import * as agentActions from 'actions/agents';
-import AgentRegister from './contents';
-
-@dataConnect(
-    (state) => {
-        const { agentId, record, agents } = state.router.location.state || state.router.location.query;
-        return { agentId, record, agents, keepLastKeepData: true };
-    },
-    (dispatch) => ({
-        actions : bindActionCreators(agentActions, dispatch),
-    }),
-    null,
-)
-export default class AgentRegisterContainer extends React.Component {
-    render () {
-        return (
-            <AgentRegister {...this.props} />
-        );
-    }
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/clients/pages/detail/index.js
-
-```js
-import React from 'react';
-import { dataConnect } from 'relatejs';
-import { bindActionCreators } from 'redux';
-import * as clientActions from 'actions/clients';
-import ClientDetail from './contents';
-
-@dataConnect(
-    (state) => {
-        const { clientId } = state.router.location.state;
-        return { clientId, keepLastKeepData: true };
-    },
-    (dispatch) => ({
-        actions : bindActionCreators(clientActions, dispatch),
-    }),
-    (props) => {
-        return {
-            fragments: ClientDetail.fragments,
-            variablesTypes: {
-                client: {
-                    clientId: 'ID!',
-                },
-            },
-            initialVariables: {
-                client: {
-                    clientId: props.clientId,
-                },
-            },
-        };
-    }
-)
-export default class ClientDetailContainer extends React.Component {
-    render () {
-        return (
-            <ClientDetail {...this.props} />
-        );
-    }
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/notifies/pages/sendNotify/index.js
-
-```js
-import React from 'react';
-import { connect } from 'react-redux';
-import { bindActionCreators } from 'redux';
-import * as notifyActions from 'actions/notifies';
-import SendNotify from './contents';
-
-@connect(
-    (state) => {
-        const { notifies, activeType } = state.router.location.state;
-        return { notifies, activeType, keepLastKeepData: true };
-    },
-    (dispatch) => ({
-        actions : bindActionCreators(notifyActions, dispatch),
-    }),
-)
-export default class SendNotifyContainer extends React.Component {
-    render () {
-        return (
-            <SendNotify {...this.props} />
-        );
-    }
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/orders/pages/detail/index.js
-
-```js
-import React from 'react';
-import { dataConnect } from 'relatejs';
-import { bindActionCreators } from 'redux';
-import * as orderActions from 'actions/orders';
-import RPOrderDetail from './contents';
-
-@dataConnect(
-    (state) => {
-        const { orderId, activeType } = state.router.location.state || state.router.location.query;
-        return { orderId, activeType, keepLastKeepData: true };
-    },
-    (dispatch) => ({
-        actions : bindActionCreators(orderActions, dispatch),
-    }),
-    (props) => {
-        return {
-            manualLoad: !!props.order || !props.orderId,
-            fragments: RPOrderDetail.fragments,
-            variablesTypes: {
-                order: {
-                    orderId: 'ID!',
-                },
-            },
-            initialVariables: {
-                order: {
-                    orderId: props.orderId,
-                },
-            },
-        };
-    }
-)
-export default class RPOrderDetailContainer extends React.Component {
-    refreshRPOrder () {
-        const { relate, orderId } = this.props;
-        relate.refresh({
-            variables: {
-                order: {
-                    orderId,
-                },
-            },
-        });
-    }
-    render () {
-        return (
-            <RPOrderDetail {...this.props} refreshRPOrder={::this.refreshRPOrder} />
-        );
-    }
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/members/pages/detail/index.js
+* PDShop_Client_PC/project/App/shared/pages/client/pages/agentMembers/pages/detail/index.js
 
 ```js
 import React from 'react';
@@ -11071,8 +11343,8 @@ import MemberDetail from './contents';
 
 @dataConnect(
     (state) => {
-        const { operType, memberId, record, members } = state.router.location.state || state.router.location.query;
-        return { operType: operType * 1, memberId, record, members, keepLastKeepData: true };
+        const { memberId, record, agentMembers } = state.router.location.state || state.router.location.query;
+        return { memberId, record, agentMembers, keepLastKeepData: true };
     },
     (dispatch) => ({
         actions : bindActionCreators(memberActions, dispatch),
@@ -11082,26 +11354,13 @@ import MemberDetail from './contents';
             manualLoad: !!props.member || !props.memberId,
             fragments: MemberDetail.fragments,
             variablesTypes: {
-                member: {
+                agentMember: {
                     memberId: 'ID!',
                 },
             },
             initialVariables: {
-                member: {
+                agentMember: {
                     memberId: props.memberId,
-                },
-            },
-            mutations: {
-                modifyMember ({ state, data }) {
-                    if (data.success) {
-                        Object.assign(props.record, data.context);
-                    }
-                },
-                removeMember ({ state, data, _ }) {
-                    if (data.success) {
-                        props.members.count--;
-                        _.remove(props.members.memberList, (item) => item.id === props.memberId);
-                    }
                 },
             },
         };
@@ -11117,64 +11376,131 @@ export default class MemberDetailContainer extends React.Component {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/partments/pages/detail/index.js
+* PDShop_Client_PC/project/App/shared/pages/client/pages/agentMembers/pages/register/index.js
 
 ```js
 import React from 'react';
 import { dataConnect } from 'relatejs';
 import { bindActionCreators } from 'redux';
-import * as partmentActions from 'actions/partments';
-import PartmentDetail from './contents';
+import * as memberActions from 'actions/members';
+import MemberRegister from './contents';
 
 @dataConnect(
     (state) => {
-        const { operType, partmentId, record, partments } = state.router.location.state || state.router.location.query;
-        return { operType: operType * 1, partmentId, record, partments, keepLastKeepData: true };
+        const { agentMembers } = state.router.location.state || state.router.location.query;
+        return { agentMembers, keepLastKeepData: true };
     },
     (dispatch) => ({
-        actions : bindActionCreators(partmentActions, dispatch),
+        actions: bindActionCreators(memberActions, dispatch),
     }),
-    (props) => {
-        return {
-            manualLoad: !!props.partment || !props.partmentId,
-            fragments: PartmentDetail.fragments,
-            variablesTypes: {
-                partment: {
-                    partmentId: 'ID!',
-                },
-            },
-            initialVariables: {
-                partment: {
-                    partmentId: props.partmentId,
-                },
-            },
-            mutations: {
-                modifyPartment ({ state, data }) {
-                    if (data.success) {
-                        Object.assign(props.record, data.context);
-                    }
-                },
-                removePartment ({ state, data, _ }) {
-                    if (data.success) {
-                        props.partments.count--;
-                        _.remove(props.partments.partmentList, (item) => item.id === props.partmentId);
-                    }
-                },
-            },
-        };
-    }
 )
-export default class PartmentDetailContainer extends React.Component {
+export default class MemberRegisterContainer extends React.Component {
     render () {
         return (
-            <PartmentDetail {...this.props} />
+            <MemberRegister {...this.props} />
         );
     }
 }
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/personal/pages/paymentPwd/index.js
+* PDShop_Client_PC/project/App/shared/pages/client/pages/needSendOrders/pages/orderListByEndpoint/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { needLoadPage } from 'utils';
+import OrderListByEndPoint from './contents';
+
+@dataConnect(
+    (state) => {
+        const { endPoint } = state.router.location.state || state.router.location.query;
+        return { endPoint, pageSize: 20, keepLastKeepData: true };
+    },
+    null,
+    (props) => ({
+        fragments: OrderListByEndPoint.fragments,
+        variablesTypes: {
+            orderListByEndPoint: {
+                pageNo: 'Int!',
+                pageSize: 'Int!',
+                endPoint: 'String!',
+                shopId: 'ID!',
+            },
+        },
+        initialVariables: {
+            orderListByEndPoint: {
+                pageNo: 0,
+                pageSize: props.pageSize,
+                shopId: props.rootShop.id,
+                endPoint: props.endPoint,
+            },
+        },
+    })
+)
+export default class OrderListByEndPointContainer extends React.Component {
+    loadListPage (unused, pageNo) {
+        const { relate, rootShop, endPoint, pageSize, orderListByEndPoint } = this.props;
+        const property = 'orderList';
+        if (needLoadPage(orderListByEndPoint, property, pageNo, pageSize)) {
+            relate.loadPage({
+                variables: {
+                    orderListByEndPoint: {
+                        pageNo,
+                        pageSize,
+                        endPoint,
+                        shopId: rootShop.id,
+                    },
+                },
+                property,
+            });
+        }
+    }
+    render () {
+        return (
+            <OrderListByEndPoint {...this.props} loadListPage={::this.loadListPage} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/personal/pages/agent/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { bindActionCreators } from 'redux';
+import * as personalActions from 'actions/personals';
+import * as accountActions from 'actions/accounts';
+import Agent from './contents';
+
+@dataConnect(
+    (state) => ({}),
+    (dispatch) => ({
+        actions : bindActionCreators({ ...personalActions, ...accountActions }, dispatch),
+    }),
+    (props) => ({
+        fragments: Agent.fragments,
+    }),
+)
+export default class AgentContainer extends React.Component {
+    refreshRemainAmount () {
+        const { relate } = this.props;
+        relate.refresh({
+            property: 'remainAmount',
+        });
+    }
+    render () {
+        return (
+            <Agent {...this.props} refreshRemainAmount={::this.refreshRemainAmount} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/personal/pages/paymentPwd/index.js
 
 ```js
 import React from 'react';
@@ -11199,122 +11525,395 @@ export default class PaymentPwdContainer extends React.Component {
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/regionRates/pages/detail/index.js
+* PDShop_Client_PC/project/App/shared/pages/client/pages/personal/pages/shipper/index.js
 
 ```js
 import React from 'react';
 import { dataConnect } from 'relatejs';
 import { bindActionCreators } from 'redux';
-import * as roadmapActions from 'actions/roadmaps';
-import RegionRateDetail from './contents';
+import * as personalActions from 'actions/personals';
+import * as accountActions from 'actions/accounts';
+import Shipper from './contents';
 
 @dataConnect(
-    (state) => {
-        const { operType, regionLastCode, regionRateId, record, regionRates } = state.router.location.state || state.router.location.query;
-        return { operType: operType * 1, regionLastCode, regionRateId, record, regionRates, keepLastKeepData: true };
-    },
+    (state) => ({}),
     (dispatch) => ({
-        actions : bindActionCreators(roadmapActions, dispatch),
+        actions : bindActionCreators({ ...personalActions, ...accountActions }, dispatch),
     }),
-    (props) => {
-        return {
-            fragments: RegionRateDetail.fragments,
-            variablesTypes: {
-                regionRate: {
-                    regionRateId: 'ID',
-                },
-                addressFromLastCode: {
-                    addressLastCode: 'Int',
-                    type: 'Int',
-                },
+    (props) => ({
+        fragments: Shipper.fragments,
+        variablesTypes: {
+            shipper: {
+                shopId: 'ID',
             },
-            initialVariables: {
-                regionRate: {
-                    regionRateId: props.regionRateId,
-                },
-                addressFromLastCode: {
-                    addressLastCode: props.regionLastCode,
-                    type: 2,
-                },
+        },
+        initialVariables: {
+            shipper: {
+                shopId: props.rootShop.id,
             },
-            mutations: {
-                modifyRoadmapRegionProfitRate ({ state, data }) {
-                    if (data.success) {
-                        Object.assign(props.record, data.context);
-                    }
-                },
-                removeRoadmapRegionProfitRate ({ state, data, _ }) {
-                    if (data.success) {
-                        props.regionRates.count--;
-                        _.remove(props.regionRates.regionRateList, (item) => item.id === props.regionRateId);
-                    }
-                },
-            },
-        };
-    }
+        },
+    }),
 )
-export default class RegionRateDetailContainer extends React.Component {
+export default class ShipperContainer extends React.Component {
+    refreshRemainAmount () {
+        const { relate } = this.props;
+        relate.refresh({
+            property: 'remainAmount',
+        });
+    }
     render () {
         return (
-            <RegionRateDetail {...this.props} />
+            <Shipper {...this.props} refreshRemainAmount={::this.refreshRemainAmount} />
         );
     }
 }
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/roadmaps/pages/detail/index.js
-
-```js
-import React from 'react';
-import { dataConnect } from 'relatejs';
-import RoadmapDetail from './contents';
-
-@dataConnect(
-    (state) => {
-        const { roadmapId } = state.router.location.state;
-        return { roadmapId, keepLastKeepData: true };
-    },
-    null,
-    (props) => {
-        return {
-            fragments: RoadmapDetail.fragments,
-            variablesTypes: {
-                roadmap: {
-                    roadmapId: 'ID!',
-                },
-            },
-            initialVariables: {
-                roadmap: {
-                    roadmapId: props.roadmapId,
-                },
-            },
-        };
-    }
-)
-export default class RoadmapDetailContainer extends React.Component {
-    render () {
-        return (
-            <RoadmapDetail {...this.props} />
-        );
-    }
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/rporders/pages/detail/index.js
+* PDShop_Client_PC/project/App/shared/pages/client/pages/preOrders/pages/detail/index.js
 
 ```js
 import React from 'react';
 import { dataConnect } from 'relatejs';
 import { bindActionCreators } from 'redux';
 import * as orderActions from 'actions/orders';
-import RPOrderDetail from './contents';
+import { getUserNameByPhone } from 'actions/personals';
+import PreOrderDetail from './contents';
 
 @dataConnect(
     (state) => {
-        const { orderId, record, rporders, activeType } = state.router.location.state || state.router.location.query;
-        return { orderId, record, rporders, activeType, keepLastKeepData: true };
+        const { orderGroupId, orderGroupStartPoint, operType, orderId, record, preOrders, activeType } = state.router.location.state || state.router.location.query;
+        return { orderGroupId, orderGroupStartPoint, operType: operType * 1, orderId, record: record || { startPoint: '贵州省贵阳市' }, preOrders, activeType, keepLastKeepData: true };
+    },
+    (dispatch) => ({
+        actions : bindActionCreators({ ...orderActions, getUserNameByPhone }, dispatch),
+    }),
+    (props) => {
+        return {
+            fragments: PreOrderDetail.fragments,
+            variablesTypes: {
+                order: {
+                    orderId: 'ID!',
+                },
+                startPointAddressFromLastCode: {
+                    addressLastCode: 'Int',
+                    isLeaf: 'Boolean',
+                },
+                addressFromLastCode: {
+                    addressLastCode: 'Int!',
+                    type: 'Int',
+                },
+                sendDoorAddressFromLastCode: {
+                    addressLastCode: 'Int',
+                },
+            },
+            initialVariables: {
+                order: {
+                    orderId: props.orderId || '',
+                },
+                startPointAddressFromLastCode: {
+                    addressLastCode: props.record ? (props.record.startPointLastCode || 0) : 0,
+                    isLeaf: props.record ? !!(props.record.shop || props.record.agent) : false,
+                },
+                addressFromLastCode: {
+                    addressLastCode: props.record ? (props.record.endPointLastCode || 0) : 0,
+                    type: props.record && props.record.isCityDistribute ? 1 : 0,
+                },
+                sendDoorAddressFromLastCode: {
+                    addressLastCode: props.record ? (props.record.sendDoorEndPointLastCode || 0) : 0,
+                },
+            },
+            mutations: {
+                modifyPreOrder ({ state, data }) {
+                    if (data.success) {
+                        Object.assign(props.record, data.context);
+                    }
+                },
+                removePreOrder ({ state, data, _ }) {
+                    if (data.success) {
+                        props.preOrders.count--;
+                        _.remove(props.preOrders.orderList, (item) => item.id === props.orderId);
+                    }
+                },
+            },
+        };
+    }
+)
+export default class PreOrderDetailContainer extends React.Component {
+    render () {
+        return (
+            <PreOrderDetail {...this.props} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/preOrders/pages/groupDetail/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { bindActionCreators } from 'redux';
+import * as orderActions from 'actions/orders';
+import InGroupPreOrderList from './contents';
+
+@dataConnect(
+    (state) => {
+        const { orderGroupId, orderGroupStartPoint, record } = state.router.location.state || state.router.location.query;
+        return { orderGroupId, orderGroupStartPoint, record, keepLastKeepData: true };
+    },
+    (dispatch) => ({
+        actions : bindActionCreators(orderActions, dispatch),
+    }),
+    (props) => ({
+        fragments: InGroupPreOrderList.fragments,
+        variablesTypes: {
+            inGroupPreOrders: {
+                orderGroupId: 'ID!',
+            },
+        },
+        initialVariables: {
+            inGroupPreOrders: {
+                orderGroupId: props.orderGroupId,
+            },
+        },
+    })
+)
+export default class InGroupPreOrderListContainer extends React.Component {
+    render () {
+        return (
+            <InGroupPreOrderList {...this.props} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/preOrders/pages/lookGroupFee/index.js
+
+```js
+    import React from 'react';
+    import { dataConnect } from 'relatejs';
+    import { bindActionCreators } from 'redux';
+    import * as orderActions from 'actions/orders';
+    import LookGroupFee from './contents';
+
+@dataConnect(
+    (state) => {
+        const { orderGroupId, record } = state.router.location.state || state.router.location.query;
+        return { orderGroupId, record, keepLastKeepData: true };
+    },
+    (dispatch) => ({
+        actions : bindActionCreators(orderActions, dispatch),
+    }),
+    (props) => ({
+        fragments: LookGroupFee.fragments,
+        variablesTypes: {
+            lookGroupFee: {
+                orderGroupId: 'ID!',
+                location: '[Float]!',
+            },
+        },
+        initialVariables: {
+            lookGroupFee: {
+                orderGroupId: props.orderGroupId,
+                location: [106.6886, 26.566621],
+            },
+        },
+    })
+)
+    export default class LookGroupFeeContainer extends React.Component {
+        render () {
+            return (
+                <LookGroupFee {...this.props} />
+            );
+        }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/preOrders/pages/lookOrderFee/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { bindActionCreators } from 'redux';
+import * as orderActions from 'actions/orders';
+import { needLoadPage } from 'utils';
+import LookOrderFee from './contents';
+
+@dataConnect(
+    (state) => {
+        const { orderId, record, startPointLastCode, shopId, agentId } = state.router.location.state || state.router.location.query;
+        return { orderId, record, startPointLastCode, shopId, agentId, orderBy: 0, pageSize: 20, location: [106.6886, 26.566621], keepLastKeepData: true };
+    },
+    (dispatch) => ({
+        actions : bindActionCreators(orderActions, dispatch),
+    }),
+    (props) => ({
+        fragments: LookOrderFee.fragments,
+        variablesTypes: {
+            lookOrderFee: {
+                orderId: 'ID!',
+                location: '[Float]!',
+                pageNo: 'Int!',
+                pageSize: 'Int!',
+                orderBy: 'Int!',
+                startPointLastCode: 'Int',
+                shopId: 'ID',
+                agentId: 'ID',
+            },
+        },
+        initialVariables: {
+            lookOrderFee: {
+                orderId: props.orderId,
+                location: props.location,
+                pageNo: 0,
+                pageSize: props.pageSize,
+                orderBy: props.orderBy,
+                startPointLastCode: props.startPointLastCode,
+                shopId: props.shopId,
+                agentId: props.agentId,
+            },
+        },
+    })
+)
+export default class LookOrderFeeContainer extends React.Component {
+    refresh (orderBy, location) {
+        const { relate, pageSize, orderId } = this.props;
+        relate.refresh({
+            variables: {
+                lookOrderFee: {
+                    orderId,
+                    location,
+                    pageNo: 0,
+                    pageSize,
+                    orderBy,
+                },
+            },
+        });
+    }
+    loadListPage (orderBy, location, type, pageNo) {
+        const { relate, lookOrderFee, pageSize, orderId } = this.props;
+        if (needLoadPage(lookOrderFee[type], 'roadmapList', pageNo, pageSize)) {
+            relate.loadPage({
+                variables: {
+                    lookOrderFee: {
+                        orderId,
+                        location,
+                        pageNo,
+                        pageSize,
+                        orderBy,
+                    },
+                },
+                property: type + '.roadmapList',
+            });
+        }
+    }
+    render () {
+        return (
+            <LookOrderFee {...this.props} refresh={::this.refresh} loadListPage={::this.loadListPage} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/preOrders/pages/lookPreOrderFee/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { bindActionCreators } from 'redux';
+import * as orderActions from 'actions/orders';
+import { needLoadPage } from 'utils';
+import LookPreOrderFee from './contents';
+
+@dataConnect(
+    (state) => {
+        const { orderId, record } = state.router.location.state || state.router.location.query;
+        return { orderId, record, orderBy: 0, pageSize: 20, location: [106.6886, 26.566621], keepLastKeepData: true };
+    },
+    (dispatch) => ({
+        actions : bindActionCreators(orderActions, dispatch),
+    }),
+    (props) => ({
+        fragments: LookPreOrderFee.fragments,
+        variablesTypes: {
+            lookPreOrderFee: {
+                orderId: 'ID!',
+                location: '[Float]!',
+                pageNo: 'Int!',
+                pageSize: 'Int!',
+                orderBy: 'Int!',
+            },
+        },
+        initialVariables: {
+            lookPreOrderFee: {
+                orderId: props.orderId,
+                location: props.location,
+                pageNo: 0,
+                pageSize: props.pageSize,
+                orderBy: props.orderBy,
+            },
+        },
+    })
+)
+export default class LookPreOrderFeeContainer extends React.Component {
+    refresh (orderBy, location) {
+        const { relate, pageSize, orderId } = this.props;
+        relate.refresh({
+            variables: {
+                lookPreOrderFee: {
+                    orderId,
+                    location,
+                    pageNo: 0,
+                    pageSize,
+                    orderBy,
+                },
+            },
+        });
+    }
+    loadListPage (orderBy, location, type, pageNo) {
+        const { relate, lookPreOrderFee, pageSize, orderId } = this.props;
+        if (needLoadPage(lookPreOrderFee[type], 'roadmapList', pageNo, pageSize)) {
+            relate.loadPage({
+                variables: {
+                    lookPreOrderFee: {
+                        orderId,
+                        location,
+                        pageNo,
+                        pageSize,
+                        orderBy,
+                    },
+                },
+                property: type + '.roadmapList',
+            });
+        }
+    }
+    render () {
+        return (
+            <LookPreOrderFee {...this.props} refresh={::this.refresh} loadListPage={::this.loadListPage} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/rcorders/pages/detail/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { bindActionCreators } from 'redux';
+import * as orderActions from 'actions/agentOrders';
+import RCOrderDetail from './contents';
+
+@dataConnect(
+    (state) => {
+        const { orderId, record, rcorders, activeType } = state.router.location.state || state.router.location.query;
+        return { orderId, record, rcorders, activeType, keepLastKeepData: true };
     },
     (dispatch) => ({
         actions : bindActionCreators(orderActions, dispatch),
@@ -11322,7 +11921,7 @@ import RPOrderDetail from './contents';
     (props) => {
         return {
             manualLoad: !!props.order || !props.orderId,
-            fragments: RPOrderDetail.fragments,
+            fragments: RCOrderDetail.fragments,
             variablesTypes: {
                 order: {
                     orderId: 'ID!',
@@ -11348,7 +11947,7 @@ import RPOrderDetail from './contents';
         };
     }
 )
-export default class RPOrderDetailContainer extends React.Component {
+export default class RCOrderDetailContainer extends React.Component {
     refresh () {
         const { relate, orderId } = this.props;
         relate.refresh({
@@ -11367,195 +11966,29 @@ export default class RPOrderDetailContainer extends React.Component {
     }
     render () {
         return (
-            <RPOrderDetail {...this.props} refresh={::this.refresh} />
+            <RCOrderDetail {...this.props} refresh={::this.refresh} />
         );
     }
 }
 
 ```
 
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/shippers/pages/detail/index.js
+* PDShop_Client_PC/project/App/shared/pages/client/pages/receiveOrders/pages/detail/index.js
 
 ```js
 import React from 'react';
 import { dataConnect } from 'relatejs';
-import { bindActionCreators } from 'redux';
-import * as shipperActions from 'actions/shippers';
-import ShipperDetail from './contents';
+import OrderDetail from './contents';
 
 @dataConnect(
     (state) => {
-        const { shipperId, record, shippers } = state.router.location.state || state.router.location.query;
-        return { shipperId, record, shippers, keepLastKeepData: true };
+        const { orderId } = state.router.location.state || state.router.location.query;
+        return { orderId, keepLastKeepData: true };
     },
-    (dispatch) => ({
-        actions : bindActionCreators(shipperActions, dispatch),
-    }),
+    null,
     (props) => {
         return {
-            fragments: ShipperDetail.fragments,
-            variablesTypes: {
-                shipper: {
-                    shipperId: 'ID!',
-                    shopId: 'ID!',
-                },
-            },
-            initialVariables: {
-                shipper: {
-                    shipperId: props.shipperId,
-                    shopId: props.record.shopId,
-                },
-            },
-            mutations: {
-                modifyShipper ({ state, data }) {
-                    if (data.success) {
-                        Object.assign(props.record, data.context);
-                    }
-                },
-                removeShipper ({ state, data, _ }) {
-                    if (data.success) {
-                        props.shippers.count--;
-                        _.remove(props.shippers.shipperList, (item) => item.id === props.record.id);
-                    }
-                },
-            },
-        };
-    }
-)
-export default class ShipperDetailContainer extends React.Component {
-    render () {
-        return (
-            <ShipperDetail {...this.props} />
-        );
-    }
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/shippers/pages/register/index.js
-
-```js
-import React from 'react';
-import { dataConnect } from 'relatejs';
-import { bindActionCreators } from 'redux';
-import * as shipperActions from 'actions/shippers';
-import ShipperRegister from './contents';
-
-@dataConnect(
-    (state) => {
-        const { shippers } = state.router.location.state || state.router.location.query;
-        return { shippers, keepLastKeepData: true };
-    },
-    (dispatch) => ({
-        actions : bindActionCreators(shipperActions, dispatch),
-    }),
-    (props) => {
-        return {
-            manualLoad: true,
-            fragments: ShipperRegister.fragments,
-            variablesTypes: {
-                shipper: {
-                    shipperId: 'ID!',
-                    shopId: 'ID!',
-                },
-            },
-            initialVariables: {
-                shipper: {
-                    shipperId: '',
-                    shopId: '',
-                },
-            },
-        };
-    }
-)
-export default class ShipperRegisterContainer extends React.Component {
-    render () {
-        return (
-            <ShipperRegister {...this.props} />
-        );
-    }
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/warehouse/pages/detail/index.js
-
-```js
-import React from 'react';
-import { dataConnect } from 'relatejs';
-import { bindActionCreators } from 'redux';
-import * as warehouseActions from 'actions/warehouses';
-import WarehouseDetail from './contents';
-
-@dataConnect(
-    (state) => {
-        const { operType, warehouseId, record, warehouses } = state.router.location.state || state.router.location.query;
-        return { operType: operType * 1, warehouseId, record, warehouses, keepLastKeepData: true };
-    },
-    (dispatch) => ({
-        actions : bindActionCreators(warehouseActions, dispatch),
-    }),
-    (props) => {
-        return {
-            manualLoad: !!props.warehouse || !props.warehouseId,
-            fragments: WarehouseDetail.fragments,
-            variablesTypes: {
-                warehouse: {
-                    warehouseId: 'ID',
-                },
-            },
-            initialVariables: {
-                warehouse: {
-                    warehouseId: props.warehouseId,
-                },
-            },
-            mutations: {
-                modifyWarehouse ({ state, data }) {
-                    if (data.success) {
-                        Object.assign(props.record, data.context);
-                    }
-                },
-                removeWarehouse ({ state, data, _ }) {
-                    if (data.success) {
-                        props.warehouses.count--;
-                        _.remove(props.warehouses.warehouseList, (item) => item.id === props.warehouseId);
-                    }
-                },
-            },
-        };
-    }
-)
-export default class WarehouseDetailContainer extends React.Component {
-    render () {
-        return (
-            <WarehouseDetail {...this.props} />
-        );
-    }
-}
-
-```
-
-* PDShop_Shop_PC/project/App/shared/pages/shop/pages/whorders/pages/detail/index.js
-
-```js
-import React from 'react';
-import { dataConnect } from 'relatejs';
-import { bindActionCreators } from 'redux';
-import * as orderActions from 'actions/orders';
-import WHOrderDetail from './contents';
-
-@dataConnect(
-    (state) => {
-        const { orderId, activeType } = state.router.location.state || state.router.location.query;
-        return { orderId, activeType, keepLastKeepData: true };
-    },
-    (dispatch) => ({
-        actions : bindActionCreators(orderActions, dispatch),
-    }),
-    (props) => {
-        return {
-            manualLoad: !!props.order || !props.orderId,
-            fragments: WHOrderDetail.fragments,
+            fragments: OrderDetail.fragments,
             variablesTypes: {
                 order: {
                     orderId: 'ID!',
@@ -11569,20 +12002,610 @@ import WHOrderDetail from './contents';
         };
     }
 )
-export default class WHOrderDetailContainer extends React.Component {
-    refreshWHOrder () {
-        const { relate, orderId } = this.props;
-        relate.refresh({
-            variables: {
-                order: {
-                    orderId,
-                },
-            },
-        });
-    }
+export default class OrderDetailContainer extends React.Component {
     render () {
         return (
-            <WHOrderDetail {...this.props} refreshWHOrder={::this.refreshWHOrder} />
+            <OrderDetail {...this.props} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/roadmaps/pages/detail/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { bindActionCreators } from 'redux';
+import * as roadmapActions from 'actions/roadmaps';
+import RoadmapDetail from './contents';
+
+@dataConnect(
+    (state) => {
+        const { operType, endPointLastCode, roadmapId, record, fromChild, roadmaps } = state.router.location.state || state.router.location.query;
+        return { operType: operType * 1, roadmapId, endPointLastCode, record, fromChild, roadmaps, keepLastKeepData: true };
+    },
+    (dispatch) => ({
+        actions : bindActionCreators(roadmapActions, dispatch),
+    }),
+    (props) => {
+        return {
+            fragments: RoadmapDetail.fragments,
+            variablesTypes: {
+                roadmap: {
+                    roadmapId: 'ID',
+                },
+                addressFromLastCode: {
+                    addressLastCode: 'Int',
+                },
+            },
+            initialVariables: {
+                roadmap: {
+                    roadmapId: props.roadmapId,
+                },
+                addressFromLastCode: {
+                    addressLastCode: props.endPointLastCode,
+                },
+            },
+            mutations: {
+                modifyRoadmap ({ state, data }) {
+                    if (data.success) {
+                        Object.assign(props.record, data.context);
+                    }
+                },
+                removeRoadmap ({ state, data, _ }) {
+                    if (data.success) {
+                        props.roadmaps.count--;
+                        _.remove(props.roadmaps.roadmapList, (item) => item.id === props.roadmapId);
+                    }
+                },
+            },
+        };
+    }
+)
+export default class RoadmapDetailContainer extends React.Component {
+    render () {
+        return (
+            <RoadmapDetail {...this.props} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/regionRates/pages/detail/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { bindActionCreators } from 'redux';
+import * as roadmapActions from 'actions/roadmaps';
+import RegionRateDetail from './contents';
+
+@dataConnect(
+    (state) => {
+        const { operType, regionLastCode, regionType, regionId, record, regionRates } = state.router.location.state || state.router.location.query;
+        return { operType: operType * 1, regionLastCode, regionType, regionId, record, regionRates, keepLastKeepData: true };
+    },
+    (dispatch) => ({
+        actions : bindActionCreators(roadmapActions, dispatch),
+    }),
+    (props) => {
+        return {
+            fragments: RegionRateDetail.fragments,
+            variablesTypes: {
+                regionRate: {
+                    regionId: 'ID',
+                },
+                addressWithRegion: {
+                    regionId: 'ID',
+                },
+            },
+            initialVariables: {
+                regionRate: {
+                    regionId: props.regionId,
+                },
+                addressWithRegion: {
+                    regionId: props.regionId,
+                },
+            },
+            mutations: {
+                modifyRegionProfit ({ state, data }) {
+                    if (data.success) {
+                        Object.assign(props.record, data.context);
+                    }
+                },
+                removeRegionProfit ({ state, data, _ }) {
+                    if (data.success) {
+                        props.regionRates.count--;
+                        _.remove(props.regionRates.regionRateList, (item) => item.id === props.regionId);
+                    }
+                },
+            },
+        };
+    }
+)
+export default class RegionRateDetailContainer extends React.Component {
+    render () {
+        return (
+            <RegionRateDetail {...this.props} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/roadmaps/pages/sendDoorList/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { bindActionCreators } from 'redux';
+import * as roadmapActions from 'actions/roadmaps';
+import SendDoorLists from './contents';
+
+@dataConnect(
+    (state) => {
+        const { record, endPointLastCode, roadmaps } = state.router.location.state || state.router.location.query;
+        return { record, endPointLastCode, roadmaps, pageSize: 20, keepLastKeepData: true };
+    },
+    (dispatch) => ({
+        actions : bindActionCreators(roadmapActions, dispatch),
+    }),
+)
+export default class SendDoorListsContainer extends React.Component {
+    render () {
+        return (
+            <SendDoorLists {...this.props} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/sendDoorRoadmaps/pages/detail/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { bindActionCreators } from 'redux';
+import * as roadmapActions from 'actions/roadmaps';
+import SendDoorRoadmapDetail from './contents';
+
+@dataConnect(
+    (state) => {
+        const { operType, endPointLastCode, roadmapId, record, roadmaps } = state.router.location.state || state.router.location.query;
+        return { operType: operType * 1, roadmapId, endPointLastCode, record, roadmaps, keepLastKeepData: true };
+    },
+    (dispatch) => ({
+        actions : bindActionCreators(roadmapActions, dispatch),
+    }),
+    (props) => {
+        return {
+            fragments: SendDoorRoadmapDetail.fragments,
+            variablesTypes: {
+                roadmap: {
+                    roadmapId: 'ID',
+                },
+                sendDoorAddressFromLastCode: {
+                    addressLastCode: 'Int',
+                    parentCode: 'Int',
+                },
+            },
+            initialVariables: {
+                roadmap: {
+                    roadmapId: props.roadmapId,
+                },
+                sendDoorAddressFromLastCode: {
+                    addressLastCode: props.endPointLastCode,
+                    parentCode: props.rootShop.addressRegionLastCode,
+                },
+            },
+            mutations: {
+                modifyRoadmap ({ state, data }) {
+                    if (data.success) {
+                        Object.assign(props.record, data.context);
+                    }
+                },
+                removeRoadmap ({ state, data, _ }) {
+                    if (data.success) {
+                        props.roadmaps.count--;
+                        _.remove(props.roadmaps.roadmapList, (item) => item.id === props.roadmapId);
+                    }
+                },
+            },
+        };
+    }
+)
+export default class SendDoorRoadmapDetailContainer extends React.Component {
+    render () {
+        return (
+            <SendDoorRoadmapDetail {...this.props} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/shipperMembers/pages/detail/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { bindActionCreators } from 'redux';
+import * as memberActions from 'actions/members';
+import MemberDetail from './contents';
+
+@dataConnect(
+    (state) => {
+        const { memberId, record, members } = state.router.location.state || state.router.location.query;
+        return { memberId, record, members, keepLastKeepData: true };
+    },
+    (dispatch) => ({
+        actions : bindActionCreators(memberActions, dispatch),
+    }),
+    (props) => {
+        return {
+            manualLoad: !!props.member || !props.memberId,
+            fragments: MemberDetail.fragments,
+            variablesTypes: {
+                shipperMember: {
+                    memberId: 'ID!',
+                },
+            },
+            initialVariables: {
+                shipperMember: {
+                    memberId: props.memberId,
+                },
+            },
+        };
+    }
+)
+export default class MemberDetailContainer extends React.Component {
+    render () {
+        return (
+            <MemberDetail {...this.props} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/sendOrders/pages/detail/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import OrderDetail from './contents';
+
+@dataConnect(
+    (state) => {
+        const { orderId } = state.router.location.state || state.router.location.query;
+        return { orderId, keepLastKeepData: true };
+    },
+    null,
+    (props) => {
+        return {
+            fragments: OrderDetail.fragments,
+            variablesTypes: {
+                order: {
+                    orderId: 'ID!',
+                },
+            },
+            initialVariables: {
+                order: {
+                    orderId: props.orderId,
+                },
+            },
+        };
+    }
+)
+export default class OrderDetailContainer extends React.Component {
+    render () {
+        return (
+            <OrderDetail {...this.props} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/shipperMembers/pages/register/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { bindActionCreators } from 'redux';
+import * as memberActions from 'actions/members';
+import MemberRegister from './contents';
+
+@dataConnect(
+    (state) => {
+        const { shipperMembers } = state.router.location.state || state.router.location.query;
+        return { shipperMembers, keepLastKeepData: true };
+    },
+    (dispatch) => ({
+        actions : bindActionCreators(memberActions, dispatch),
+    }),
+)
+export default class MemberRegisterContainer extends React.Component {
+    render () {
+        return (
+            <MemberRegister {...this.props} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/trucks/pages/detail/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { bindActionCreators } from 'redux';
+import * as truckActions from 'actions/trucks';
+import TruckDetail from './contents';
+
+@dataConnect(
+    (state) => {
+        const { operType, truckId, record, trucks, workTruckList } = state.router.location.state || state.router.location.query;
+        return { operType: operType * 1, truckId, record, trucks, workTruckList, keepLastKeepData: true };
+    },
+    (dispatch) => ({
+        actions : bindActionCreators(truckActions, dispatch),
+    }),
+    (props) => {
+        return {
+            fragments: TruckDetail.fragments,
+            variablesTypes: {
+                truck: {
+                    truckId: 'ID',
+                },
+            },
+            initialVariables: {
+                truck: {
+                    truckId: props.truckId,
+                },
+            },
+            mutations: {
+                modifyTruck ({ state, data }) {
+                    if (data.success) {
+                        Object.assign(props.record, data.context);
+                    }
+                },
+                removeTruck ({ state, data, _ }) {
+                    if (data.success) {
+                        props.workTruckList.count--;
+                        _.remove(props.workTruckList.list, (item) => item.id === props.truckId);
+                    }
+                },
+            },
+        };
+    }
+)
+export default class TruckDetailContainer extends React.Component {
+    render () {
+        return (
+            <TruckDetail {...this.props} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/trucks/pages/lookTruckFee/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { bindActionCreators } from 'redux';
+import * as orderActions from 'actions/orders';
+import LookTruckOrderFee from './contents';
+
+@dataConnect(
+    (state) => {
+        const { truckId, startPointLastCode, shopId } = state.router.location.state || state.router.location.query;
+        return { truckId, startPointLastCode, shopId, pageSize: 20, location: [106.6886, 26.566621], keepLastKeepData: true };
+    },
+    (dispatch) => ({
+        actions : bindActionCreators(orderActions, dispatch),
+    }),
+    (props) => ({
+        fragments: LookTruckOrderFee.fragments,
+        variablesTypes: {
+            lookTruckOrderFee: {
+                truckId: 'ID!',
+                location: '[Float]!',
+                startPointLastCode: 'Int',
+                shopId: 'ID',
+            },
+        },
+        initialVariables: {
+            lookTruckOrderFee: {
+                truckId: props.truckId,
+                location: props.location,
+                startPointLastCode: props.startPointLastCode,
+                shopId: props.shopId,
+            },
+        },
+    })
+)
+export default class LookTruckOrderFeeContainer extends React.Component {
+    render () {
+        return (
+            <LookTruckOrderFee {...this.props} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/trucks/pages/orderList/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { bindActionCreators } from 'redux';
+import * as orderActions from 'actions/orders';
+import OrderListInTruck from './contents';
+
+@dataConnect(
+    (state) => {
+        const { truckId } = state.router.location.state || state.router.location.query;
+        return { truckId, keepLastKeepData: true };
+    },
+    (dispatch) => ({
+        actions : bindActionCreators(orderActions, dispatch),
+    }),
+    (props) => ({
+        fragments: OrderListInTruck.fragments,
+        variablesTypes: {
+            orderListInTruck: {
+                truckId: 'ID!',
+            },
+        },
+        initialVariables: {
+            orderListInTruck: {
+                truckId: props.truckId,
+            },
+        },
+    })
+)
+export default class OrderListInTruckContainer extends React.Component {
+    render () {
+        return (
+            <OrderListInTruck {...this.props} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/trucks/pages/payForCarryPartment/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { bindActionCreators } from 'redux';
+import * as truckActions from 'actions/trucks';
+import PayForCarryPartment from './contents';
+
+@dataConnect(
+    (state) => {
+        const { truckId, record } = state.router.location.state || state.router.location.query;
+        return { truckId, record, keepLastKeepData: true };
+    },
+    (dispatch) => ({
+        actions : bindActionCreators(truckActions, dispatch),
+    }),
+    (props) => {
+        return {
+            fragments: PayForCarryPartment.fragments,
+            variablesTypes: {
+                truck: {
+                    truckId: 'ID!',
+                },
+            },
+            initialVariables: {
+                truck: {
+                    truckId: props.truckId,
+                },
+            },
+        };
+    }
+)
+export default class PayForCarryPartmentContainer extends React.Component {
+    render () {
+        return (
+            <PayForCarryPartment {...this.props} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/trucks/pages/selectCarryPartment/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { bindActionCreators } from 'redux';
+import * as truckActions from 'actions/trucks';
+import SelectCarryPartment from './contents';
+
+@dataConnect(
+    (state) => {
+        const { truckId, record } = state.router.location.state || state.router.location.query;
+        return { truckId, record, keepLastKeepData: true };
+    },
+    (dispatch) => ({
+        actions : bindActionCreators(truckActions, dispatch),
+    }),
+    (props) => {
+        return {
+            fragments: SelectCarryPartment.fragments,
+            variablesTypes: {
+                carryPartments: {
+                    truckId: 'ID!',
+                },
+            },
+            initialVariables: {
+                carryPartments: {
+                    truckId: props.truckId,
+                },
+            },
+        };
+    }
+)
+export default class SelectCarryPartmentContainer extends React.Component {
+    render () {
+        return (
+            <SelectCarryPartment {...this.props} />
+        );
+    }
+}
+
+```
+
+* PDShop_Client_PC/project/App/shared/pages/client/pages/trucks/pages/showDetail/index.js
+
+```js
+import React from 'react';
+import { dataConnect } from 'relatejs';
+import { bindActionCreators } from 'redux';
+import * as truckActions from 'actions/trucks';
+import ShowDetail from './contents';
+
+@dataConnect(
+    (state) => {
+        const { truckId, record, workTruckList } = state.router.location.state || state.router.location.query;
+        return { truckId, record, workTruckList, keepLastKeepData: true };
+    },
+    (dispatch) => ({
+        actions : bindActionCreators(truckActions, dispatch),
+    }),
+    (props) => {
+        return {
+            fragments: ShowDetail.fragments,
+            variablesTypes: {
+                truck: {
+                    truckId: 'ID!',
+                },
+            },
+            initialVariables: {
+                truck: {
+                    truckId: props.truckId,
+                },
+            },
+        };
+    }
+)
+export default class ShowDetailContainer extends React.Component {
+    render () {
+        return (
+            <ShowDetail {...this.props} />
         );
     }
 }
